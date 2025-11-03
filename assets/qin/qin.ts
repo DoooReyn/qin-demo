@@ -6,6 +6,7 @@ import { Logcat } from "./dependency/logger/logcat";
 import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
+import { ILogcat } from "./typings/logcat";
 
 /**
  * Qin
@@ -43,15 +44,28 @@ Version: 0.0.1`;
     this.__dpi = new DependencyInjector();
     this.__svr = new ServiceRegistry();
     this.__dpi.onInjected = (dep) => {
-      console.log("注册依赖:", dep);
+      this.dump("注册依赖:", dep);
       dep.dependencyOf = (name: string) => this.dependencyOf(name);
     };
     this.__svr.onRegistered = (svr: IService) => {
-      console.log("注册服务:", svr);
+      this.dump("注册服务:", svr);
       svr.dependencyOf = (name: string) => this.dependencyOf(name);
       svr.serviceOf = (name: string) => this.serviceOf(name);
     };
     this.__dpi.inject(this.__svr);
+  }
+
+  /**
+   * 打印调试信息
+   * @param args 调试信息
+   */
+  dump(...args: any[]) {
+    const logcat = this.dependencyOf<ILogcat>("Logcat");
+    if (logcat) {
+      logcat.acquire("qin").i(...args);
+    } else {
+      console.log(...args);
+    }
   }
 
   /**
@@ -160,7 +174,7 @@ Version: 0.0.1`;
    * @returns 依赖实例
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
-    return this.__dpi.resolve(name);
+    return this.__dpi.resolve(name) as T;
   }
 
   /**
@@ -169,6 +183,6 @@ Version: 0.0.1`;
    * @returns 服务实例
    */
   serviceOf<T extends IService>(name: string): T | undefined {
-    return this.__svr.resolve(name);
+    return this.__svr.resolve(name) as T;
   }
 }

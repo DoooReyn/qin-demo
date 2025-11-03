@@ -1,4 +1,4 @@
-import { ILogcat } from "../../typings/logcat";
+import { ILogcat, LoggerLevel } from "../../typings/logcat";
 import { Logger } from "./logger";
 
 /**
@@ -13,7 +13,7 @@ export class Logcat implements ILogcat {
   private __container: Map<string, Logger> = new Map();
 
   onAttach(): void {
-    this.acquire("sys");
+    this.acquire("qin");
     this.acquire("res");
     this.acquire("gui");
     this.acquire("net");
@@ -34,5 +34,29 @@ export class Logcat implements ILogcat {
       this.__container.set(name, new Logger(name));
     }
     return this.__container.get(name)!;
+  }
+
+  /**
+   * 统一设置日志级别
+   * @param level 日志级别
+   */
+  with(level: LoggerLevel) {
+    this.__container.forEach((logger) => {
+      logger.level = level;
+    });
+  }
+
+  /**
+   * 开启所有日志记录器
+   */
+  on() {
+    this.with(LoggerLevel.V);
+  }
+
+  /**
+   * 关闭所有日志记录器
+   */
+  off() {
+    this.with(LoggerLevel.N);
   }
 }

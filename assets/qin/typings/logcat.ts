@@ -70,4 +70,20 @@ export interface ILogcat extends IDependency {
    * @returns 日志记录器
    */
   acquire(name: string): ILogger;
+
+  /**
+   * 统一设置日志级别
+   * @param level 日志级别
+   */
+  with(level: LoggerLevel): void;
+
+  /**
+   * 开启所有日志记录器
+   */
+  on(): void;
+  
+  /**
+   * 关闭所有日志记录器
+   */
+  off(): void;
 }
