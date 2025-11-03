@@ -6,6 +6,7 @@ import { Logcat } from "./dependency/logger/logcat";
 import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
+import { EventBus } from "./dependency/event-bus/event-bus";
 
 /**
  * Qin
@@ -111,6 +112,7 @@ Version: 0.0.1`;
     this.__options = { ...this.__options, ...options };
 
     // 注册内部依赖
+    this.__dpi.inject(new EventBus());
     this.__dpi.inject(new Looper());
 
     // 注册可选依赖
