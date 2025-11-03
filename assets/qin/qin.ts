@@ -43,31 +43,22 @@ Version: 0.0.1`;
     this.__initialized = false;
     this.__dpi = new DependencyInjector();
     this.__svr = new ServiceRegistry();
+
+    const logcat = new Logcat();
     this.__dpi.onInjected = (dep) => {
-      this.dump("注册依赖:", dep);
+      logcat.qin.i("注册依赖:", dep.name);
       dep.dependencyOf = (name: string) => this.dependencyOf(name);
     };
     this.__svr.onRegistered = (svr: IService) => {
-      this.dump("注册服务:", svr);
+      logcat.qin.i("注册服务:", svr.name);
       svr.dependencyOf = (name: string) => this.dependencyOf(name);
       svr.serviceOf = (name: string) => this.serviceOf(name);
     };
+
+    this.__dpi.inject(logcat);
     this.__dpi.inject(this.__svr);
   }
-
-  /**
-   * 打印调试信息
-   * @param args 调试信息
-   */
-  dump(...args: any[]) {
-    const logcat = this.dependencyOf<ILogcat>("Logcat");
-    if (logcat) {
-      logcat.acquire("qin").i(...args);
-    } else {
-      console.log(...args);
-    }
-  }
-
+  
   /**
    * 检查环境是否匹配
    * @param env 环境名称
@@ -121,7 +112,6 @@ Version: 0.0.1`;
     this.__options = { ...this.__options, ...options };
 
     // 注册内部依赖
-    this.__dpi.inject(new Logcat());
     this.__dpi.inject(new Looper());
 
     // 注册可选依赖

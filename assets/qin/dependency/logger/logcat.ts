@@ -14,10 +14,6 @@ export class Logcat implements ILogcat {
 
   onAttach(): void {
     this.acquire("qin");
-    this.acquire("res");
-    this.acquire("gui");
-    this.acquire("net");
-    this.acquire("app");
   }
 
   onDetach(): void {
@@ -34,6 +30,11 @@ export class Logcat implements ILogcat {
       this.__container.set(name, new Logger(name));
     }
     return this.__container.get(name)!;
+  }
+
+  /** 获取默认日志记录器 */
+  get qin() {
+    return this.acquire("qin");
   }
 
   /**
