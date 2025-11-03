@@ -38,8 +38,11 @@ export class DependencyInjector {
    * @param name 依赖名称
    * @returns 依赖实例
    */
-  resolve<T extends IDependency>(name: string): T | undefined {
-    return this.__container.get(name) as T;
+  resolve<T extends IDependency>(dep: IDependency | string): T | undefined {
+    if (typeof dep === "string") {
+      return this.__container.get(dep) as T;
+    }
+    return this.__container.get(dep.name) as T;
   }
 
   /**

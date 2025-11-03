@@ -1,6 +1,7 @@
 import { DependencyInjector } from "./core/dependency-injector";
-import { Runtime } from "./core/Runtime";
+import { Looper } from "./core/looper";
 import { ServiceRegistry } from "./core/service-registry";
+import { Logcat } from "./dependency/logger/logcat";
 import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
@@ -36,7 +37,7 @@ Version: 0.0.1`;
 
   constructor() {
     console.log(this.description);
-
+    this.__initializing = false;
     this.__initialized = false;
     this.__dpi = new DependencyInjector();
     this.__svr = new ServiceRegistry();
@@ -96,8 +97,8 @@ Version: 0.0.1`;
     this.__options = { ...this.__options, ...options };
 
     // 注册内部依赖
-    const runtime = new Runtime();
-    this.__dpi.inject(runtime);
+    this.__dpi.inject(new Logcat());
+    this.__dpi.inject(new Looper());
 
     // 注册可选依赖
     if (this.__options.dependencies) {
@@ -119,7 +120,7 @@ Version: 0.0.1`;
     await this.__svr.init();
 
     // 设置运行时更新函数
-    runtime.tick = (dt: number) => {
+    this.__dpi.resolve<Looper>("Looper")!.loop = (dt: number) => {
       this.__svr.update(dt);
     };
 

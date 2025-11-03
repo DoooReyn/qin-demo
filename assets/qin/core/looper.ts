@@ -2,12 +2,12 @@ import { director, System } from "cc";
 import { IDependency } from "../typings/dependency";
 
 /**
- * 应用运行时系统
- * - @description 应用运行时系统为框架提供应用级别的运行时能力
+ * 应用循环系统
+ * - @description 应用循环系统为框架提供应用级别的循环能力
  */
-export class Runtime extends System implements IDependency {
-  readonly name: string = "Runtime";
-  readonly description: string = "应用运行时系统";
+export class Looper extends System implements IDependency {
+  readonly name: string = "Looper";
+  readonly description: string = "应用循环系统";
 
   /** 更新回调 */
   private __tick: (dt: number) => void;
@@ -23,10 +23,10 @@ export class Runtime extends System implements IDependency {
   }
 
   /**
-   * 设置更新回调
-   * @param fn 更新回调
+   * 设置循环回调
+   * @param fn 循环回调
    */
-  set tick(fn: (dt: number) => void) {
+  set loop(fn: (dt: number) => void) {
     this.__tick = fn;
   }
 
