@@ -1,22 +1,34 @@
 import { IDependency } from "../typings/dependency";
+import { IDependencyInjector } from "../typings/dependency-injector";
 
 /**
  * 依赖注入器
  * - @description 依赖注入器用于管理和注入应用程序中的依赖项
  */
-export class DependencyInjector {
+export class DependencyInjector implements IDependencyInjector {
   /** 依赖容器 */
   private __container: Map<string, IDependency> = new Map();
+
+  /** 依赖注入时调用 */
+  private __onInjected: (dep: IDependency) => void;
+
+  /** 设置依赖注入时回调 */
+  public set onInjected(callback: (dep: IDependency) => void) {
+    this.__onInjected = callback;
+  }
 
   /**
    * 注入依赖
    * @param dep 依赖
+   * @param dependencies 依赖项的依赖
    */
   inject(dep: IDependency): void {
-    if (!this.__container.has(dep.name)) {
-      this.__container.set(dep.name, dep);
-      dep.onAttach();
+    if (this.__container.has(dep.name)) {
+      throw new Error(`依赖 ${dep.name} 已注册.`);
     }
+    this.__container.set(dep.name, dep);
+    this.__onInjected?.(dep);
+    dep.onAttach();
   }
 
   /**

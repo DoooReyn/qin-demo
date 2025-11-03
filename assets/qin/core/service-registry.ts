@@ -1,11 +1,11 @@
-import { IDependency } from "../typings/dependency";
 import { IService } from "../typings/service";
+import { IServiceRegistry } from "../typings/service-registry";
 
 /**
  * 服务注册器
  * - @description 服务注册器用于管理和注册应用程序中的服务
  */
-export class ServiceRegistry implements IDependency {
+export class ServiceRegistry implements IServiceRegistry {
   readonly name: string = "ServiceRegistry";
   readonly description: string = "服务注册管理";
 
@@ -26,15 +26,24 @@ export class ServiceRegistry implements IDependency {
   /** 服务容器 */
   private __container: Map<string, IService>;
 
+  /** 服务注册时回调 */
+  private __onRegistered: (svr: IService) => void;
+
+  /** 设置服务注册时回调 */
+  set onRegistered(callback: (svr: IService) => void) {
+    this.__onRegistered = callback;
+  }
+
   /**
    * 注册服务
    * @param svr 服务
    */
   register(svr: IService): void {
     if (this.__container.has(svr.name)) {
-      throw new Error(`Service ${svr.name} already registered.`);
+      throw new Error(`服务 ${svr.name} 已注册.`);
     }
     this.__container.set(svr.name, svr);
+    this.__onRegistered?.(svr);
   }
 
   /**

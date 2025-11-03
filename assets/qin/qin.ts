@@ -1,5 +1,6 @@
 import { DependencyInjector } from "./core/dependency-injector";
 import { Looper } from "./core/looper";
+import { ILooper } from "./typings/looper";
 import { ServiceRegistry } from "./core/service-registry";
 import { Logcat } from "./dependency/logger/logcat";
 import { IDependency } from "./typings/dependency";
@@ -41,6 +42,15 @@ Version: 0.0.1`;
     this.__initialized = false;
     this.__dpi = new DependencyInjector();
     this.__svr = new ServiceRegistry();
+    this.__dpi.onInjected = (dep) => {
+      console.log("注册依赖:", dep);
+      dep.dependencyOf = (name: string) => this.dependencyOf(name);
+    };
+    this.__svr.onRegistered = (svr: IService) => {
+      console.log("注册服务:", svr);
+      svr.dependencyOf = (name: string) => this.dependencyOf(name);
+      svr.serviceOf = (name: string) => this.serviceOf(name);
+    };
     this.__dpi.inject(this.__svr);
   }
 
@@ -83,11 +93,11 @@ Version: 0.0.1`;
    */
   async init(options: IQinOptions) {
     if (this.__initializing) {
-      throw new Error("Qin is initializing.");
+      throw new Error("Qin 正在初始化中.");
     }
 
     if (this.__initialized) {
-      throw new Error("Qin has been initialized.");
+      throw new Error("Qin 已初始化.");
     }
 
     // 标记为正在初始化
@@ -120,7 +130,7 @@ Version: 0.0.1`;
     await this.__svr.init();
 
     // 设置运行时更新函数
-    this.__dpi.resolve<Looper>("Looper")!.loop = (dt: number) => {
+    this.__dpi.resolve<ILooper>("Looper")!.loop = (dt: number) => {
       this.__svr.update(dt);
     };
 

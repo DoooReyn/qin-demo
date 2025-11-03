@@ -1,11 +1,11 @@
 import { director, System } from "cc";
-import { IDependency } from "../typings/dependency";
+import { ILooper } from "../typings/looper";
 
 /**
  * 应用循环系统
  * - @description 应用循环系统为框架提供应用级别的循环能力
  */
-export class Looper extends System implements IDependency {
+export class Looper extends System implements ILooper {
   readonly name: string = "Looper";
   readonly description: string = "应用循环系统";
 
