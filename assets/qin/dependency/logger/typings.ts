@@ -1,22 +1,4 @@
-/**
- * 日志级别
- */
-export enum LoggerLevel {
-  /** 详细日志 */
-  V = 0,
-  /** 调试日志 */
-  D = 1,
-  /** 信息日志 */
-  I = 2,
-  /** 警告日志 */
-  W = 3,
-  /** 错误日志 */
-  E = 4,
-  /** 致命错误日志 */
-  F = 5,
-  /** 无日志 */
-  N = 99,
-}
+import { LoggerLevel } from "../../typings/logcat";
 
 /**
  * 日志颜色
@@ -44,3 +26,5 @@ export const LOGGER_LEVEL_ENTRY: Record<LoggerLevel, (...args: any[]) => void> =
     [LoggerLevel.F]: console.error,
     [LoggerLevel.N]: () => {},
   } as const;
+export { LoggerLevel };
+

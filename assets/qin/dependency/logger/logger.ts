@@ -1,11 +1,12 @@
 import { sys } from "cc";
 import { LOGGER_COLOR, LOGGER_LEVEL_ENTRY, LoggerLevel } from "./typings";
+import { ILogger } from "../../typings/logcat";
 
 /**
  * 日志
  * - @description 日志为框架提供日志输出能力
  */
-export class Logger {
+export class Logger implements ILogger {
   /** 日志级别 */
   private __level: LoggerLevel = LoggerLevel.V;
 
@@ -14,6 +15,14 @@ export class Logger {
    * @param header 日志头
    */
   constructor(public readonly header: string) {}
+
+  /** 日志级别 */
+  get level(): LoggerLevel {
+    return this.__level;
+  }
+  set level(level: LoggerLevel) {
+    this.__level = level;
+  }
 
   /** 日志输出 */
   private __print(level: LoggerLevel, msg: any[]): void {

@@ -1,23 +1,21 @@
-import { IDependency } from "../../typings/dependency";
+import { ILogcat } from "../../typings/logcat";
 import { Logger } from "./logger";
 
 /**
  * 日志系统
  * - @description 日志系统，用于记录应用程序的运行日志
  */
-export class Logcat implements IDependency {
-  /** 依赖名称 */
+export class Logcat implements ILogcat {
   readonly name: string = "Logcat";
-  /** 依赖描述 */
   readonly description: string = "日志系统";
-  
+
   /** 日志记录器容器 */
   private __container: Map<string, Logger> = new Map();
 
   onAttach(): void {
     this.acquire("sys");
-    this.acquire("gui");
     this.acquire("res");
+    this.acquire("gui");
     this.acquire("net");
     this.acquire("app");
   }
