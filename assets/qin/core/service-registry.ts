@@ -91,7 +91,7 @@ export class ServiceRegistry implements IServiceRegistry {
    * 注销所有服务
    */
   async destroy() {
-    // 反向注销服务，确保先注册的先注销
+    // 反向注销服务，确保先注册的后注销
     const services = Array.from(this.__container.entries()).reverse();
     for (let [_, svr] of services) {
       await svr.uninstall();

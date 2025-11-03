@@ -61,6 +61,7 @@ export class DependencyInjector implements IDependencyInjector {
    * 注销所有依赖
    */
   async destroy() {
+    // 反向注销依赖，确保先注册的后注销
     const dependencies = Array.from(this.__container.entries()).reverse();
     for (let [_, dep] of dependencies) {
       dep.onDetach();
