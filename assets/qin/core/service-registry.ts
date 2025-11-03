@@ -88,4 +88,14 @@ export class ServiceRegistry implements IDependency {
       await svr.uninstall();
     }
   }
+
+  /**
+   * 更新所有服务
+   * @param dt 时间间隔
+   */
+  update(dt: number): void {
+    for (let [_, svr] of this.__container) {
+      svr.update(dt);
+    }
+  }
 }

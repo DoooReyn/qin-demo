@@ -1,4 +1,7 @@
-/** 服务项 */
+/** 
+ * 服务项
+ * - @description 服务项为框架提供特定业务能力，它跟游戏功能紧密相关
+ */
 export interface IService {
   /** 服务名称 */
   readonly name: string;

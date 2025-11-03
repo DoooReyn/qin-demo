@@ -1,4 +1,5 @@
 import { DependencyInjector } from "./core/dependency-injector";
+import { Runtime } from "./core/Runtime";
 import { ServiceRegistry } from "./core/service-registry";
 import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
@@ -94,14 +95,20 @@ Version: 0.0.1`;
     // 合并选项
     this.__options = { ...this.__options, ...options };
 
-    // 注册依赖
+    // 注册内部依赖
+    const runtime = new Runtime();
+    this.__dpi.inject(runtime);
+
+    // 注册可选依赖
     if (this.__options.dependencies) {
       this.__options.dependencies.forEach((dep) => {
         this.__dpi.inject(dep);
       });
     }
 
-    // 注册服务
+    // 注册内部服务
+
+    // 注册可选服务
     if (this.__options.services) {
       this.__options.services.forEach((svr) => {
         this.__svr.register(svr);
@@ -110,6 +117,11 @@ Version: 0.0.1`;
 
     // 初始化服务
     await this.__svr.init();
+
+    // 设置运行时更新函数
+    runtime.tick = (dt: number) => {
+      this.__svr.update(dt);
+    };
 
     // 标记为初始化完成
     this.__initializing = false;
