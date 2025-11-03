@@ -6,7 +6,6 @@ import { Logcat } from "./dependency/logger/logcat";
 import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
-import { ILogcat } from "./typings/logcat";
 
 /**
  * Qin
