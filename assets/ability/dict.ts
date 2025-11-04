@@ -10,7 +10,7 @@ export type IKey = string | symbol;
 
 /**
  * 字典能力项接口
- * @description 字典能力项提供对字典的操作
+ * @description 提供对字典的操作方法
  */
 export interface IDict extends IAbility {
   /** 冻结字典（防止修改） */
