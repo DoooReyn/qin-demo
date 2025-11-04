@@ -1,21 +1,22 @@
+import { IDependency } from "../../typings/dependency";
 import { IEventBus, IEventChannel } from "../../typings/event-bus";
+import { Dependency } from "../dependency";
 import { EventChannel } from "./event-channel";
 
 /**
  * 事件总线
  * - 用于管理事件渠道，实现事件的发布和订阅。
  */
-export class EventBus implements IEventBus {
+export class EventBus extends Dependency implements IEventBus {
   readonly name: string = "EventBus";
   readonly description: string = "事件总线";
 
   /** 事件渠道容器 */
   private __channels: Map<string, IEventChannel> = new Map();
 
-  onAttach(): void {}
-
   onDetach(): void {
     this.removeAll();
+    super.onDetach();
   }
 
   /**

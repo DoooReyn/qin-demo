@@ -1,15 +1,14 @@
 import { IProxy, IProxyDependency, IProxyOptions } from "../../typings/proxy";
+import { Dependency } from "../dependency";
 import { DeepProxy } from "./deep-proxy";
 
 /**
  * （外部）深层代理
  * @description 提供创建代理的方法
  */
-export class ProxyDependency implements IProxyDependency {
+export class ProxyDependency extends Dependency implements IProxyDependency {
   readonly name: string = "ProxyDependency";
   readonly description: string = "深层代理";
-  onAttach(): void {}
-  onDetach(): void {}
 
   public create<T extends object>(
     target: T,

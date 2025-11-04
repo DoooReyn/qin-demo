@@ -1,11 +1,12 @@
 import { ILogcat, LoggerLevel } from "../../typings/logcat";
+import { Dependency } from "../dependency";
 import { Logger } from "./logger";
 
 /**
  * 日志系统
  * - @description 日志系统，用于记录应用程序的运行日志
  */
-export class Logcat implements ILogcat {
+export class Logcat extends Dependency implements ILogcat {
   readonly name: string = "Logcat";
   readonly description: string = "日志系统";
 
@@ -13,11 +14,13 @@ export class Logcat implements ILogcat {
   private __container: Map<string, Logger> = new Map();
 
   onAttach(): void {
+    super.onAttach();
     this.acquire("qin");
   }
 
   onDetach(): void {
     this.__container.clear();
+    super.onDetach();
   }
 
   /**

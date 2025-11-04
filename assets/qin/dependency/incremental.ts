@@ -1,13 +1,14 @@
 import { IIncremental } from "../typings/incremental";
+import { Dependency } from "./dependency";
 
 /**
  * 递增ID生成器
  */
-export class Incremental implements IIncremental {
+export class Incremental extends Dependency implements IIncremental {
   readonly name: string = "Incremental";
   readonly description: string = "递增ID生成器";
-  onAttach(): void {}
   onDetach(): void {
+    super.onDetach();
     this.__container.clear();
   }
 

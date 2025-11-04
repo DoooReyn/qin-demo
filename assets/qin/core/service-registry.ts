@@ -1,3 +1,5 @@
+import { Dependency } from "../dependency/dependency";
+import { ILogcat } from "../typings/logcat";
 import { IService } from "../typings/service";
 import { IServiceRegistry } from "../typings/service-registry";
 
@@ -5,13 +7,9 @@ import { IServiceRegistry } from "../typings/service-registry";
  * 服务注册器
  * - @description 服务注册器用于管理和注册应用程序中的服务
  */
-export class ServiceRegistry implements IServiceRegistry {
+export class ServiceRegistry extends Dependency implements IServiceRegistry {
   readonly name: string = "ServiceRegistry";
   readonly description: string = "服务注册管理";
-
-  onAttach(): void {
-    this.__container = new Map();
-  }
 
   onDetach(): void {
     this.destroy()
@@ -19,12 +17,13 @@ export class ServiceRegistry implements IServiceRegistry {
         this.__container.clear();
       })
       .catch((err) => {
-        console.error("Error detaching service registry:", err);
+        this.dependencyOf<ILogcat>("Logcat")?.qin.e("服务注销失败：", err);
       });
+    super.onDetach();
   }
 
   /** 服务容器 */
-  private __container: Map<string, IService>;
+  private __container: Map<string, IService> = new Map();
 
   /** 服务注册时回调 */
   private __onRegistered: (svr: IService) => void;

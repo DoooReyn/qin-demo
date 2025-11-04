@@ -12,9 +12,9 @@ export interface IService {
   /** 服务描述 */
   readonly description: string;
   /** 获取依赖项 */
-  dependencyOf?<D extends IDependency>(name: string): D;
+  dependencyOf<D extends IDependency>(name: string): D;
   /** 获取服务项 */
-  serviceOf?<D extends IService>(name: string): D;
+  serviceOf<D extends IService>(name: string): D;
   /** 服务安装 */
   install(): Promise<void>;
   /** 服务卸载 */
