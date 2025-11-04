@@ -193,7 +193,7 @@ export interface IBe extends IAbility {
    * @param value 目标值
    * @returns 值的 CC 类名
    */
-  ccclassOf<T extends new (...args: any) => any>(value: InstanceType<T>);
+  ccclassOf<T extends new (...args: any) => any>(value: InstanceType<T>): string;
   /**
    * 判断值是否为指定 CC 类名的实例
    * @param value 目标值

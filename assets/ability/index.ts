@@ -4,6 +4,7 @@ export * from "./colors";
 export * from "./digit";
 export * from "./dict";
 export * from "./global";
+export * from "./list";
 export * from "./literal";
 export * from "./might";
 export * from "./platform";
