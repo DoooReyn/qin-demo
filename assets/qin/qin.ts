@@ -9,6 +9,7 @@ import { IService } from "./typings/service";
 import { EventBus } from "./dependency/event-bus/event-bus";
 import { Incremental } from "./dependency/incremental";
 import { ProxyDependency } from "./dependency/proxy/proxy";
+import { TimerService } from "./service/timer";
 
 /**
  * Qin
@@ -127,6 +128,7 @@ Version: 0.0.1`;
     }
 
     // 注册内部服务
+    this.__svr.register(new TimerService());
 
     // 注册可选服务
     if (this.__options.services) {
