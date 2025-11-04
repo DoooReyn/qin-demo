@@ -1585,6 +1585,9 @@ export interface IGrapheme extends IAbility {
 /** 字符串占用字素缓存 */
 const CACHE: Record<string, number> = Object.create(null);
 
+/**
+ * 字素拆分器能力实现
+ */
 export const grapheme: IGrapheme = {
   name: "Grapheme",
   description: "字素拆分器",
