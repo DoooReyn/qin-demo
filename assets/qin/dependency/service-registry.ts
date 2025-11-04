@@ -1,4 +1,4 @@
-import { Dependency } from "../dependency/dependency";
+import { Dependency } from "./dependency";
 import { ILogcat } from "../typings/logcat";
 import { IService } from "../typings/service";
 import { IServiceRegistry } from "../typings/service-registry";

@@ -1,15 +1,15 @@
-import { DependencyInjector } from "./core/dependency-injector";
-import { Looper } from "./core/looper";
-import { ILooper } from "./typings/looper";
-import { ServiceRegistry } from "./core/service-registry";
-import { Logcat } from "./dependency/logger/logcat";
-import { IDependency } from "./typings/dependency";
-import { IQinOptions } from "./typings/options";
-import { IService } from "./typings/service";
+import { DependencyInjector } from "./dependency-injector";
+import { Looper } from "./dependency/looper";
+import { ServiceRegistry } from "./dependency/service-registry";
 import { EventBus } from "./dependency/event-bus/event-bus";
 import { Incremental } from "./dependency/incremental";
 import { ProxyDependency } from "./dependency/proxy/proxy";
+import { Logcat } from "./dependency/logger/logcat";
 import { TimerService } from "./service/timer";
+import { ILooper } from "./typings/looper";
+import { IDependency } from "./typings/dependency";
+import { IQinOptions } from "./typings/options";
+import { IService } from "./typings/service";
 
 /**
  * Qin
@@ -61,7 +61,7 @@ Version: 0.0.1`;
     this.__dpi.inject(logcat);
     this.__dpi.inject(this.__svr);
   }
-  
+
   /**
    * 检查环境是否匹配
    * @param env 环境名称
