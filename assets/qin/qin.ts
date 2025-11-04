@@ -7,6 +7,7 @@ import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
 import { EventBus } from "./dependency/event-bus/event-bus";
+import { Incremental } from "./dependency/incremental";
 
 /**
  * Qin
@@ -112,6 +113,7 @@ Version: 0.0.1`;
     this.__options = { ...this.__options, ...options };
 
     // 注册内部依赖
+    this.__dpi.inject(new Incremental());
     this.__dpi.inject(new EventBus());
     this.__dpi.inject(new Looper());
 
