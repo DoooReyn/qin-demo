@@ -3,6 +3,7 @@ export * from "./be";
 export * from "./colors";
 export * from "./digit";
 export * from "./dict";
+export * from "./effect";
 export * from "./global";
 export * from "./list";
 export * from "./literal";
