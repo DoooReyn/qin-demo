@@ -13,4 +13,5 @@ export * from "./might";
 export * from "./platform";
 export * from "./random";
 export * from "./regexp";
+export * from "./shot";
 export * from "./time";
