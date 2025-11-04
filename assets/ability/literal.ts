@@ -2,7 +2,7 @@ import { IAbility } from "./ability";
 import { random, Range } from "./random";
 
 /**
- * 字符串能力接口
+ * 字符串操作能力接口
  * @description 提供字符串操作能力
  */
 export interface ILiteral extends IAbility {
@@ -174,17 +174,21 @@ export interface ILiteral extends IAbility {
   splitWords(text: string): string[];
 }
 
-const charSet: Record<string, [number, number]> = {
+/** 常用字符集码范围 */
+const CHAR_SET: Record<string, [number, number]> = {
   /** 基本汉字 */
-  BasicChinese: [0x4e00, 0x9fa5],
+  CHINESE: [0x4e00, 0x9fa5],
   /** 数字0-9	*/
-  Numbers: [0x30, 0x39],
+  DIGIT: [0x30, 0x39],
   /** 小写英文字母 */
-  LowerCaseAlphabet: [0x61, 0x7a],
+  LOWER: [0x61, 0x7a],
   /** 大写英文字母 */
-  UpperCaseAlphabet: [0x41, 0x5a],
+  UPPER: [0x41, 0x5a],
 } as const;
 
+/**
+ * 字符串操作能力实现
+ */
 export const literal: ILiteral = {
   name: "Literal",
   description: "字符串操作能力",
@@ -318,8 +322,8 @@ export const literal: ILiteral = {
     for (let i = 0; i < n; i++) {
       chars += String.fromCharCode(
         random.randomInteger(
-          charSet.BasicChinese[0],
-          charSet.BasicChinese[1],
+          CHAR_SET.BasicChinese[0],
+          CHAR_SET.BasicChinese[1],
           Range.L1R1
         )
       );
@@ -331,8 +335,8 @@ export const literal: ILiteral = {
     for (let i = 0; i < n; i++) {
       chars += String.fromCharCode(
         random.randomInteger(
-          charSet.LowerCaseAlphabet[0],
-          charSet.LowerCaseAlphabet[1],
+          CHAR_SET.LowerCaseAlphabet[0],
+          CHAR_SET.LowerCaseAlphabet[1],
           Range.L1R1
         )
       );
@@ -344,8 +348,8 @@ export const literal: ILiteral = {
     for (let i = 0; i < n; i++) {
       chars += String.fromCharCode(
         random.randomInteger(
-          charSet.UpperCaseAlphabet[0],
-          charSet.UpperCaseAlphabet[1],
+          CHAR_SET.UpperCaseAlphabet[0],
+          CHAR_SET.UpperCaseAlphabet[1],
           Range.L1R1
         )
       );
@@ -358,16 +362,16 @@ export const literal: ILiteral = {
       if (random.randomIf()) {
         chars += String.fromCharCode(
           random.randomInteger(
-            charSet.LowerCaseAlphabet[0],
-            charSet.LowerCaseAlphabet[1],
+            CHAR_SET.LowerCaseAlphabet[0],
+            CHAR_SET.LowerCaseAlphabet[1],
             Range.L1R1
           )
         );
       } else {
         chars += String.fromCharCode(
           random.randomInteger(
-            charSet.UpperCaseAlphabet[0],
-            charSet.UpperCaseAlphabet[1],
+            CHAR_SET.UpperCaseAlphabet[0],
+            CHAR_SET.UpperCaseAlphabet[1],
             Range.L1R1
           )
         );
@@ -385,7 +389,8 @@ export const literal: ILiteral = {
   isChinese: (char: string) => {
     const charCode = char.charCodeAt(0);
     return (
-      charCode >= charSet.BasicChinese[0] && charCode <= charSet.BasicChinese[1]
+      charCode >= CHAR_SET.BasicChinese[0] &&
+      charCode <= CHAR_SET.BasicChinese[1]
     );
   },
   isEnglish(char: string) {
@@ -393,7 +398,7 @@ export const literal: ILiteral = {
   },
   isDigit(char: string) {
     const charCode = char.charCodeAt(0);
-    return charCode >= charSet.Numbers[0] && charCode <= charSet.Numbers[1];
+    return charCode >= CHAR_SET.Numbers[0] && charCode <= CHAR_SET.Numbers[1];
   },
   splitWords(text: string) {
     if (!text || text.length === 0) {
