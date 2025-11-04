@@ -8,6 +8,7 @@ export * from "./global";
 export * from "./grapheme";
 export * from "./list";
 export * from "./literal";
+export * from "./mediator";
 export * from "./might";
 export * from "./platform";
 export * from "./random";
