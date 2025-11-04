@@ -87,7 +87,9 @@ export const platform: IPlatform = {
   macos: sys.OS.OSX === sys.os,
   windows: sys.OS.WINDOWS === sys.os,
   linux: sys.OS.LINUX === sys.os,
-  desktop: [sys.OS.WINDOWS, sys.OS.OSX, sys.OS.LINUX].includes(sys.os),
+  get desktop(): boolean {
+    return platform.macos || platform.windows || platform.linux;
+  },
   android: sys.OS.ANDROID === sys.os,
   ios: sys.OS.IOS === sys.os,
   web: sys.isBrowser,
