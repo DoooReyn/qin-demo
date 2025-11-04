@@ -86,6 +86,7 @@ export interface IDigit extends IAbility {
   ): [number, number];
 }
 
+/** 数字能力实现 */
 export const digit: IDigit = {
   name: "Digit",
   description: "数字",
