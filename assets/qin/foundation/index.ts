@@ -2,4 +2,4 @@ export * from "./linked-list";
 export * from "./circular-linked-list";
 export * from "./doubly-circular-linked-list";
 export * from "./deep-proxy";
-
+export * from "./group";

@@ -73,6 +73,6 @@ export class Incremental extends Dependency implements IIncremental {
    * @returns 下一个递增ID
    */
   acquire(tag: string) {
-    return this.next(tag);
+    return tag + "-" + this.next(tag);
   }
 }

@@ -45,14 +45,14 @@ Version: 0.0.1`;
     this.__initialized = false;
 
     // 依赖项容器
-    this.__dpi = new DependencyInjector();
+    this.__dpi = DependencyInjector.Shared;
     this.__dpi.onInjected = (dep) => {
       logcat.qin.i("注册依赖:", dep.name, dep.description);
       dep.dependencyOf = (name: string) => this.dependencyOf(name);
     };
 
     // 服务项容器
-    this.__svr = new ServiceRegistry();
+    this.__svr = ServiceRegistry.Shared;
     this.__dpi.inject(this.__svr);
     this.__svr.onRegistered = (svr: IService) => {
       logcat.qin.i("注册服务:", svr.name, svr.description);

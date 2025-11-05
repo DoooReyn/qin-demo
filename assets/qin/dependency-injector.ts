@@ -6,6 +6,14 @@ import { IDependencyInjector } from "./typings/dependency-injector";
  * @description 依赖注入容器用于管理和注入应用程序中的依赖项
  */
 export class DependencyInjector implements IDependencyInjector {
+  /**
+   * 单例
+   */
+  public static get Shared(): DependencyInjector {
+    // @ts-ignore
+    return (DependencyInjector.__inst ??= new DependencyInjector());
+  }
+
   /** 依赖容器 */
   private __container: Map<string, IDependency> = new Map();
 

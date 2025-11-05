@@ -40,5 +40,5 @@ export interface IIncremental extends IDependency {
    * @param tag 生成器标签
    * @returns 下一个递增ID
    */
-  acquire(tag: string): number;
+  acquire(tag: string): string;
 }

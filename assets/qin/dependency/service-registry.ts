@@ -11,6 +11,14 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
   readonly name: string = "ServiceRegistry";
   readonly description: string = "服务注册容器";
 
+  /**
+   * 单例
+   */
+  public static get Shared(): ServiceRegistry {
+    // @ts-ignore
+    return (ServiceRegistry.__inst ??= new ServiceRegistry());
+  }
+
   onDetach(): void {
     this.destroy()
       .then(() => {
