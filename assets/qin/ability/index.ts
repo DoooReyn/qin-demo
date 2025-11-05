@@ -22,3 +22,4 @@ export * from "./regexp";
 export * from "./shot";
 export * from "./time";
 export * from "./zipson";
+export * from "./zlib";
