@@ -15,7 +15,7 @@ export interface IZlib extends IAbility {
  * Zlib 调制能力实现
  */
 export const zlib: IZlib = {
-  name: "Modulate",
+  name: "Zlib",
   description: "Zlib 调制能力",
   encode(data: Data) {
     return inflate(data, { to: "string" });
