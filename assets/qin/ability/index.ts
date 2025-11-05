@@ -11,6 +11,7 @@ export * from "./literal";
 export * from "./mediator";
 export * from "./misc";
 export * from "./might";
+export * from "./mock";
 export * from "./platform";
 export * from "./random";
 export * from "./regexp";
