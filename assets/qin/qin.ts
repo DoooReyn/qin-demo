@@ -4,16 +4,16 @@ import { ServiceRegistry } from "./dependency/service-registry";
 import { EventBus } from "./dependency/event-bus/event-bus";
 import { Incremental } from "./dependency/incremental";
 import { ProxyDependency } from "./dependency/proxy/proxy";
-import { Logcat } from "./dependency/logger/logcat";
-import { TimerService } from "./service/timer";
+import { TimerService } from "./service/timer/timer";
 import { ILooper } from "./typings/looper";
 import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
+import { logcat } from "./ability";
 
 /**
  * Qin
- * - @description Qin 是一个通用的轻量级 2D 游戏框架
+ * @description Qin 是一个通用的轻量级 2D 游戏框架
  */
 export class Qin {
   /** 框架描述 */
@@ -41,13 +41,12 @@ Version: 0.0.1`;
   private __initializing: boolean;
 
   constructor() {
-    console.log(this.description);
+    logcat.qin.i(this.description);
     this.__initializing = false;
     this.__initialized = false;
     this.__dpi = new DependencyInjector();
     this.__svr = new ServiceRegistry();
 
-    const logcat = new Logcat();
     this.__dpi.onInjected = (dep) => {
       logcat.qin.i("注册依赖:", dep.name);
       dep.dependencyOf = (name: string) => this.dependencyOf(name);
@@ -57,8 +56,6 @@ Version: 0.0.1`;
       svr.dependencyOf = (name: string) => this.dependencyOf(name);
       svr.serviceOf = (name: string) => this.serviceOf(name);
     };
-
-    this.__dpi.inject(logcat);
     this.__dpi.inject(this.__svr);
   }
 

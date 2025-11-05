@@ -10,8 +10,6 @@ export interface IMock extends IAbility {
   member<C>(key: string | symbol, value: any): (target: C) => C;
   /** 获取类的原型成员 */
   memberOf<V>(target: any, key: IKey): V;
-  /** 对象池条目装饰器 */
-  obEntry<C>(name: string): (target: C) => C;
 }
 
 /**
@@ -22,19 +20,12 @@ export const mock: IMock = {
   description: "装饰器",
   ..._decorator,
   member(key: IKey, val: any) {
-    return function(target: any) {
+    return function (target: any) {
       target.prototype[key] = val;
       return target;
-    }
+    };
   },
   memberOf<V>(target: any, key: IKey) {
     return target.prototype[key] as V;
   },
-  obEntry(name: string) {
-    return mock.member(Symbol.for("OBJ_ENTRY"), {
-      name,
-      createAt: 0,
-      recycleAt: 0,
-    })
-  }
-}
+};

@@ -3,7 +3,7 @@ import { IService } from "./service";
 
 /**
  * 服务注册器接口
- * - @description 服务注册器接口定义了服务注册器的基本功能
+ * @description 服务注册器接口定义了服务注册器的基本功能
  */
 export interface IServiceRegistry extends IDependency {
   /** 注册服务 */

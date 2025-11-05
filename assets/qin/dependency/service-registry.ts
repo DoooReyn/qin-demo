@@ -1,11 +1,11 @@
 import { Dependency } from "./dependency";
-import { ILogcat } from "../typings/logcat";
 import { IService } from "../typings/service";
 import { IServiceRegistry } from "../typings/service-registry";
+import { logcat } from "../ability";
 
 /**
  * 服务注册器
- * - @description 服务注册器用于管理和注册应用程序中的服务
+ * @description 服务注册器用于管理和注册应用程序中的服务
  */
 export class ServiceRegistry extends Dependency implements IServiceRegistry {
   readonly name: string = "ServiceRegistry";
@@ -17,7 +17,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
         this.__container.clear();
       })
       .catch((err) => {
-        this.dependencyOf<ILogcat>("Logcat")?.qin.e("服务注销失败：", err);
+        logcat.qin.e("服务注销失败：", err);
       });
     super.onDetach();
   }

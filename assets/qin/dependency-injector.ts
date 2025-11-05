@@ -1,9 +1,9 @@
-import { IDependency } from "../typings/dependency";
-import { IDependencyInjector } from "../typings/dependency-injector";
+import { IDependency } from "./typings/dependency";
+import { IDependencyInjector } from "./typings/dependency-injector";
 
 /**
  * 依赖注入器
- * - @description 依赖注入器用于管理和注入应用程序中的依赖项
+ * @description 依赖注入器用于管理和注入应用程序中的依赖项
  */
 export class DependencyInjector implements IDependencyInjector {
   /** 依赖容器 */

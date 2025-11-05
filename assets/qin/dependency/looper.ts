@@ -4,7 +4,7 @@ import { Dependency } from "../dependency/dependency";
 
 /**
  * 循环系统
- * - @description 循环系统为框架提供应用级别的循环能力
+ * @description 循环系统为框架提供应用级别的循环能力
  */
 class LoopSystem extends System {
   /** 更新回调 */
@@ -26,7 +26,7 @@ class LoopSystem extends System {
 
 /**
  * 应用循环系统
- * - @description 应用循环系统为框架提供应用级别的循环能力
+ * @description 应用循环系统为框架提供应用级别的循环能力
  */
 export class Looper extends Dependency implements ILooper {
   readonly name: string = "Looper";
