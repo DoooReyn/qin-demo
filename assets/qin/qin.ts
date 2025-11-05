@@ -3,7 +3,6 @@ import { Looper } from "./dependency/looper";
 import { ServiceRegistry } from "./dependency/service-registry";
 import { EventBus } from "./dependency/event-bus/event-bus";
 import { Incremental } from "./dependency/incremental";
-import { ProxyDependency } from "./dependency/proxy/proxy";
 import { TimerService } from "./service/timer/timer";
 import { ILooper } from "./typings/looper";
 import { IDependency } from "./typings/dependency";
@@ -115,7 +114,6 @@ Version: 0.0.1`;
     this.__options = { ...this.__options, ...options };
 
     // 注册内部依赖
-    this.__dpi.inject(new ProxyDependency());
     this.__dpi.inject(new Incremental());
     this.__dpi.inject(new EventBus());
     this.__dpi.inject(new Looper());
