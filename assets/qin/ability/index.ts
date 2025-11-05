@@ -11,6 +11,7 @@ export * from "./json";
 export * from "./list";
 export * from "./literal";
 export * from "./logcat";
+export * from "./md5";
 export * from "./mediator";
 export * from "./misc";
 export * from "./might";
