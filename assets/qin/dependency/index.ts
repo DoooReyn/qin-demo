@@ -1,4 +1,5 @@
 export * from "./dependency";
+export * from "./astc";
 export * from "./event-bus/event-channel";
 export * from "./event-bus/event-bus";
 export * from "./environment";

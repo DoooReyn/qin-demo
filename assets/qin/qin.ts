@@ -6,6 +6,7 @@ import {
   Incremental,
   Sensitives,
   Environment,
+  Astc,
 } from "./dependency";
 import { TimerService } from "./service";
 import { ILooper, IDependency, IQinOptions, IService } from "./typings";
@@ -78,6 +79,7 @@ Version: 0.0.1`;
     const env = new Environment();
     this.__dpi.inject(env).use(options);
     logcat.qin.i("应用环境参数", env.args);
+    this.__dpi.inject(new Astc());
     this.__dpi.inject(new Incremental());
     this.__dpi.inject(new EventBus());
     this.__dpi.inject(new Sensitives());
