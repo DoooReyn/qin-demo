@@ -30,13 +30,14 @@ export class DependencyInjector implements IDependencyInjector {
    * @param dep 依赖
    * @param dependencies 依赖项的依赖
    */
-  inject(dep: IDependency): void {
+  inject<D extends IDependency>(dep: D): D {
     if (this.__container.has(dep.name)) {
       throw new Error(`依赖 ${dep.name} 已注册.`);
     }
     this.__container.set(dep.name, dep);
     this.__onInjected?.(dep);
     dep.onAttach();
+    return dep;
   }
 
   /**
@@ -58,11 +59,11 @@ export class DependencyInjector implements IDependencyInjector {
    * @param name 依赖名称
    * @returns 依赖实例
    */
-  resolve<T extends IDependency>(dep: IDependency | string): T | undefined {
+  resolve<D extends IDependency>(dep: IDependency | string): D | undefined {
     if (typeof dep === "string") {
-      return this.__container.get(dep) as T;
+      return this.__container.get(dep) as D;
     }
-    return this.__container.get(dep.name) as T;
+    return this.__container.get(dep.name) as D;
   }
 
   /**

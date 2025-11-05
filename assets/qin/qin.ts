@@ -1,15 +1,15 @@
 import { DependencyInjector } from "./dependency-injector";
-import { Looper } from "./dependency/looper";
-import { ServiceRegistry } from "./dependency/service-registry";
-import { EventBus } from "./dependency/event-bus/event-bus";
-import { Incremental } from "./dependency/incremental";
-import { TimerService } from "./service/timer/timer";
-import { ILooper } from "./typings/looper";
-import { IDependency } from "./typings/dependency";
-import { IQinOptions } from "./typings/options";
-import { IService } from "./typings/service";
+import {
+  Looper,
+  ServiceRegistry,
+  EventBus,
+  Incremental,
+  Sensitives,
+  Environment,
+} from "./dependency";
+import { TimerService } from "./service";
+import { ILooper, IDependency, IQinOptions, IService } from "./typings";
 import { logcat } from "./ability";
-import { Sensitives } from "./dependency/sensitives";
 
 /**
  * Qin
@@ -20,13 +20,6 @@ export class Qin {
   readonly description: string = `Qin Framework 
 Copyright © 2025 Qin Team ❤ Reyn
 Version: 0.0.1`;
-
-  /** 框架选项 */
-  private __options: IQinOptions = {
-    app: "qin",
-    version: "0.0.1",
-    env: "dev",
-  };
 
   /** 依赖注入器 */
   private __dpi: DependencyInjector;
@@ -63,36 +56,6 @@ Version: 0.0.1`;
   }
 
   /**
-   * 检查环境是否匹配
-   * @param env 环境名称
-   * @returns 是否匹配
-   */
-  isEnv(env: string) {
-    return this.__options.env === env;
-  }
-
-  /**
-   * 是否为开发环境
-   */
-  get isDev() {
-    return this.isEnv("dev");
-  }
-
-  /**
-   * 是否为预发布环境
-   */
-  get isBeta() {
-    return this.isEnv("beta");
-  }
-
-  /**
-   * 是否为生产环境
-   */
-  get isProd() {
-    return this.isEnv("prod");
-  }
-
-  /**
    * 初始化框架
    * - 初始化框架选项
    * - 注册可选依赖
@@ -111,18 +74,18 @@ Version: 0.0.1`;
     // 标记为正在初始化
     this.__initializing = true;
 
-    // 合并选项
-    this.__options = { ...this.__options, ...options };
-
     // 注册内部依赖
+    const env = new Environment();
+    this.__dpi.inject(env).use(options);
+    logcat.qin.i("应用环境参数", env.args);
     this.__dpi.inject(new Incremental());
     this.__dpi.inject(new EventBus());
-    this.__dpi.inject(new Looper());
     this.__dpi.inject(new Sensitives());
+    this.__dpi.inject(new Looper());
 
     // 注册可选依赖
-    if (this.__options.dependencies) {
-      this.__options.dependencies.forEach((dep) => {
+    if (options.dependencies) {
+      options.dependencies.forEach((dep) => {
         this.__dpi.inject(dep);
       });
     }
@@ -131,8 +94,8 @@ Version: 0.0.1`;
     this.__svr.register(new TimerService());
 
     // 注册可选服务
-    if (this.__options.services) {
-      this.__options.services.forEach((svr) => {
+    if (options.services) {
+      options.services.forEach((svr) => {
         this.__svr.register(svr);
       });
     }

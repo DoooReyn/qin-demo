@@ -56,9 +56,9 @@ export interface IDict extends IAbility {
   /** 深拷贝（递归复制嵌套对象，支持数组和对象，不支持循环引用） */
   deepCopy(d: IDictionary): IDictionary;
   /** 合并字典（覆盖目标字典中的相同键） */
-  merge(dst: IDictionary, src: IDictionary): void;
+  merge(dst: IDictionary, src: IDictionary): IDictionary;
   /** 覆盖字典（仅覆盖目标字典中不存在的键） */
-  override(dst: IDictionary, src: IDictionary): void;
+  override(dst: IDictionary, src: IDictionary): IDictionary;
 }
 
 /** 字典能力项 */
@@ -168,6 +168,7 @@ export const dict: IDict = {
     for (let key in src) {
       dst[key] = src[key];
     }
+    return dst;
   },
   override(dst: IDictionary, src: IDictionary) {
     for (let key in src) {
@@ -175,5 +176,6 @@ export const dict: IDict = {
         dst[key] = src[key];
       }
     }
+    return dst;
   },
 };

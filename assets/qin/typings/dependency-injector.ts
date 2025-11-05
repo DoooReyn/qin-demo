@@ -6,11 +6,11 @@ import { IDependency } from "./dependency";
  */
 export interface IDependencyInjector {
   /** 注入依赖 */
-  inject(dep: IDependency): void;
+  inject<D extends IDependency>(dep: D): D;
   /** 注销依赖 */
   eject(dep: IDependency | string): void;
   /** 解析依赖 */
-  resolve<T extends IDependency>(dep: IDependency | string): T | undefined;
+  resolve<D extends IDependency>(dep: IDependency | string): D | undefined;
   /** 注销所有依赖 */
   destroy(): Promise<void>;
 }
