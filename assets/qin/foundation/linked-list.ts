@@ -15,21 +15,21 @@ export class ListNode<T> {
  * 普通链表实现
  */
 export class LinkedList<T> {
-  protected head: ListNode<T> | null;
-  protected tail: ListNode<T> | null;
-  protected size_: number;
+  protected _head: ListNode<T> | null;
+  protected _tail: ListNode<T> | null;
+  protected _size: number;
 
   public constructor() {
-    this.head = null;
-    this.tail = null;
-    this.size_ = 0;
+    this._head = null;
+    this._tail = null;
+    this._size = 0;
   }
 
   /**
    * 获取链表长度
    */
   public get size(): number {
-    return this.size_;
+    return this._size;
   }
 
   /**
@@ -38,14 +38,14 @@ export class LinkedList<T> {
   public append(value: T): void {
     const newNode = new ListNode(value);
 
-    if (!this.head) {
-      this.head = newNode;
-      this.tail = newNode;
+    if (!this._head) {
+      this._head = newNode;
+      this._tail = newNode;
     } else {
-      this.tail!.next = newNode;
-      this.tail = newNode;
+      this._tail!.next = newNode;
+      this._tail = newNode;
     }
-    this.size_++;
+    this._size++;
   }
 
   /**
@@ -54,41 +54,41 @@ export class LinkedList<T> {
   public prepend(value: T): void {
     const newNode = new ListNode(value);
 
-    if (!this.head) {
-      this.head = newNode;
-      this.tail = newNode;
+    if (!this._head) {
+      this._head = newNode;
+      this._tail = newNode;
     } else {
-      newNode.next = this.head;
-      this.head = newNode;
+      newNode.next = this._head;
+      this._head = newNode;
     }
-    this.size_++;
+    this._size++;
   }
 
   /**
    * 在指定位置插入元素
    */
   public insertAt(index: number, value: T): boolean {
-    if (index < 0 || index > this.size_) return false;
+    if (index < 0 || index > this._size) return false;
 
     if (index === 0) {
       this.prepend(value);
       return true;
     }
 
-    if (index === this.size_) {
+    if (index === this._size) {
       this.append(value);
       return true;
     }
 
     const newNode = new ListNode(value);
-    let current = this.head;
+    let current = this._head;
     for (let i = 0; i < index - 1; i++) {
       current = current!.next;
     }
 
     newNode.next = current!.next;
     current!.next = newNode;
-    this.size_++;
+    this._size++;
     return true;
   }
 
@@ -96,27 +96,27 @@ export class LinkedList<T> {
    * 删除指定位置的元素
    */
   public removeAt(index: number): T | null {
-    if (index < 0 || index >= this.size_) return null;
+    if (index < 0 || index >= this._size) return null;
 
     let removedValue: T;
     if (index === 0) {
-      removedValue = this.head!.value;
-      this.head = this.head!.next;
-      if (!this.head) this.tail = null;
+      removedValue = this._head!.value;
+      this._head = this._head!.next;
+      if (!this._head) this._tail = null;
     } else {
-      let current = this.head;
+      let current = this._head;
       for (let i = 0; i < index - 1; i++) {
         current = current!.next;
       }
       removedValue = current!.next!.value;
       current!.next = current!.next!.next;
 
-      if (index === this.size_ - 1) {
-        this.tail = current;
+      if (index === this._size - 1) {
+        this._tail = current;
       }
     }
 
-    this.size_--;
+    this._size--;
     return removedValue;
   }
 
@@ -124,7 +124,7 @@ export class LinkedList<T> {
    * 获取指定元素的节点
    */
   public getNode(value: T): ListNode<T> | null {
-    let current = this.head;
+    let current = this._head;
     while (current) {
       if (current.value === value) {
         return current;
@@ -138,9 +138,9 @@ export class LinkedList<T> {
    * 获取指定位置的元素
    */
   public getAt(index: number): T | null {
-    if (index < 0 || index >= this.size_) return null;
+    if (index < 0 || index >= this._size) return null;
 
-    let current = this.head;
+    let current = this._head;
     for (let i = 0; i < index; i++) {
       current = current!.next;
     }
@@ -151,7 +151,7 @@ export class LinkedList<T> {
    * 查找元素索引
    */
   public indexOf(value: T): number {
-    let current = this.head;
+    let current = this._head;
     let index = 0;
 
     while (current) {
@@ -175,9 +175,9 @@ export class LinkedList<T> {
    * 清空链表
    */
   public clear(): void {
-    this.head = null;
-    this.tail = null;
-    this.size_ = 0;
+    this._head = null;
+    this._tail = null;
+    this._size = 0;
   }
 
   /**
@@ -185,7 +185,7 @@ export class LinkedList<T> {
    */
   public toArray(): T[] {
     const result: T[] = [];
-    let current = this.head;
+    let current = this._head;
 
     while (current) {
       result.push(current.value);
@@ -209,7 +209,7 @@ export class LinkedList<T> {
    * 遍历链表
    */
   public forEach(callback: (value: T, index: number) => void): void {
-    let current = this.head;
+    let current = this._head;
     let index = 0;
 
     while (current) {
