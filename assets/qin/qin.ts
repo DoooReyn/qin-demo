@@ -44,19 +44,22 @@ Version: 0.0.1`;
     logcat.qin.i(this.description);
     this.__initializing = false;
     this.__initialized = false;
-    this.__dpi = new DependencyInjector();
-    this.__svr = new ServiceRegistry();
 
+    // 依赖项容器
+    this.__dpi = new DependencyInjector();
     this.__dpi.onInjected = (dep) => {
       logcat.qin.i("注册依赖:", dep.name);
       dep.dependencyOf = (name: string) => this.dependencyOf(name);
     };
+
+    // 服务项容器
+    this.__svr = new ServiceRegistry();
+    this.__dpi.inject(this.__svr);
     this.__svr.onRegistered = (svr: IService) => {
       logcat.qin.i("注册服务:", svr.name);
       svr.dependencyOf = (name: string) => this.dependencyOf(name);
       svr.serviceOf = (name: string) => this.serviceOf(name);
     };
-    this.__dpi.inject(this.__svr);
   }
 
   /**
