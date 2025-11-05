@@ -1,8 +1,9 @@
+import { Node, isValid } from "cc";
 import { DependencyInjector } from "../dependency-injector";
 import { IIncremental } from "../typings";
 
 /**
- * 分组辅助模块
+ * 分组辅助工具
  */
 export class Group<T extends object = any> {
   /** 分组标识 */
@@ -83,5 +84,15 @@ export class Group<T extends object = any> {
    */
   public get size() {
     return this.list.length;
+  }
+}
+
+/**
+ * 节点分组辅助工具
+ */
+export class NodeGroup extends Group<Node> {
+  constructor() {
+    super();
+    this.filter = isValid;
   }
 }
