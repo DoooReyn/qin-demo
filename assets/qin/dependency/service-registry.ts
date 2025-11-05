@@ -4,12 +4,12 @@ import { IServiceRegistry } from "../typings/service-registry";
 import { logcat } from "../ability";
 
 /**
- * 服务注册器
- * @description 服务注册器用于管理和注册应用程序中的服务
+ * 服务注册容器
+ * @description 服务注册容器用于管理和注册应用程序中的服务
  */
 export class ServiceRegistry extends Dependency implements IServiceRegistry {
   readonly name: string = "ServiceRegistry";
-  readonly description: string = "服务注册管理";
+  readonly description: string = "服务注册容器";
 
   onDetach(): void {
     this.destroy()
