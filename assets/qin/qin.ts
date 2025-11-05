@@ -9,6 +9,7 @@ import { IDependency } from "./typings/dependency";
 import { IQinOptions } from "./typings/options";
 import { IService } from "./typings/service";
 import { logcat } from "./ability";
+import { Sensitives } from "./dependency/sensitives";
 
 /**
  * Qin
@@ -117,6 +118,7 @@ Version: 0.0.1`;
     this.__dpi.inject(new Incremental());
     this.__dpi.inject(new EventBus());
     this.__dpi.inject(new Looper());
+    this.__dpi.inject(new Sensitives());
 
     // 注册可选依赖
     if (this.__options.dependencies) {

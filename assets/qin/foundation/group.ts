@@ -10,7 +10,7 @@ export class Group<T extends object = any> {
   public readonly id: string;
 
   /** 对象列表 */
-  protected list: T[] = [];
+  protected _list: T[] = [];
 
   /** 对象过滤器 */
   public filter: undefined | ((d: T) => boolean);
@@ -27,13 +27,13 @@ export class Group<T extends object = any> {
    * @param action 动作
    */
   public with(action: (d: T) => void) {
-    for (let i = 0; i < this.list.length; i++) {
-      if (this.filter && !this.filter(this.list[i])) {
-        this.list.splice(i, 1);
+    for (let i = 0; i < this._list.length; i++) {
+      if (this.filter && !this.filter(this._list[i])) {
+        this._list.splice(i, 1);
         i--;
         continue;
       }
-      action(this.list[i]);
+      action(this._list[i]);
     }
   }
 
@@ -42,8 +42,8 @@ export class Group<T extends object = any> {
    * @param member 成员
    */
   public add(member: T) {
-    if (this.list.indexOf(member) == -1) {
-      this.list.push(member);
+    if (this._list.indexOf(member) == -1) {
+      this._list.push(member);
     }
   }
 
@@ -60,8 +60,8 @@ export class Group<T extends object = any> {
    * @param member 成员
    */
   public del(member: T) {
-    const at = this.list.indexOf(member);
-    if (at > -1) this.list.splice(at, 1);
+    const at = this._list.indexOf(member);
+    if (at > -1) this._list.splice(at, 1);
   }
 
   /**
@@ -76,14 +76,14 @@ export class Group<T extends object = any> {
    * 移除所有成员
    */
   public clear() {
-    this.list.length = 0;
+    this._list.length = 0;
   }
 
   /**
    * 成员数量
    */
   public get size() {
-    return this.list.length;
+    return this._list.length;
   }
 }
 

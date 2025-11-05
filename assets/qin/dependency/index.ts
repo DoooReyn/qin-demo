@@ -4,3 +4,4 @@ export * from "./event-bus/event-bus";
 export * from "./incremental";
 export * from "./looper";
 export * from "./service-registry";
+export * from "./sensitives";
