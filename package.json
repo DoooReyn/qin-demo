@@ -5,6 +5,7 @@
     "version": "3.8.7"
   },
   "dependencies": {
+    "js-base64": "^3.7.8",
     "zipson": "^0.2.12"
   }
 }

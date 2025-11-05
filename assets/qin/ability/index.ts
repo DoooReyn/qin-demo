@@ -1,4 +1,5 @@
 export * from "./ability";
+export * from "./base64";
 export * from "./be";
 export * from "./colors";
 export * from "./digit";
