@@ -1,7 +1,7 @@
 import { IAbility } from "./ability";
 import { logcat } from "./logcat";
 import { might } from "./might";
-import * as Zipson from "zipson";
+import { stringify, parse } from "zipson";
 
 /**
  * Zipson 调制能力接口
@@ -20,10 +20,10 @@ export const zipson: IZipSon = {
   name: "Zipson",
   description: "Zipson 调制能力",
   encode(data: object): string {
-    return Zipson.stringify(data);
+    return stringify(data);
   },
   decode(data: string): object {
-    const [ret, err] = might.sync(Zipson.parse, Zipson, data);
+    const [ret, err] = might.sync(() => parse(data));
     if (err) {
       logcat.qin.e("zipson 解析失败:", data);
     }
