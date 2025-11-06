@@ -1,4 +1,6 @@
-import { ObjectEntry, pool, Triggers } from "../ability";
+import { obEntryOutline, ObjectEntry } from "../dependency";
+import ioc from "../ioc";
+import { Triggers } from "./trigger";
 
 /** 选择模式 */
 export enum SelectMode {
@@ -11,7 +13,7 @@ export enum SelectMode {
 /**
  * 选项
  */
-@pool.obEntryOutline("Option")
+@obEntryOutline("Option")
 export class Option<R> extends ObjectEntry {
   /** 原始内容 */
   private __raw: R | null = null;
@@ -113,7 +115,7 @@ export class Selector<R> {
    */
   public add(raw: R) {
     if (!this.has(raw)) {
-      const option = pool.acquire(Option<R>, raw);
+      const option = ioc.pool.acquire(Option<R>, raw);
       this.__options.push(option);
       return option;
     }
@@ -129,16 +131,20 @@ export class Selector<R> {
     if (index > -1) {
       const options = this.__options.splice(index, 1);
       if (options.length > 0) {
-        pool.recycle(options[0]);
+        ioc.pool.recycle(options[0]);
       }
     }
   }
 
   /** 清除选项 */
   public clear() {
-    for (let l = this.__options.length, i = l - 1, opt: Option<R>; i >= 0; i--) {
+    for (
+      let l = this.__options.length, i = l - 1, opt: Option<R>;
+      i >= 0;
+      i--
+    ) {
       opt = this.__options[i];
-      pool.recycle(opt);
+      ioc.pool.recycle(opt);
     }
     this.__options.length = 0;
   }

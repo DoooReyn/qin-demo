@@ -1,10 +1,12 @@
-import { ObjectEntry, pool, Triggers } from "../../ability";
+
+import { Triggers } from "../../foundation";
 import { ICounter } from "../../typings";
+import { obEntryOutline, ObjectEntry } from "../pool";
 
 /**
  * 计数器
  */
-@pool.obEntryOutline("Counter")
+@obEntryOutline("Counter")
 export class Counter extends ObjectEntry implements ICounter {
   /** 设定#计次间隔 */
   protected _interval: number = 0;

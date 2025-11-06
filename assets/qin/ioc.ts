@@ -1,7 +1,14 @@
 import {
-  IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILooper, ITimer
+  IDependency,
+  IDependencyMeta,
+  IEnvironment,
+  IEventBus,
+  IIncremental,
+  ILooper,
+  ITimer,
+  ILogcat,
+  IPool,
 } from "./typings";
-import { ILogcat } from "./typings/logcat";
 
 /**
  * 依赖注入容器
@@ -38,7 +45,6 @@ export class IoC {
       throw new Error(`依赖 ${dep.meta.name} 已注册.`);
     }
     this.__container.set(dep.meta.name, dep);
-    this.logcat.qin.i("注册依赖:", dep.meta.name);
     return dep;
   }
 
@@ -118,6 +124,11 @@ export class IoC {
   get incremental() {
     return this.resolve<IIncremental>("Incremental");
   }
+
+  /** 对象池容器 */
+  get pool() {
+    return this.resolve<IPool>("Pool");
+  }
 }
 
 /** 依赖注入容器单例 */
@@ -133,6 +144,7 @@ export function Injectable(meta: IDependencyMeta) {
       const inst = new target();
       inst.meta = meta;
       ioc.inject(inst);
+      console.info("注册依赖:", meta.name);
     }
     return target;
   };
