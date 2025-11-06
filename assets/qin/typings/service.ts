@@ -1,4 +1,4 @@
-import { IDependency } from "./dependency";
+
 
 /**
  * 服务项
@@ -11,14 +11,12 @@ export interface IService {
   readonly name: string;
   /** 服务描述 */
   readonly description: string;
-  /** 获取依赖项 */
-  dependencyOf<D extends IDependency>(name: string): D;
-  /** 获取服务项 */
-  serviceOf<D extends IService>(name: string): D;
+  /** 运行状态 */
+  running: boolean;
   /** 服务安装 */
-  install(): Promise<void>;
+  onAttach(): Promise<void>;
   /** 服务卸载 */
-  uninstall(): Promise<void>;
+  onDetach(): Promise<void>;
   /** 服务更新 */
   update(ms: number): void;
 }

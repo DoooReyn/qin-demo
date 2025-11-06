@@ -73,12 +73,15 @@ export class TimerService extends Service implements ITimerService {
     this.__container.clear();
   }
 
-  uninstall(): Promise<void> {
+  onDetach(): Promise<void> {
     this.stopAll();
-    return super.uninstall();
+    return super.onDetach();
   }
 
   update(ms: number): void {
-    this.__container.forEach((v) => v.update(ms));
+    super.update(ms);
+    if (this._running) {
+      this.__container.forEach((v) => v.update(ms));
+    }
   }
 }

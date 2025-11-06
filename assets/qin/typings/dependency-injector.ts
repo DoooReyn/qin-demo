@@ -10,7 +10,7 @@ export interface IDependencyInjector {
   /** 注销依赖 */
   eject(dep: IDependency | string): void;
   /** 解析依赖 */
-  resolve<D extends IDependency>(dep: IDependency | string): D | undefined;
+  resolve<D extends IDependency>(dep: D | string): D | undefined;
   /** 注销所有依赖 */
   destroy(): Promise<void>;
 }

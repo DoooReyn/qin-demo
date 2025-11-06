@@ -9,8 +9,6 @@ export interface IDependency {
   readonly name: string;
   /** 依赖描述 */
   readonly description: string;
-  /** 获取依赖项 */
-  dependencyOf<D extends IDependency>(name: string): D;
   /** 依赖注入时调用 */
   onAttach(): void;
   /** 依赖解注入时调用 */

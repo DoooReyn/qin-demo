@@ -5,6 +5,8 @@ import { IDependency } from "./dependency";
  * @description 应用循环系统接口定义了应用循环系统的行为
  */
 export interface ILooper extends IDependency {
-  /** 设置循环回调 */
-  loop: (dt: number) => void;
+  /** 启动循环 */
+  start: () => void;
+  /** 暂停循环 */
+  pause: () => void;
 }

@@ -1,16 +1,10 @@
-import { DependencyInjector } from "./dependency-injector";
-import {
-  Looper,
-  ServiceRegistry,
-  EventBus,
-  Incremental,
-  Sensitives,
-  Environment,
-  Astc,
-} from "./dependency";
-import { TimerService } from "./service";
-import { ILooper, IDependency, IQinOptions, IService } from "./typings";
 import { logcat } from "./ability";
+import {
+  Astc, Environment, EventBus, Incremental, Looper, Sensitives, ServiceRegistry
+} from "./dependency";
+import { DependencyInjector } from "./dependency-injector";
+import { TimerService } from "./service";
+import { IDependency, IQinOptions, IService } from "./typings";
 
 /**
  * Qin
@@ -22,12 +16,6 @@ export class Qin {
 Copyright © 2025 Qin Team ❤ Reyn
 Version: 0.0.1`;
 
-  /** 依赖注入器 */
-  private __dpi: DependencyInjector;
-
-  /** 服务注册器 */
-  private __svr: ServiceRegistry;
-
   /** 是否已初始化 */
   private __initialized: boolean;
 
@@ -38,22 +26,7 @@ Version: 0.0.1`;
     logcat.qin.i(this.description);
     this.__initializing = false;
     this.__initialized = false;
-
-    // 依赖项容器
-    this.__dpi = DependencyInjector.Shared;
-    this.__dpi.onInjected = (dep) => {
-      logcat.qin.i("注册依赖:", dep.name, dep.description);
-      dep.dependencyOf = (name: string) => this.dependencyOf(name);
-    };
-
-    // 服务项容器
-    this.__svr = ServiceRegistry.Shared;
-    this.__dpi.inject(this.__svr);
-    this.__svr.onRegistered = (svr: IService) => {
-      logcat.qin.i("注册服务:", svr.name, svr.description);
-      svr.dependencyOf = (name: string) => this.dependencyOf(name);
-      svr.serviceOf = (name: string) => this.serviceOf(name);
-    };
+    DependencyInjector.Shared.inject(ServiceRegistry.Shared);
   }
 
   /**
@@ -75,45 +48,44 @@ Version: 0.0.1`;
     // 标记为正在初始化
     this.__initializing = true;
 
+    const dpi = DependencyInjector.Shared;
+    const svr = ServiceRegistry.Shared;
+
     // 注册内部依赖
     const env = new Environment();
-    this.__dpi.inject(env).use(options);
+    dpi.inject(env).use(options);
     logcat.qin.i("应用环境参数", env.args);
-    this.__dpi.inject(new Astc());
-    this.__dpi.inject(new Incremental());
-    this.__dpi.inject(new EventBus());
-    this.__dpi.inject(new Sensitives());
-    this.__dpi.inject(new Looper());
+    dpi.inject(new Astc());
+    dpi.inject(new Incremental());
+    dpi.inject(new EventBus());
+    dpi.inject(new Sensitives());
+    dpi.inject(new Looper());
 
     // 注册可选依赖
     if (options.dependencies) {
       options.dependencies.forEach((dep) => {
-        this.__dpi.inject(dep);
+        dpi.inject(dep);
       });
     }
 
     // 注册内部服务
-    this.__svr.register(new TimerService());
+    svr.register(new TimerService());
 
     // 注册可选服务
     if (options.services) {
-      options.services.forEach((svr) => {
-        this.__svr.register(svr);
+      options.services.forEach((s) => {
+        svr.register(s);
       });
     }
 
     // 初始化服务
-    await this.__svr.init();
+    await svr.init();
 
     // 设置运行时更新函数
-    this.__dpi.resolve<ILooper>("Looper")!.loop = (dt: number) => {
-      this.__svr.update(dt);
-    };
+    dpi.looper.start();
 
     // 标记为初始化完成
     this.__initializing = false;
-
-    // 标记为已初始化
     this.__initialized = true;
   }
 
@@ -124,10 +96,9 @@ Version: 0.0.1`;
    */
   async destroy() {
     // 注销服务
-    await this.__svr.destroy();
-
+    await ServiceRegistry.Shared.destroy();
     // 注销依赖
-    await this.__dpi.destroy();
+    await DependencyInjector.Shared.destroy();
   }
 
   /**
@@ -136,7 +107,7 @@ Version: 0.0.1`;
    * @returns 依赖实例
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
-    return this.__dpi.resolve(name) as T;
+    return DependencyInjector.Shared.resolve(name) as T;
   }
 
   /**
@@ -145,6 +116,6 @@ Version: 0.0.1`;
    * @returns 服务实例
    */
   serviceOf<T extends IService>(name: string): T | undefined {
-    return this.__svr.resolve(name) as T;
+    return ServiceRegistry.Shared.resolve(name) as T;
   }
 }

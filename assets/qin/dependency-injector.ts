@@ -1,5 +1,5 @@
-import { IDependency } from "./typings/dependency";
-import { IDependencyInjector } from "./typings/dependency-injector";
+import { logcat } from "./ability";
+import { IDependency, IDependencyInjector, IEnvironment, IEventBus, ILooper } from "./typings";
 
 /**
  * 依赖注入容器
@@ -17,14 +17,6 @@ export class DependencyInjector implements IDependencyInjector {
   /** 依赖容器 */
   private __container: Map<string, IDependency> = new Map();
 
-  /** 依赖注入时调用 */
-  private __onInjected: (dep: IDependency) => void;
-
-  /** 设置依赖注入时回调 */
-  public set onInjected(callback: (dep: IDependency) => void) {
-    this.__onInjected = callback;
-  }
-
   /**
    * 注入依赖
    * @param dep 依赖
@@ -35,7 +27,7 @@ export class DependencyInjector implements IDependencyInjector {
       throw new Error(`依赖 ${dep.name} 已注册.`);
     }
     this.__container.set(dep.name, dep);
-    this.__onInjected?.(dep);
+    logcat.qin.i("注册依赖:", dep.name, dep.description);
     dep.onAttach();
     return dep;
   }
@@ -59,7 +51,7 @@ export class DependencyInjector implements IDependencyInjector {
    * @param name 依赖名称
    * @returns 依赖实例
    */
-  resolve<D extends IDependency>(dep: IDependency | string): D | undefined {
+  resolve<D extends IDependency>(dep: D | string): D | undefined {
     if (typeof dep === "string") {
       return this.__container.get(dep) as D;
     }
@@ -76,5 +68,26 @@ export class DependencyInjector implements IDependencyInjector {
       dep.onDetach();
     }
     this.__container.clear();
+  }
+
+  /**
+   * 应用循环系统
+   */
+  get looper() {
+    return this.resolve<ILooper>("Looper");
+  }
+
+  /**
+   * 事件总线
+   */
+  get eventBus() {
+    return this.resolve<IEventBus>("EventBus");
+  }
+
+  /**
+   * 环境参数解析器
+   */
+  get environment() {
+    return this.resolve<IEnvironment>("Environment");
   }
 }

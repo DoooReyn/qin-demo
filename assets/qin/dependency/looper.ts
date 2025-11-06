@@ -1,26 +1,30 @@
 import { director, System } from "cc";
-import { ILooper } from "../typings/looper";
+
 import { Dependency } from "../dependency/dependency";
+import { ILooper } from "../typings/looper";
+import { ServiceRegistry } from "./service-registry";
 
 /**
  * 循环系统
  * @description 循环系统为框架提供应用级别的循环能力
  */
 class LoopSystem extends System {
-  /** 更新回调 */
-  private __tick: (dt: number) => void;
+  /** 运行状态 */
+  private __running: boolean = false;
 
-  /**
-   * 设置循环回调
-   * @param fn 循环回调
-   */
-  set loop(fn: (dt: number) => void) {
-    this.__tick = fn;
+  /** 运行状态 */
+  get running() {
+    return this.__running;
+  }
+  set running(r: boolean) {
+    this.__running = r;
   }
 
   update(dt: number): void {
     super.update(dt);
-    this?.__tick?.(dt);
+    if (this.__running) {
+      ServiceRegistry.Shared.update(dt);
+    }
   }
 }
 
@@ -47,11 +51,11 @@ export class Looper extends Dependency implements ILooper {
     super.onDetach();
   }
 
-  /**
-   * 设置循环回调
-   * @param fn 循环回调
-   */
-  set loop(fn: (dt: number) => void) {
-    this.__system.loop = fn;
+  start() {
+    this.__system.running = true;
+  }
+
+  pause() {
+    this.__system.running = false;
   }
 }

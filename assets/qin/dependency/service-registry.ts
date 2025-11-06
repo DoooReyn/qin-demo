@@ -1,7 +1,7 @@
-import { Dependency } from "./dependency";
+import { logcat } from "../ability";
 import { IService } from "../typings/service";
 import { IServiceRegistry } from "../typings/service-registry";
-import { logcat } from "../ability";
+import { Dependency } from "./dependency";
 
 /**
  * 服务注册容器
@@ -33,14 +33,6 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
   /** 服务容器 */
   private __container: Map<string, IService> = new Map();
 
-  /** 服务注册时回调 */
-  private __onRegistered: (svr: IService) => void;
-
-  /** 设置服务注册时回调 */
-  set onRegistered(callback: (svr: IService) => void) {
-    this.__onRegistered = callback;
-  }
-
   /**
    * 注册服务
    * @param svr 服务
@@ -50,7 +42,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
       throw new Error(`服务 ${svr.name} 已注册.`);
     }
     this.__container.set(svr.name, svr);
-    this.__onRegistered?.(svr);
+    logcat.qin.i("注册服务:", svr.name, svr.description);
   }
 
   /**
@@ -62,7 +54,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
       svr = this.__container.get(svr) as IService;
     }
     if (svr && this.__container.has(svr.name)) {
-      await svr.uninstall();
+      await svr.onDetach();
       this.__container.delete(svr.name);
     }
   }
@@ -90,7 +82,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
    */
   async init() {
     for (let [_, svr] of this.__container) {
-      await svr.install();
+      await svr.onAttach();
     }
   }
 
@@ -101,7 +93,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
     // 反向注销服务，确保先注册的后注销
     const services = Array.from(this.__container.entries()).reverse();
     for (let [_, svr] of services) {
-      await svr.uninstall();
+      await svr.onDetach();
     }
   }
 
