@@ -7,7 +7,7 @@ import { Dependency } from "./dependency";
  * 环境参数解析器
  * @description 提供环境参数解析能力
  */
-@Injectable({ name: "Environment", description: "环境参数解析器" })
+@Injectable({ name: "Environment" })
 export class Environment extends Dependency implements IEnvironment {
   args: IQinOptions = {
     app: "qin",

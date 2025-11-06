@@ -7,7 +7,7 @@ import { Tick } from "./tick";
  * 定时器
  * @description 提供了时器的安装、卸载和更新功能
  */
-@Injectable({name: "Timer", description: "定时器"})
+@Injectable({name: "Timer"})
 export class Timer extends Dependency implements ITimer {
   /** 定时器容器 */
   private readonly __container: Map<string, Tick> = new Map();

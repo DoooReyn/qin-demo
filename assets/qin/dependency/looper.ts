@@ -32,7 +32,7 @@ class LoopSystem extends System {
  * 应用循环系统
  * @description 应用循环系统为框架提供应用级别的循环能力
  */
-@Injectable({ name: "Looper", description: "应用循环系统" })
+@Injectable({ name: "Looper" })
 export class Looper extends Dependency implements ILooper {
   /** 循环系统 */
   private __system: LoopSystem;

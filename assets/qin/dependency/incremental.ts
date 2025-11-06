@@ -5,7 +5,7 @@ import { Dependency } from "./dependency";
 /**
  * 递增ID生成器
  */
- @Injectable({name: "Incremental", description: "递增ID生成器"})
+@Injectable({ name: "Incremental" })
 export class Incremental extends Dependency implements IIncremental {
   onDetach() {
     this.__container.clear();

@@ -36,7 +36,7 @@ export class IoC {
       throw new Error(`依赖 ${dep.meta.name} 已注册.`);
     }
     this.__container.set(dep.meta.name, dep);
-    logcat.qin.i("注册依赖:", dep.meta.name, dep.meta.description);
+    logcat.qin.i("注册依赖:", dep.meta.name);
     return dep;
   }
 

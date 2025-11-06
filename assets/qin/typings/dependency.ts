@@ -4,8 +4,8 @@
 export interface IDependencyMeta {
   /** 名称 */
   readonly name: string;
-  /** 描述 */
-  readonly description: string;
+  
+  [key: string]: any;
 }
 
 /**

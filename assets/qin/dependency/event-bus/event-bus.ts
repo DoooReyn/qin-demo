@@ -7,7 +7,7 @@ import { EventChannel } from "./event-channel";
  * 事件总线
  * - 用于管理事件渠道，实现事件的发布和订阅。
  */
-@Injectable({name: "EventBus", description: "事件总线"})
+@Injectable({name: "EventBus"})
 export class EventBus extends Dependency implements IEventBus {
   /** 事件渠道容器 */
   private __channels: Map<string, IEventChannel> = new Map();

@@ -45,7 +45,7 @@ enum PixelFormat {
 /**
  * ASTC 压缩纹理支持
  */
-@Injectable({ name: "ASTC", description: "ASTC 压缩纹理支持" })
+@Injectable({ name: "ASTC" })
 export class Astc extends Dependency implements IAstc {
   /** 目标纹理格式 */
   private __format: ASTC_FORMAT = gfx.Format.ASTC_RGBA_6X6;
