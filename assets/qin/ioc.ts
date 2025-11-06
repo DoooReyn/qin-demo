@@ -9,6 +9,7 @@ import {
   ILogcat,
   IObPoC,
   INodePoC,
+  ISensitives,
 } from "./typings";
 
 /**
@@ -134,6 +135,11 @@ export class IoC {
   /** 节点池容器 */
   get nodePool() {
     return this.resolve<INodePoC>("NodePoC");
+  }
+
+  /** 敏感词过滤器 */
+  get sensitives() {
+    return this.resolve<ISensitives>("Sensitives")
   }
 }
 
