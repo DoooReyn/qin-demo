@@ -1,13 +1,16 @@
 import ioc, { Injectable } from "../ioc";
 import {
   Constructor,
+  INodePoC,
   IObjectEntry,
   IObjectEntryOutline,
   IObjectPool,
-  IPool,
+  IObPoC,
+  PoolNode as IPoolNode,
 } from "../typings";
-import { misc, mock, time } from "../ability";
+import { might, misc, mock, time } from "../ability";
 import { Dependency } from "./dependency";
+import { instantiate, Prefab } from "cc";
 
 /**
  * 对象池条目
@@ -15,7 +18,7 @@ import { Dependency } from "./dependency";
 export class ObjectEntry implements IObjectEntry {
   /** 条目概要 */
   protected get _outline(): IObjectEntryOutline {
-    return this[Pool.key] as IObjectEntryOutline;
+    return this[ObjectPoolContainer.Key] as IObjectEntryOutline;
   }
 
   /** 条目名称 */
@@ -197,12 +200,13 @@ export class ObjectPool<T extends IObjectEntry> implements IObjectPool<T> {
 }
 
 /**
- * 对象池管理
+ * 对象池容器
  * - 统一管理（使用和回收）所有对象池
  */
-@Injectable({ name: "Pool" })
-export class Pool extends Dependency implements IPool {
-  public static key: symbol = Symbol.for("OBJ_ENTRY");
+@Injectable({ name: "ObjPoC" })
+export class ObjectPoolContainer extends Dependency implements IObPoC {
+  /** 标识 */
+  public static Key: symbol = Symbol.for("ObjPoC");
 
   /** 池子容器 */
   private __container: Map<string, IObjectPool<IObjectEntry>> = new Map();
@@ -211,7 +215,7 @@ export class Pool extends Dependency implements IPool {
     const name = ObEntryOutlineOf(cls)?.name;
 
     if (name == undefined) {
-      throw new Error(`对象池条目必须调用装饰器 @pool.obEntryOutline`);
+      throw new Error(`对象池条目必须调用装饰器 @ObEntryOutline`);
     }
 
     if (this.__container.has(name)) {
@@ -227,7 +231,7 @@ export class Pool extends Dependency implements IPool {
     const name = ObEntryOutlineOf(cls)?.name;
 
     if (name == undefined) {
-      throw new Error(`对象池条目必须调用装饰器 @pool.obEntryOutline`);
+      throw new Error(`对象池条目必须调用装饰器 @ObEntryOutline`);
     }
 
     if (!this.__container.has(name)) {
@@ -280,12 +284,12 @@ export class Pool extends Dependency implements IPool {
  */
 export function ObEntryOutline(name: string) {
   return function (target: any) {
-    target.prototype[Pool.key] = {
+    target.prototype[ObjectPoolContainer.Key] = {
       name,
       createAt: 0,
       recycleAt: 0,
     };
-    ioc.pool.register(target);
+    ioc.objPool.register(target);
     return target;
   };
 }
@@ -296,5 +300,169 @@ export function ObEntryOutline(name: string) {
  * @returns
  */
 export function ObEntryOutlineOf(target: any) {
-  return mock.memberOf<IObjectEntryOutline>(target, Pool.key);
+  return mock.memberOf<IObjectEntryOutline>(target, ObjectPoolContainer.Key);
+}
+
+/**
+ * 节点池
+ */
+export class NodePool {
+  /** 节点过期时间（毫秒） */
+  public static readonly EXPIRES: number = 30_000;
+
+  /** 节点列表 */
+  private __container: IPoolNode[] = [];
+
+  /**
+   * 节点池构造器
+   * @param template 模板（只支持预制体）
+   * @param expires 过期时间（毫秒）
+   * @warn Expires <= 0 表示永不过期
+   */
+  public constructor(
+    public readonly template: Prefab,
+    public readonly expires: number = NodePool.EXPIRES
+  ) {}
+
+  /**
+   * 获取节点
+   * @returns
+   */
+  public acquire() {
+    let node: IPoolNode;
+    if (this.__container.length > 0) {
+      node = this.__container.shift()!;
+    } else {
+      node = instantiate(this.template);
+    }
+    delete node.__recycled__;
+    delete node.__expire_at__;
+    return node;
+  }
+
+  /**
+   * 回收节点
+   * @param inst 节点实例
+   */
+  public recycle(inst: IPoolNode) {
+    if (inst && inst.isValid && inst.__recycled__ === undefined) {
+      inst.__recycled__ = true;
+      inst.__expire_at__ = this.expires > 0 ? time.now + this.expires : 0;
+      inst.removeFromParent();
+      // 延迟一帧回收，避免同一帧重复使用
+      ioc.timer.shared.nextTick(might.sync, might, () =>
+        this.__container.push(inst)
+      );
+    }
+  }
+
+  /**
+   * 清空节点池
+   */
+  public clear() {
+    this.__container.forEach((item) => item.destroy());
+    this.__container = [];
+  }
+
+  /**
+   * 清理过期节点
+   */
+  public lazyCleanup() {
+    const count = this.__container.length;
+    if (count > 0) {
+      const item = this.__container[count - 1];
+      const expireAt = item.__expire_at__!;
+      const now = time.now;
+      if (expireAt > 0 && now >= expireAt) {
+        this.__container.pop();
+        item.destroy();
+        ioc.logcat.res.d(
+          `节点池: 节点过期，自动销毁 池子 ${this.template.name} 剩余 ${this.size}`
+        );
+      }
+    }
+  }
+
+  /** 节点剩余个数 */
+  public get size() {
+    return this.__container.length;
+  }
+}
+
+/**
+ * 节点池容器
+ */
+@Injectable({ name: "NodePoC" })
+export class NodePoolContainer extends Dependency implements INodePoC {
+  /** 节点池容器 */
+  private __container: Map<string, NodePool> = new Map();
+
+  register(template: Prefab, expires: number = NodePool.EXPIRES) {
+    const key = template.data.name;
+
+    if (this.__container.has(key)) {
+      throw new Error(`节点池: 注册失败，节点池已存在 ${key}`);
+    }
+
+    const pool = new NodePool(template, expires);
+    this.__container.set(key, pool);
+  }
+
+  unregister(key: string) {
+    if (!this.__container.has(key)) {
+      throw new Error(`节点池: 注销失败，节点池不存在 ${key}`);
+    }
+
+    const pool = this.__container.get(key)!;
+    pool.clear();
+    this.__container.delete(key);
+  }
+
+  has(key: string) {
+    return this.__container.has(key);
+  }
+
+  templateOf(key: string) {
+    if (this.__container.has(key)) {
+      const pool = this.__container.get(key)!;
+      return pool.template;
+    }
+    return null;
+  }
+
+  acquire<N extends IPoolNode>(key: string): N | null {
+    if (this.__container.has(key)) {
+      const pool = this.__container.get(key)!;
+      return pool.acquire() as N;
+    } else {
+      ioc.logcat.res.w(`节点池: 获取失败，节点池不存在 ${key}`);
+      return null;
+    }
+  }
+
+  recycle(inst: IPoolNode) {
+    if (inst && inst.isValid && inst["_prefab"] && inst["_prefab"]["asset"]) {
+      const key = inst["_prefab"]["asset"]["name"];
+      if (this.__container.has(key)) {
+        this.__container.get(key)!.recycle(inst);
+      } else {
+        ioc.logcat.res.w(`节点池: 回收失败，节点池不存在 ${key}`);
+      }
+    }
+  }
+
+  sizeOf(key: string) {
+    if (this.__container.has(key)) {
+      return this.__container.get(key)!.size;
+    }
+    return 0;
+  }
+
+  lazyCleanup() {
+    this.__container.forEach((pool) => pool.lazyCleanup());
+  }
+
+  clear() {
+    this.__container.forEach((pool) => pool.clear());
+  }
 }

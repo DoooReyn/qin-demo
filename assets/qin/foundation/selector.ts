@@ -115,7 +115,7 @@ export class Selector<R> {
    */
   public add(raw: R) {
     if (!this.has(raw)) {
-      const option = ioc.pool.acquire(Option<R>, raw);
+      const option = ioc.objPool.acquire(Option<R>, raw);
       this.__options.push(option);
       return option;
     }
@@ -131,7 +131,7 @@ export class Selector<R> {
     if (index > -1) {
       const options = this.__options.splice(index, 1);
       if (options.length > 0) {
-        ioc.pool.recycle(options[0]);
+        ioc.objPool.recycle(options[0]);
       }
     }
   }
@@ -144,7 +144,7 @@ export class Selector<R> {
       i--
     ) {
       opt = this.__options[i];
-      ioc.pool.recycle(opt);
+      ioc.objPool.recycle(opt);
     }
     this.__options.length = 0;
   }

@@ -7,7 +7,8 @@ import {
   ILooper,
   ITimer,
   ILogcat,
-  IPool,
+  IObPoC,
+  INodePoC,
 } from "./typings";
 
 /**
@@ -126,8 +127,13 @@ export class IoC {
   }
 
   /** 对象池容器 */
-  get pool() {
-    return this.resolve<IPool>("Pool");
+  get objPool() {
+    return this.resolve<IObPoC>("ObjPoC");
+  }
+
+  /** 节点池容器 */
+  get nodePool() {
+    return this.resolve<INodePoC>("NodePoC");
   }
 }
 

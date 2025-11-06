@@ -144,7 +144,7 @@ export class Trigger extends ObjectEntry implements ITrigger {
         ioc.logcat.qin.e("触发器: 运行时错误", err);
       }
       if (this.__once) {
-        ioc.pool.recycle(this);
+        ioc.objPool.recycle(this);
       }
     }
   }
@@ -164,7 +164,7 @@ export class Trigger extends ObjectEntry implements ITrigger {
         ioc.logcat.qin.e("触发器: 运行时错误", err);
       }
       if (this.__once) {
-        ioc.pool.recycle(this);
+        ioc.objPool.recycle(this);
       }
     }
   }
@@ -180,7 +180,7 @@ export class Triggers implements ITriggers {
    * 清空触发器
    */
   public clear() {
-    this.__container.forEach((trigger) => ioc.pool.recycle(trigger));
+    this.__container.forEach((trigger) => ioc.objPool.recycle(trigger));
     this.__container.length = 0;
   }
 
@@ -197,7 +197,7 @@ export class Triggers implements ITriggers {
     once: boolean = false,
     ...args: any[]
   ) {
-    const trigger = ioc.pool.acquire(Trigger, fn, context, once, args);
+    const trigger = ioc.objPool.acquire(Trigger, fn, context, once, args);
     if (trigger !== null) {
       this.__container.push(trigger);
     }
@@ -212,7 +212,7 @@ export class Triggers implements ITriggers {
     const at = this.__container.findIndex((trg) => trg.equalsWith(fn, context));
     if (at > -1) {
       const trigger = this.__container[at];
-      ioc.pool.recycle(trigger);
+      ioc.objPool.recycle(trigger);
       this.__container.splice(at, 1);
     }
   }
@@ -225,7 +225,7 @@ export class Triggers implements ITriggers {
     const at = this.__container.findIndex((trg) => trg.equals(trigger));
     if (at > -1) {
       const trigger = this.__container[at];
-      ioc.pool.recycle(trigger);
+      ioc.objPool.recycle(trigger);
       this.__container.splice(at, 1);
     }
   }

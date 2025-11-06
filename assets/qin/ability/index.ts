@@ -16,7 +16,6 @@ export * from "./mediator";
 export * from "./misc";
 export * from "./might";
 export * from "./mock";
-export * from "./node-pool";
 export * from "./platform";
 export * from "./random";
 export * from "./regexp";

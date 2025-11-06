@@ -52,7 +52,7 @@ export class Tick implements ITick {
    * @returns
    */
   public add(interval: number = 0, total: number = 1) {
-    const counter = ioc.pool.acquire(Counter, interval, total);
+    const counter = ioc.objPool.acquire(Counter, interval, total);
     this.__container.push(counter);
     return counter;
   }
@@ -176,7 +176,7 @@ export class Tick implements ITick {
    * 清空所有计数器
    */
   private __clear() {
-    this.__container.forEach((counter) => ioc.pool.recycle(counter));
+    this.__container.forEach((counter) => ioc.objPool.recycle(counter));
     this.__container.length = 0;
   }
 

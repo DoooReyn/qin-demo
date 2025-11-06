@@ -1,3 +1,4 @@
+import { Prefab, Node } from "cc";
 import { Constructor } from "./common";
 import { IDependency } from "./dependency";
 
@@ -78,9 +79,9 @@ export interface IObjectPool<T extends IObjectEntry> {
 }
 
 /**
- * 对象池管理能力接口
+ * 对象池容器接口
  */
-export interface IPool extends IDependency {
+export interface IObPoC extends IDependency {
   /**
    * 注册对象池
    * @param cls 对象池条目构造
@@ -105,7 +106,10 @@ export interface IPool extends IDependency {
    * @param args 实例化参数
    * @returns
    */
-  acquire<T extends IObjectEntry>(cls: Constructor<T>, ...args: any[]): T | null;
+  acquire<T extends IObjectEntry>(
+    cls: Constructor<T>,
+    ...args: any[]
+  ): T | null;
   /**
    * 回收对象池条目实例
    * @param instance 对象池条目实例
@@ -117,6 +121,72 @@ export interface IPool extends IDependency {
   lazyCleanup(): void;
   /**
    * 清空所有对象池
+   */
+  clear(): void;
+}
+
+/**
+ * 节点池条目
+ */
+export interface PoolNode extends Node {
+  /** 节点回收标记 */
+  __recycled__?: boolean;
+  /** 节点过期标记 */
+  __expire_at__?: number;
+}
+
+/**
+ * 节点池容器能力接口
+ */
+export interface INodePoC extends IDependency {
+  /**
+   * 注册节点池
+   * @param key 节点池名称
+   * @param template 预制体模板
+   * @@param expires 过期时间（毫秒）
+   */
+  register(template: Prefab, expires?: number): void;
+  /**
+   * 注销节点池
+   * @param key 节点池名称
+   */
+  unregister(key: string): void;
+  /**
+   * 节点池是否已注册
+   * @param key 节点池名称
+   * @returns
+   */
+  has(key: string): boolean;
+  /**
+   * 获取节点池模板资源
+   * @param key 节点池名称
+   * @returns
+   */
+  templateOf(key: string): Prefab | null;
+  /**
+   * 获取节点
+   * @param key 节点池名称
+   * @returns
+   */
+  acquire<N extends PoolNode>(key: string): N | null;
+  /**
+   * 回收节点
+   * @param inst 节点实例
+   */
+  recycle(inst: PoolNode): void;
+  /**
+   * 获取节点池当前节点数量
+   * @param key 节点池名称
+   * @returns
+   */
+  sizeOf(key: string): number;
+  /**
+   * 懒清理
+   * @description 每隔一段时间删除一个对象，防止内存溢出
+   */
+  lazyCleanup(): void;
+  /**
+   * 清空所有节点池
    */
   clear(): void;
 }
