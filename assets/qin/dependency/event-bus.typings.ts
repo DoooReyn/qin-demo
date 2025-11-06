@@ -14,6 +14,8 @@ export interface IEventBus extends IDependency {
   remove(channel: string): void;
   /** 删除所有事件渠道 */
   removeAll(): void;
+  /** 共享事件渠道 */
+  get shared(): IEventChannel;
 }
 
 /**

@@ -57,6 +57,18 @@ export interface ILogger {
    * @param msg 日志消息
    */
   f(...msg: any[]): void;
+  /** 格式化详细日志 */
+  vf(msg: string, ...args: any[]): void;
+  /** 格式化调试日志 */
+  df(msg: string, ...args: any[]): void;
+  /** 格式化信息日志 */
+  if(msg: string, ...args: any[]): void;
+  /** 格式化价格日志 */
+  wf(msg: string, ...args: any[]): void;
+  /** 格式化错误日志 */
+  ef(msg: string, ...args: any[]): void;
+  /** 格式化致命错误日志 */
+  ff(msg: string, ...args: any[]): void;
 }
 
 /**

@@ -13,6 +13,7 @@
 - assets 存放资源和代码文件的目录
   - qin 存放游戏框架代码
     - extends 原型扩展
+    - atom 继承 Component 的组件
     - ability 基础能力（不需要实例化，可以直接使用）
     - foundation 辅助功能（通常指需要实例化才能够使用的功能）
     - dependency 依赖容器（为框架提供强力功能支持的容器）

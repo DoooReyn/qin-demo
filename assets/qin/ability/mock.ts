@@ -1,4 +1,7 @@
+
+
 import { _decorator } from "cc";
+
 import { IAbility } from "./ability";
 import { IKey } from "./dict";
 
@@ -6,6 +9,8 @@ import { IKey } from "./dict";
  * 装饰器能力接口
  */
 export interface IMock extends IAbility {
+  /** ccc 装饰器集合 */
+  decorator: typeof _decorator;
   /** 向类注入原型成员 */
   member<C>(key: string | symbol, value: any): (target: C) => C;
   /** 获取类的原型成员 */
@@ -18,7 +23,7 @@ export interface IMock extends IAbility {
 export const mock: IMock = {
   name: "Mock",
   description: "装饰器",
-  ..._decorator,
+  decorator: _decorator,
   member(key: IKey, val: any) {
     return function (target: any) {
       target.prototype[key] = val;

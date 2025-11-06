@@ -1,16 +1,7 @@
 import {
-  IDependency,
-  IDependencyMeta,
-  IEnvironment,
-  IEventBus,
-  IIncremental,
-  ILooper,
-  ITimer,
-  ILogcat,
-  IObPoC,
-  INodePoC,
-  ISensitives,
-} from "./typings";
+  IAstc, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILogcat, ILooper,
+  INodePoC, IObPoC, IRemoteContainer, IResContainer, ISensitives, ITimer
+} from "./dependency";
 
 /**
  * 依赖注入容器
@@ -139,7 +130,22 @@ export class IoC {
 
   /** 敏感词过滤器 */
   get sensitives() {
-    return this.resolve<ISensitives>("Sensitives")
+    return this.resolve<ISensitives>("Sensitives");
+  }
+
+  /** 资源容器 */
+  get res() {
+    return this.resolve<IResContainer>("ResContainer");
+  }
+
+  /** 远程资源容器 */
+  get remote() {
+    return this.resolve<IRemoteContainer>("RemoteContainer");
+  }
+
+  /** ASTC 解析器 */
+  get astc() {
+    return this.resolve<IAstc>("ASTC");
   }
 }
 

@@ -1,5 +1,6 @@
 import { sys } from "cc";
 
+import { literal } from "../ability";
 import { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
 import { ILogcat, ILogger, LoggerLevel } from "./logcat.typings";
@@ -67,6 +68,11 @@ class Logger implements ILogger {
     }
   }
 
+  /** 格式化日志输出 */
+  private __fmt(level: LoggerLevel, msg: string, ...args: any[]) {
+    return this.__print(level, [literal.fmt(msg, ...args)]);
+  }
+
   /** 详细日志 */
   v(...msg: any[]): void {
     this.__print(LoggerLevel.V, msg);
@@ -95,6 +101,25 @@ class Logger implements ILogger {
   /** 致命错误日志 */
   f(...msg: any[]): void {
     this.__print(LoggerLevel.F, msg);
+  }
+
+  vf(msg: string, ...args: any[]): void {
+    this.__fmt(LoggerLevel.V, msg, ...args);
+  }
+  df(msg: string, ...args: any[]): void {
+    this.__fmt(LoggerLevel.D, msg, ...args);
+  }
+  if(msg: string, ...args: any[]): void {
+    this.__fmt(LoggerLevel.I, msg, ...args);
+  }
+  wf(msg: string, ...args: any[]): void {
+    this.__fmt(LoggerLevel.W, msg, ...args);
+  }
+  ef(msg: string, ...args: any[]): void {
+    this.__fmt(LoggerLevel.E, msg, ...args);
+  }
+  ff(msg: string, ...args: any[]): void {
+    this.__fmt(LoggerLevel.F, msg, ...args);
   }
 }
 

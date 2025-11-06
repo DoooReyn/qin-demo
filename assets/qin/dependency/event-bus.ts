@@ -30,11 +30,7 @@ export class EventChannel implements IEventChannel {
    */
   publish(event: string, ...data: any[]): void {
     if (this.__listeners.has(event)) {
-      this.__listeners
-        .get(event)!
-        .forEach((listener) =>
-          listener.handle.apply(listener.context, ...data)
-        );
+      this.__listeners.get(event)!.forEach((listener) => listener.handle.apply(listener.context, ...data));
     }
   }
 
@@ -44,9 +40,7 @@ export class EventChannel implements IEventChannel {
    * @returns 是否已订阅
    */
   has(event: string): boolean {
-    return (
-      this.__listeners.has(event) && this.__listeners.get(event)!.length > 0
-    );
+    return this.__listeners.has(event) && this.__listeners.get(event)!.length > 0;
   }
 
   /**
@@ -123,9 +117,12 @@ export class EventBus extends Dependency implements IEventBus {
   /** 事件渠道容器 */
   private __channels: Map<string, IEventChannel> = new Map();
 
+  get shared() {
+    return this.acquire("shared");
+  }
+
   onDetach() {
     this.removeAll();
-    super.onDetach();
     return super.onDetach();
   }
 
