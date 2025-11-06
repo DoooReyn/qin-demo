@@ -1,5 +1,7 @@
 import { Asset } from "cc";
 
+import { IDependency } from "./dependency.typings";
+
 /**
  * 可释放的资源接口
  */
@@ -10,7 +12,7 @@ export interface ReleasableAsset extends Asset {
 /**
  * 资源自动释放池接口
  */
-export interface IReleasable {
+export interface IReleasableContainer extends IDependency {
   /**
    * 懒清理
    */

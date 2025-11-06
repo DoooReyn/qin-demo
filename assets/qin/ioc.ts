@@ -1,6 +1,6 @@
 import {
   IAstc, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILogcat, ILooper,
-  INodePoC, IObPoC, IRemoteContainer, IResContainer, ISensitives, ITimer
+  INodePoC, IObPoC, IReleasableContainer, IRemoteContainer, IResContainer, ISensitives, ITimer
 } from "./dependency";
 
 /**
@@ -146,6 +146,11 @@ export class IoC {
   /** ASTC 解析器 */
   get astc() {
     return this.resolve<IAstc>("ASTC");
+  }
+
+  /** 资源自动释放池 */
+  get roc() {
+    return this.resolve<IReleasableContainer>("ReleasableContainer");
   }
 }
 

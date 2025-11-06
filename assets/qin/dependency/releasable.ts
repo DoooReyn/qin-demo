@@ -3,15 +3,23 @@ import { Asset } from "cc";
 import { time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
-import { IReleasable, ReleasableAsset } from "./releasable.typings";
+import { IReleasableContainer, ReleasableAsset } from "./releasable.typings";
 
 /**
  * 资源自动释放池
  */
-@Injectable({ name: "Releasable" })
-export class Releasable extends Dependency implements IReleasable {
+@Injectable({ name: "ReleasableContainer" })
+export class ReleasableContainer extends Dependency implements IReleasableContainer {
   /** 资源自动释放池 */
   private readonly __container: Map<string, ReleasableAsset> = new Map();
+
+  onDetach(): Promise<void> {
+    for (const [_, asset] of this.__container) {
+      this.remove(asset);
+    }
+    this.__container.clear();
+    return super.onDetach();
+  }
 
   public lazyCleanup() {
     const now = time.now;
