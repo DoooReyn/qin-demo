@@ -199,10 +199,10 @@ export class ObjectPool<T extends IObjectEntry> implements IObjectPool<T> {
  * 对象池容器
  * - 统一管理（使用和回收）所有对象池
  */
-@Injectable({ name: "ObjPoC" })
+@Injectable({ name: "ObPoC" })
 export class ObjectPoolContainer extends Dependency implements IObPoC {
   /** 标识 */
-  public static Key: symbol = Symbol.for("ObjPoC");
+  public static Key: symbol = Symbol.for("ObPoC");
 
   /** 池子容器 */
   private __container: Map<string, IObjectPool<IObjectEntry>> = new Map();

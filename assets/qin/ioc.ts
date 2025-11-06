@@ -1,6 +1,7 @@
 import {
-  IAstc, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILogcat, ILooper,
-  INodePoC, IObPoC, IReleasableContainer, IRemoteContainer, IResContainer, ISensitives, ITimer
+  IAstc, IAudioPlayer, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILogcat,
+  ILooper, INodePoC, IObPoC, IReleasableContainer, IRemoteContainer, IResContainer, ISensitives,
+  ITimer
 } from "./dependency";
 
 /**
@@ -120,7 +121,7 @@ export class IoC {
 
   /** 对象池容器 */
   get objPool() {
-    return this.resolve<IObPoC>("ObjPoC");
+    return this.resolve<IObPoC>("ObPoC");
   }
 
   /** 节点池容器 */
@@ -151,6 +152,11 @@ export class IoC {
   /** 资源自动释放池 */
   get roc() {
     return this.resolve<IReleasableContainer>("ReleasableContainer");
+  }
+
+  /** 音频播放器 */
+  get audioPlayer() {
+    return this.resolve<IAudioPlayer>("AudioPlayer");
   }
 }
 

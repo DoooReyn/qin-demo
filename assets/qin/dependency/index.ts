@@ -1,3 +1,5 @@
+export * from "./audio.typings";
+export * from "./audio";
 export * from "./dependency.typings";
 export * from "./dependency";
 export * from "./astc.typings";
