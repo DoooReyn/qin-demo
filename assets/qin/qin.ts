@@ -69,12 +69,12 @@ Version: 0.0.1`;
     }
 
     // 注册内部服务
-    svr.register(new TimerService());
+    svr.inject(new TimerService());
 
     // 注册可选服务
     if (options.services) {
       options.services.forEach((s) => {
-        svr.register(s);
+        svr.inject(s);
       });
     }
 

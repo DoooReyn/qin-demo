@@ -37,7 +37,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
    * 注册服务
    * @param svr 服务
    */
-  register(svr: IService): void {
+  inject(svr: IService): void {
     if (this.__container.has(svr.name)) {
       throw new Error(`服务 ${svr.name} 已注册.`);
     }
@@ -49,7 +49,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
    * 注销服务
    * @param svr 服务
    */
-  async unregister(svr: IService | string): Promise<void> {
+  async eject(svr: IService | string): Promise<void> {
     if (typeof svr === "string") {
       svr = this.__container.get(svr) as IService;
     }

@@ -7,9 +7,9 @@ import { IService } from "./service";
  */
 export interface IServiceRegistry extends IDependency {
   /** 注册服务 */
-  register(svr: IService): void;
+  inject(svr: IService): void;
   /** 注销服务 */
-  unregister(svr: IService | string): Promise<void>;
+  eject(svr: IService | string): Promise<void>;
   /** 是否存在服务 */
   has(name: string): boolean;
   /** 获取服务 */
