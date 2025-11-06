@@ -7,9 +7,13 @@ import { IDependency, IQinOptions } from "./typings";
  */
 export class Qin {
   /** 框架描述 */
-  readonly description: string = `Qin Framework 
-Copyright © 2025 Qin Team ❤ Reyn
-Version: 0.0.1`;
+  readonly description: string = `
+--------------------------------------------------
+  Qin Framework 
+  Copyright © 2025 Qin Team ❤ Reyn
+  Version: 0.0.1
+--------------------------------------------------
+`;
 
   /** 是否已初始化 */
   private __initialized: boolean;
@@ -23,13 +27,7 @@ Version: 0.0.1`;
     this.__initialized = false;
   }
 
-  /**
-   * 初始化框架
-   * - 初始化框架选项
-   * - 注册可选依赖
-   * - 注册可选服务
-   * - 初始化服务注册器
-   */
+  /** 初始化框架 */
   async init(options: IQinOptions) {
     if (this.__initializing) {
       throw new Error("Qin 正在初始化中.");
@@ -42,7 +40,6 @@ Version: 0.0.1`;
     // 标记为正在初始化
     this.__initializing = true;
 
-    
     // 初始化依赖项
     await ioc.init();
     ioc.logcat.qin.i("依赖项初始化完成");
@@ -50,7 +47,7 @@ Version: 0.0.1`;
     // 应用环境参数
     ioc.environment.use(options);
     ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
-    
+
     // 启动应用循环
     ioc.looper.start();
 
