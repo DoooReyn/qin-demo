@@ -1,7 +1,7 @@
 import { director, System } from "cc";
 
 import { Dependency } from "../dependency";
-import { Injectable, IoC } from "../ioc";
+import { ioc, Injectable } from "../ioc";
 import { ILooper } from "../typings";
 
 /**
@@ -23,7 +23,7 @@ class LoopSystem extends System {
   update(dt: number): void {
     super.update(dt);
     if (this.__running) {
-      IoC.Shared.timer.update(dt);
+      ioc.timer.update(dt);
     }
   }
 }

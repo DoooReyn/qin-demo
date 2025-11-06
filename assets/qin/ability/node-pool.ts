@@ -1,8 +1,7 @@
 import { instantiate, Node, Prefab } from "cc";
 
-import { IoC } from "../ioc";
+import { ioc } from "../ioc";
 import { IAbility } from "./ability";
-import { logcat } from "./logcat";
 import { might } from "./might";
 import { time } from "./time";
 
@@ -32,10 +31,7 @@ export class NodePool {
    * @param expires 过期时间（毫秒）
    * @warn Expires <= 0 表示永不过期
    */
-  public constructor(
-    public readonly template: Prefab,
-    public readonly expires: number = NodePool.EXPIRES
-  ) {}
+  public constructor(public readonly template: Prefab, public readonly expires: number = NodePool.EXPIRES) {}
 
   /**
    * 获取节点
@@ -63,10 +59,7 @@ export class NodePool {
       inst.__expire_at__ = this.expires > 0 ? time.now + this.expires : 0;
       inst.removeFromParent();
       // 延迟一帧回收，避免同一帧重复使用
-      const self = this;
-      IoC.Shared.timer.shared.nextTick(might.sync, might, () =>
-        this.__container.push(inst)
-      );
+      ioc.timer.shared.nextTick(might.sync, might, () => this.__container.push(inst));
     }
   }
 
@@ -90,11 +83,7 @@ export class NodePool {
       if (expireAt > 0 && now >= expireAt) {
         this.__container.pop();
         item.destroy();
-        logcat
-          .acquire("res")
-          .d(
-            `节点池: 节点过期，自动销毁 池子 ${this.template.name} 剩余 ${this.size}`
-          );
+        ioc.logcat.res.d(`节点池: 节点过期，自动销毁 池子 ${this.template.name} 剩余 ${this.size}`);
       }
     }
   }
@@ -204,7 +193,7 @@ export const nodePool: INodePool = {
       const pool = CONTAINER.get(key)!;
       return pool.acquire() as N;
     } else {
-      logcat.acquire("res").w(`节点池: 获取失败，节点池不存在 ${key}`);
+      ioc.logcat.res.w(`节点池: 获取失败，节点池不存在 ${key}`);
       return null;
     }
   },
@@ -214,7 +203,7 @@ export const nodePool: INodePool = {
       if (CONTAINER.has(key)) {
         CONTAINER.get(key)!.recycle(inst);
       } else {
-        logcat.acquire("res").w(`节点池: 回收失败，节点池不存在 ${key}`);
+        ioc.logcat.res.w(`节点池: 回收失败，节点池不存在 ${key}`);
       }
     }
   },

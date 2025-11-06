@@ -1,5 +1,7 @@
-import { logcat } from "./ability";
-import { IDependency, IDependencyMeta, IEnvironment, IEventBus, ILooper, ITimer } from "./typings";
+import {
+  IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILooper, ITimer
+} from "./typings";
+import { ILogcat } from "./typings/logcat";
 
 /**
  * 依赖注入容器
@@ -36,7 +38,7 @@ export class IoC {
       throw new Error(`依赖 ${dep.meta.name} 已注册.`);
     }
     this.__container.set(dep.meta.name, dep);
-    logcat.qin.i("注册依赖:", dep.meta.name);
+    this.logcat.qin.i("注册依赖:", dep.meta.name);
     return dep;
   }
 
@@ -106,7 +108,20 @@ export class IoC {
   get timer() {
     return this.resolve<ITimer>("Timer");
   }
+
+  /** 日志系统 */
+  get logcat() {
+    return this.resolve<ILogcat>("Logcat");
+  }
+
+  /** 递增ID生成器 */
+  get incremental() {
+    return this.resolve<IIncremental>("Incremental");
+  }
 }
+
+/** 依赖注入容器单例 */
+export const ioc: IoC = IoC.Shared;
 
 /**
  * 依赖注册装饰器
@@ -114,12 +129,13 @@ export class IoC {
  */
 export function Injectable(meta: IDependencyMeta) {
   return function <T extends new (...args: any[]) => IDependency>(target: T) {
-    const injector = IoC.Shared;
-    if (!injector.has(meta.name)) {
+    if (!ioc.has(meta.name)) {
       const inst = new target();
       inst.meta = meta;
-      injector.inject(inst);
+      ioc.inject(inst);
     }
     return target;
   };
 }
+
+export default ioc;

@@ -1,5 +1,4 @@
-import { logcat } from "./ability";
-import { IoC } from "./ioc";
+import ioc from "./ioc";
 import { IDependency, IQinOptions } from "./typings";
 
 /**
@@ -19,7 +18,7 @@ Version: 0.0.1`;
   private __initializing: boolean;
 
   constructor() {
-    logcat.qin.i(this.description);
+    ioc.logcat.qin.i(this.description);
     this.__initializing = false;
     this.__initialized = false;
   }
@@ -45,16 +44,15 @@ Version: 0.0.1`;
 
     
     // 初始化依赖项
-    const dpi = IoC.Shared;
-    await dpi.init();
-    logcat.qin.i("依赖项初始化完成");
+    await ioc.init();
+    ioc.logcat.qin.i("依赖项初始化完成");
 
     // 应用环境参数
-    dpi.environment.use(options);
-    logcat.qin.i("应用环境参数", dpi.environment.args);
+    ioc.environment.use(options);
+    ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
     
     // 启动应用循环
-    dpi.looper.start();
+    ioc.looper.start();
 
     // 标记为初始化完成
     this.__initializing = false;
@@ -67,7 +65,7 @@ Version: 0.0.1`;
    */
   async destroy() {
     // 注销依赖
-    await IoC.Shared.destroy();
+    await ioc.destroy();
   }
 
   /**
@@ -76,6 +74,6 @@ Version: 0.0.1`;
    * @returns 依赖实例
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
-    return IoC.Shared.resolve(name) as T;
+    return ioc.resolve(name) as T;
   }
 }

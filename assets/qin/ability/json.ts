@@ -1,5 +1,5 @@
+import ioc from "../ioc";
 import { IAbility } from "./ability";
-import { logcat } from "./logcat";
 import { might } from "./might";
 
 /**
@@ -24,7 +24,7 @@ export const json: IJson = {
   decode(data: string): object {
     const [ret, err] = might.sync(JSON.parse, JSON, data);
     if (err) {
-      logcat.qin.e("JSON 解析失败:", data);
+      ioc.logcat.qin.e("JSON 解析失败:", data);
     }
     return ret;
   },

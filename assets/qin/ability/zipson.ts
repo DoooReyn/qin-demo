@@ -1,7 +1,8 @@
+import { parse, stringify } from "zipson";
+
+import ioc from "../ioc";
 import { IAbility } from "./ability";
-import { logcat } from "./logcat";
 import { might } from "./might";
-import { stringify, parse } from "zipson";
 
 /**
  * Zipson 调制能力接口
@@ -25,7 +26,7 @@ export const zipson: IZipSon = {
   decode(data: string): object {
     const [ret, err] = might.sync(() => parse(data));
     if (err) {
-      logcat.qin.e("zipson 解析失败:", data);
+      ioc.logcat.qin.e("zipson 解析失败:", data);
     }
     return ret;
   },

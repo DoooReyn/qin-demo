@@ -1,64 +1,8 @@
 import { sys } from "cc";
-import { IAbility } from "./ability";
 
-/**
- * 日志级别
- */
-export enum LoggerLevel {
-  /** 详细日志 */
-  V = 0,
-  /** 调试日志 */
-  D = 1,
-  /** 信息日志 */
-  I = 2,
-  /** 警告日志 */
-  W = 3,
-  /** 错误日志 */
-  E = 4,
-  /** 致命错误日志 */
-  F = 5,
-  /** 无日志 */
-  N = 99,
-}
-
-/**
- * 日志接口
- * @description 日志接口为框架提供日志输出能力
- */
-export interface ILogger {
-  /** 日志级别 */
-  level: LoggerLevel;
-  /**
-   * 打印详细日志
-   * @param msg 日志消息
-   */
-  v(...msg: any[]): void;
-  /**
-   * 打印调试日志
-   * @param msg 日志消息
-   */
-  d(...msg: any[]): void;
-  /**
-   * 打印信息日志
-   * @param msg 日志消息
-   */
-  i(...msg: any[]): void;
-  /**
-   * 打印警告日志
-   * @param msg 日志消息
-   */
-  w(...msg: any[]): void;
-  /**
-   * 打印错误日志
-   * @param msg 日志消息
-   */
-  e(...msg: any[]): void;
-  /**
-   * 打印致命错误日志
-   * @param msg 日志消息
-   */
-  f(...msg: any[]): void;
-}
+import { Injectable } from "../ioc";
+import { ILogcat, ILogger, LoggerLevel } from "../typings/logcat";
+import { Dependency } from "./dependency";
 
 /**
  * 日志颜色
@@ -154,67 +98,41 @@ class Logger implements ILogger {
   }
 }
 
-/**
- * 日志系统接口
- * @description 日志系统接口为框架提供分类日志输出能力
- */
-export interface ILogcat extends IAbility {
-  /** 清空容器 */
-  clear(): void;
-  /**
-   * 获取日志记录器
-   * @param name 日志记录器名称
-   * @returns 日志记录器
-   */
-  acquire(name: string): ILogger;
-  /**
-   * 统一设置日志级别
-   * @param level 日志级别
-   */
-  with(level: LoggerLevel): void;
-  /**
-   * 开启所有日志记录器
-   */
-  on(): void;
-  /**
-   * 关闭所有日志记录器
-   */
-  off(): void;
-  /** 获取默认日志记录器 */
-  get qin(): ILogger;
-}
+@Injectable({ name: "Logcat" })
+export class Logcat extends Dependency implements ILogcat {
+  /** 日志容器 */
+  private __container: Map<string, Logger> = new Map();
 
-/** 日志容器 */
-const CONTAINER: Map<string, Logger> = new Map();
-
-/**
- * 日志系统
- * @description 日志系统，用于记录应用程序的运行日志
- */
-export const logcat: ILogcat = {
-  name: "Logcat",
-  description: "日志系统",
   get qin(): ILogger {
-    return logcat.acquire("qin");
-  },
+    return this.acquire("qin");
+  }
+
+  get res() {
+    return this.acquire("res");
+  }
+
   clear(): void {
-    CONTAINER.clear();
-  },
+    this.__container.clear();
+  }
+
   acquire(name: string): Logger {
-    if (!CONTAINER.has(name)) {
-      CONTAINER.set(name, new Logger(name));
+    if (!this.__container.has(name)) {
+      this.__container.set(name, new Logger(name));
     }
-    return CONTAINER.get(name)!;
-  },
+    return this.__container.get(name)!;
+  }
+
   with(level: LoggerLevel) {
-    CONTAINER.forEach((logger) => {
+    this.__container.forEach((logger) => {
       logger.level = level;
     });
-  },
+  }
+
   on() {
-    logcat.with(LoggerLevel.V);
-  },
+    this.with(LoggerLevel.V);
+  }
+
   off() {
-    logcat.with(LoggerLevel.N);
-  },
-};
+    this.with(LoggerLevel.N);
+  }
+}

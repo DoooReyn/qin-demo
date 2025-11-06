@@ -1,7 +1,6 @@
 import { assetManager, director, gfx, js, sys, AssetManager, ImageAsset, SpriteFrame } from "cc";
 
-import { logcat } from "../ability";
-import { Injectable } from "../ioc";
+import ioc, { Injectable } from "../ioc";
 import { ASTC_FORMAT, IAstc, IMemoryImageSource } from "../typings";
 import { Dependency } from "./dependency";
 
@@ -58,7 +57,7 @@ export class Astc extends Dependency implements IAstc {
 
   /** 输出内容 */
   private __dump(log: string, ...args: any) {
-    if (this.logEnabled) logcat.acquire("res").d(log, ...args);
+    if (this.logEnabled) ioc.logcat.acquire("res").d(log, ...args);
   }
 
   /**

@@ -1,7 +1,6 @@
 import { isValid, Node } from "cc";
 
-import { IoC } from "../ioc";
-import { IIncremental } from "../typings";
+import { ioc } from "../ioc";
 
 /**
  * 分组辅助工具
@@ -17,10 +16,7 @@ export class Group<T extends object = any> {
   public filter: undefined | ((d: T) => boolean);
 
   constructor() {
-    this.id =
-      IoC.Shared.resolve<IIncremental>("Incremental").acquire(
-        "group"
-      );
+    this.id = ioc.incremental.acquire("group");
   }
 
   /**
