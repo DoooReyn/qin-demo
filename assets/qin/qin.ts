@@ -29,7 +29,7 @@ export class Qin {
   }
 
   /** 初始化框架 */
-  async init(options: IQinOptions) {
+  async initialize(options: IQinOptions) {
     if (this.__initializing) {
       throw new Error("Qin 正在初始化中.");
     }
@@ -42,7 +42,7 @@ export class Qin {
     this.__initializing = true;
 
     // 初始化依赖项
-    await ioc.init();
+    await ioc.initialize();
     ioc.logcat.qin.i("依赖项初始化完成");
 
     // 应用环境参数

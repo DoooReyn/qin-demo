@@ -59,7 +59,7 @@ export class IoC {
   /**
    * 初始化所有依赖项
    */
-  async init() {
+  async initialize() {
     for (let [_, dep] of this.__container) {
       await dep.onAttach();
     }
@@ -155,7 +155,7 @@ export class IoC {
   }
 
   /** 音频播放器 */
-  get audioPlayer() {
+  get audio() {
     return this.resolve<IAudioPlayer>("AudioPlayer");
   }
 }

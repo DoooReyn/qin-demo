@@ -10,7 +10,7 @@ import { Loader } from "./loader";
  */
 @mock.decorator.ccclass("Audio")
 @mock.decorator.requireComponent(AudioSource)
-export class AudioComponent extends Loader<Node, AudioClip> {
+export class AudioAtom extends Loader<Node, AudioClip> {
   /** 触发器#播放完成 */
   public readonly onFinish: Triggers = new Triggers();
 
