@@ -1,5 +1,6 @@
+import { IDependency } from "./dependency";
 import ioc from "./ioc";
-import { IDependency, IQinOptions } from "./typings";
+import { IQinOptions } from "./typings";
 
 /**
  * Qin
@@ -71,6 +72,6 @@ export class Qin {
    * @returns 依赖实例
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
-    return ioc.resolve(name) as T;
+    return ioc.resolve<T>(name) as T;
   }
 }

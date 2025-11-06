@@ -1,6 +1,5 @@
 import { might, misc } from "../ability";
-import { ObEntryOutline, ObjectEntry } from "../dependency";
-import { IObjectEntry } from "../typings";
+import { IObjectEntry, ObjectEntry, ObEntryOutline } from "../dependency";
 import ioc from "../ioc";
 
 /**

@@ -1,7 +1,8 @@
 import { assetManager, director, gfx, js, sys, AssetManager, ImageAsset, SpriteFrame } from "cc";
 
 import ioc, { Injectable } from "../ioc";
-import { ASTC_FORMAT, IAstc, IMemoryImageSource } from "../typings";
+import { IMemoryImageSource } from "../typings";
+import { ASTC_FORMAT, IAstc } from "./astc.typings";
 import { Dependency } from "./dependency";
 
 enum PixelFormat {

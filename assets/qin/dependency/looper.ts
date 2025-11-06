@@ -2,7 +2,7 @@ import { director, System } from "cc";
 
 import { Dependency } from "../dependency";
 import { ioc, Injectable } from "../ioc";
-import { ILooper } from "../typings";
+import { ILooper } from "./looper.typings";
 
 /**
  * 循环系统

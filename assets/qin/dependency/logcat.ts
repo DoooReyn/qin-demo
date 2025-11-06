@@ -1,8 +1,8 @@
 import { sys } from "cc";
 
 import { Injectable } from "../ioc";
-import { ILogcat, ILogger, LoggerLevel } from "../typings/logcat";
 import { Dependency } from "./dependency";
+import { ILogcat, ILogger, LoggerLevel } from "./logcat.typings";
 
 /**
  * 日志颜色

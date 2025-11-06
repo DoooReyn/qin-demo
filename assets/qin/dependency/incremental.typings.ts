@@ -1,4 +1,4 @@
-import { IDependency } from "./dependency";
+import { IDependency } from "./dependency.typings";
 
 /**
  * 递增ID生成器接口

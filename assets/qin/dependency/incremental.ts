@@ -1,6 +1,6 @@
 import { Injectable } from "../ioc";
-import { IIncremental } from "../typings/incremental";
 import { Dependency } from "./dependency";
+import { IIncremental } from "./incremental.typings";
 
 /**
  * 递增ID生成器

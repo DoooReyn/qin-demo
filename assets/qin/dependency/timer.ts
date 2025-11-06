@@ -1,9 +1,9 @@
-import ioc, { Injectable } from "../ioc";
-import { ITimer, ICounter, ITick } from "../typings";
-import { Dependency } from "./dependency";
-import { Triggers } from "../foundation";
-import { ObEntryOutline, ObjectEntry } from "./pool";
 import { time } from "../ability";
+import { Triggers } from "../foundation";
+import ioc, { Injectable } from "../ioc";
+import { Dependency } from "./dependency";
+import { ObjectEntry, ObEntryOutline } from "./pool";
+import { ICounter, ITick, ITimer } from "./timer.typings";
 
 /**
  * 计数器

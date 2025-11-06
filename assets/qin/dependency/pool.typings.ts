@@ -1,6 +1,7 @@
-import { Prefab, Node } from "cc";
-import { Constructor } from "./common";
-import { IDependency } from "./dependency";
+import { Node, Prefab } from "cc";
+
+import { Constructor } from "../typings/common.typings";
+import { IDependency } from "./dependency.typings";
 
 /** 对象池条目概要接口 */
 export interface IObjectEntryOutline {
@@ -128,7 +129,7 @@ export interface IObPoC extends IDependency {
 /**
  * 节点池条目
  */
-export interface PoolNode extends Node {
+export interface IPoolNode extends Node {
   /** 节点回收标记 */
   __recycled__?: boolean;
   /** 节点过期标记 */
@@ -168,12 +169,12 @@ export interface INodePoC extends IDependency {
    * @param key 节点池名称
    * @returns
    */
-  acquire<N extends PoolNode>(key: string): N | null;
+  acquire<N extends IPoolNode>(key: string): N | null;
   /**
    * 回收节点
    * @param inst 节点实例
    */
-  recycle(inst: PoolNode): void;
+  recycle(inst: IPoolNode): void;
   /**
    * 获取节点池当前节点数量
    * @param key 节点池名称

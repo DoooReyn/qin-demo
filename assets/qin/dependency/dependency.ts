@@ -1,4 +1,4 @@
-import { IDependencyMeta } from "../typings";
+import { IDependencyMeta } from "./dependency.typings";
 
 /**
  * 依赖项基类

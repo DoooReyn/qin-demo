@@ -1,5 +1,5 @@
-import { IDependency } from "./dependency";
-import { IQinOptions } from "./options";
+import { IQinOptions } from "../typings/qin.typings";
+import { IDependency } from "./dependency.typings";
 
 /**
  * 环境参数解析器接口

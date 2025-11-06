@@ -1,4 +1,4 @@
-import { IDependency } from "./dependency";
+import { IDependency } from "../dependency/dependency.typings";
 
 /**
  * 应用循环系统接口

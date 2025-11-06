@@ -1,4 +1,4 @@
-import { IDependency } from "./dependency";
+import { IDependency } from "./dependency.typings";
 
 /**
  * 日志级别

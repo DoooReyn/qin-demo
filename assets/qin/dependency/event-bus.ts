@@ -1,6 +1,6 @@
 import { Injectable } from "../ioc";
-import { IEventBus, IEventChannel, IEventListener } from "../typings";
 import { Dependency } from "./dependency";
+import { IEventBus, IEventChannel, IEventListener } from "./event-bus.typings";
 
 /**
  * 事件渠道

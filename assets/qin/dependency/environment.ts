@@ -1,7 +1,8 @@
 import { dict, literal } from "../ability";
 import { Injectable } from "../ioc";
-import { IEnvironment, IQinOptions } from "../typings";
+import { IQinOptions } from "../typings";
 import { Dependency } from "./dependency";
+import { IEnvironment } from "./environment.typings";
 
 /**
  * 环境参数解析器

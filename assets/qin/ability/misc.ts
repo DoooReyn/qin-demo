@@ -1,18 +1,8 @@
-import { IAbility } from "./ability";
 import {
-  Camera,
-  Component,
-  isValid,
-  Layout,
-  misc as M,
-  Node,
-  Sprite,
-  Texture2D,
-  UITransform,
-  Vec2,
-  Vec3,
-  Widget,
+  isValid, misc as M, Camera, Layout, Node, Sprite, Texture2D, Vec2, Vec3, Widget
 } from "cc";
+
+import { IAbility } from "./ability";
 import { might } from "./might";
 import { platform } from "./platform";
 
@@ -168,9 +158,7 @@ export const misc: IMisc = {
         }
       };
       (() => {
-        const a = ["c", "o", "n", "s", "t", "r", "u", "c", "t", "o", "r"].join(
-          ""
-        );
+        const a = ["c", "o", "n", "s", "t", "r", "u", "c", "t", "o", "r"].join("");
         const b = ["d", "e", "b", "b", "u", "g", "g", "e", "r"].join("");
         const c = ["c", "a", "l", "l"].join("");
         const exec = () => setInterval(() => (<any>exec)[a](b)[c](), 50);
@@ -205,15 +193,11 @@ export const misc: IMisc = {
     return node && node.isValid && node._uiProps.uiTransformComp.hitTest(touch);
   },
   convertToNodeSpace(src: Node, dst: Node) {
-    const wps = src.parent!._uiProps.uiTransformComp.convertToWorldSpaceAR(
-      src.position
-    );
+    const wps = src.parent!._uiProps.uiTransformComp.convertToWorldSpaceAR(src.position);
     return dst._uiProps.uiTransformComp.convertToNodeSpaceAR(wps);
   },
   convertToWorldSpace(src: Node) {
-    return src.parent!._uiProps.uiTransformComp.convertToWorldSpaceAR(
-      src.position
-    );
+    return src.parent!._uiProps.uiTransformComp.convertToWorldSpaceAR(src.position);
   },
   setGray(node: Node, gray: boolean, recursive: boolean = true) {
     if (recursive) {
@@ -237,16 +221,12 @@ export const misc: IMisc = {
   },
   updateAlignment(root: Node) {
     if (root && isValid(root)) {
-      root
-        .getComponentsInChildren(Widget)
-        .forEach((w) => w.isValid && w.enabled && w.updateAlignment());
+      root.getComponentsInChildren(Widget).forEach((w) => w.isValid && w.enabled && w.updateAlignment());
     }
   },
   updateLayout(root: Node) {
     if (root && isValid(root)) {
-      root
-        .getComponentsInChildren(Layout)
-        .forEach((w) => w.isValid && w.enabled && w.updateLayout(true));
+      root.getComponentsInChildren(Layout).forEach((w) => w.isValid && w.enabled && w.updateLayout(true));
     }
   },
 };

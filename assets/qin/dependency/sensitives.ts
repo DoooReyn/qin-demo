@@ -1,6 +1,6 @@
 import { Injectable } from "../ioc";
-import { ISensitives } from "../typings/sensitives";
 import { Dependency } from "./dependency";
+import { ISensitives } from "./sensitives.typings";
 
 /** 默认干扰词 */
 const defaultNoiseWords =

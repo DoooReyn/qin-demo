@@ -1,8 +1,7 @@
-import { gfx } from "cc";
-import { IDependency } from "./dependency";
-import { IMemoryImageSource } from "./common";
-import { ImageAsset } from "cc";
-import { SpriteFrame } from "cc";
+import { gfx, ImageAsset, SpriteFrame } from "cc";
+
+import { IMemoryImageSource } from "../typings/common.typings";
+import { IDependency } from "./dependency.typings";
 
 /** 允许的 ASTC 格式 */
 export type ASTC_FORMAT =
