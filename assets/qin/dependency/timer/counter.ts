@@ -1,9 +1,5 @@
-import {
-  ObjectEntry,
-  pool,
-  Triggers,
-} from "../../ability";
-import { ICounter } from "../../typings/timer";
+import { ObjectEntry, pool, Triggers } from "../../ability";
+import { ICounter } from "../../typings";
 
 /**
  * 计数器

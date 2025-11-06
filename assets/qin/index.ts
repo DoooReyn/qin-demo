@@ -1,10 +1,9 @@
 import { DEV } from "cc/env";
 import { Qin } from "./qin";
 
-export * from "./foundation/index";
-export * from "./ability/index";
-export * from "./dependency/index";
-export * from "./service/index";
+export * from "./foundation";
+export * from "./ability";
+export * from "./dependency";
 export * from "./dependency-injector";
 
 /** 全局 Qin 实例 */

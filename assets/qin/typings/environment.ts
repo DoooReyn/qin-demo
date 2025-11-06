@@ -8,11 +8,6 @@ export interface IEnvironment extends IDependency {
   /** 环境参数 */
   args: IQinOptions;
   /**
-   * 解析
-   * @param url 网址
-   */
-  parse(url?: string): void;
-  /**
    * 导入环境参数
    * @param params 环境参数
    */

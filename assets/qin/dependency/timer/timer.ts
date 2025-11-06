@@ -1,17 +1,22 @@
-import { ITimerService } from "../../typings/timer";
-import { Service } from "../service";
+import { Dependency } from "../dependency";
+import { ITimer } from "../../typings";
 import { Tick } from "./tick";
 
 /**
  * 定时器服务
  * @description 定时器服务类实现了定时器服务接口，提供了定时器的安装、卸载和更新功能
  */
-export class TimerService extends Service implements ITimerService {
-  readonly name: string = "TimerService";
+export class Timer extends Dependency implements ITimer {
+  readonly name: string = "Timer";
   readonly description: string = "定时器服务";
 
   /** 定时器容器 */
   private readonly __container: Map<string, Tick> = new Map();
+
+  onDetach(): Promise<void> {
+    this.stop();
+    return super.onDetach();
+  }
 
   /**
    * 获取定时器
@@ -53,35 +58,31 @@ export class TimerService extends Service implements ITimerService {
   /**
    * 暂停所有定时器（不包括 Director）
    */
-  public pauseAll() {
+  public pause() {
     this.__container.forEach((tick) => tick.pause());
   }
 
   /**
    * 恢复所有定时器（不包括 Director）
    */
-  public resumeAll() {
+  public resume() {
     this.__container.forEach((tick) => tick.run());
   }
 
   /**
    * 停止（清除）所有定时器
    */
-  public stopAll() {
-    this.pauseAll();
+  public stop() {
+    this.pause();
     this.__container.forEach((tick) => tick.stop());
     this.__container.clear();
   }
 
-  onDetach(): Promise<void> {
-    this.stopAll();
-    return super.onDetach();
-  }
-
-  update(ms: number): void {
-    super.update(ms);
-    if (this._running) {
-      this.__container.forEach((v) => v.update(ms));
-    }
+  /**
+   * 更新所有定时器
+   * @param dt 时间片
+   */
+  public update(dt: number) {
+    this.__container.forEach((tick) => tick.update(dt));
   }
 }

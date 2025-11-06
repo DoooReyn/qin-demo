@@ -1,5 +1,5 @@
 import { logcat } from "./ability";
-import { IDependency, IDependencyInjector, IEnvironment, IEventBus, ILooper } from "./typings";
+import { IDependency, IDependencyInjector, IEnvironment, IEventBus, ILooper, ITimer } from "./typings";
 
 /**
  * 依赖注入容器
@@ -78,24 +78,23 @@ export class DependencyInjector implements IDependencyInjector {
     this.__container.clear();
   }
 
-  /**
-   * 应用循环系统
-   */
+  /** 应用循环系统 */
   get looper() {
     return this.resolve<ILooper>("Looper");
   }
 
-  /**
-   * 事件总线
-   */
+  /** 事件总线 */
   get eventBus() {
     return this.resolve<IEventBus>("EventBus");
   }
 
-  /**
-   * 环境参数解析器
-   */
+  /** 环境参数解析器 */
   get environment() {
     return this.resolve<IEnvironment>("Environment");
+  }
+
+  /** 定时器 */
+  get timer() {
+    return this.resolve<ITimer>("Timer");
   }
 }

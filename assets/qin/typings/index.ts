@@ -8,6 +8,4 @@ export * from "./incremental";
 export * from "./looper";
 export * from "./options";
 export * from "./sensitives";
-export * from "./service-registry";
-export * from "./service";
 export * from "./timer";

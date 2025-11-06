@@ -1,8 +1,7 @@
 import { director, System } from "cc";
-
-import { Dependency } from "../dependency/dependency";
-import { ILooper } from "../typings/looper";
-import { ServiceRegistry } from "./service-registry";
+import { Dependency } from "../dependency";
+import { ILooper } from "../typings";
+import { DependencyInjector } from "../dependency-injector";
 
 /**
  * 循环系统
@@ -23,7 +22,7 @@ class LoopSystem extends System {
   update(dt: number): void {
     super.update(dt);
     if (this.__running) {
-      ServiceRegistry.Shared.update(dt);
+      DependencyInjector.Shared.timer.update(dt);
     }
   }
 }

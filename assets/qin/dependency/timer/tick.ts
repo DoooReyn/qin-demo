@@ -1,6 +1,6 @@
 import { pool, time } from "../../ability";
 import { Counter } from "./counter";
-import { ITick } from "../../typings/timer";
+import { ITick } from "../../typings";
 
 /**
  * 定时器

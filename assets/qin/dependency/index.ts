@@ -5,5 +5,7 @@ export * from "./event-bus/event-bus";
 export * from "./environment";
 export * from "./incremental";
 export * from "./looper";
-export * from "./service-registry";
 export * from "./sensitives";
+export * from "./timer/counter";
+export * from "./timer/tick";
+export * from "./timer/timer";

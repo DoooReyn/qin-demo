@@ -4,6 +4,4 @@ qin.init({
   env: "dev",
   app: "qin-demo",
   version: "0.0.1",
-  dependencies: [],
-  services: [],
 });

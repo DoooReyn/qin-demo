@@ -16,18 +16,11 @@ export class Environment extends Dependency implements IEnvironment {
     env: "dev",
   };
 
-  onAttach() {
-    this.parse();
-    return super.onAttach();
-  }
-
-  parse(url?: string) {
-    this.use(literal.extractUrlParams(url) as IQinOptions);
-  }
-
   use(args: IQinOptions) {
-    const ret = dict.omit(args, ["services", "dependencies"], false);
-    this.args = dict.merge(this.args, ret) as IQinOptions;
+    dict.merge(this.args, args) as IQinOptions;
+    if (this.isDev) {
+      dict.merge(this.args, literal.extractUrlParams() as IQinOptions);
+    }
   }
 
   isMode(mode: string) {

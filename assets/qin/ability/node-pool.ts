@@ -2,9 +2,8 @@ import { instantiate, Node, Prefab } from "cc";
 import { time } from "./time";
 import { logcat } from "./logcat";
 import { might } from "./might";
-import { ServiceRegistry } from "../dependency";
-import { ITimerService } from "../typings";
 import { IAbility } from "./ability";
+import { DependencyInjector } from "../dependency-injector";
 
 /**
  * 节点
@@ -24,7 +23,7 @@ export class NodePool {
   public static readonly EXPIRES: number = 30_000;
 
   /** 节点列表 */
-  private items: PoolNode[] = [];
+  private __container: PoolNode[] = [];
 
   /**
    * 节点池构造器
@@ -43,8 +42,8 @@ export class NodePool {
    */
   public acquire() {
     let node: PoolNode;
-    if (this.items.length > 0) {
-      node = this.items.shift()!;
+    if (this.__container.length > 0) {
+      node = this.__container.shift()!;
     } else {
       node = instantiate(this.template);
     }
@@ -64,13 +63,9 @@ export class NodePool {
       inst.removeFromParent();
       // 延迟一帧回收，避免同一帧重复使用
       const self = this;
-      ServiceRegistry.Shared.resolve<ITimerService>(
-        "TimerService"
-      ).shared.nextTick(function () {
-        might.sync(function () {
-          self.items.push(inst);
-        });
-      }, self);
+      DependencyInjector.Shared.timer.shared.nextTick(might.sync, might, () =>
+        this.__container.push(inst)
+      );
     }
   }
 
@@ -78,21 +73,21 @@ export class NodePool {
    * 清空节点池
    */
   public clear() {
-    this.items.forEach((item) => item.destroy());
-    this.items = [];
+    this.__container.forEach((item) => item.destroy());
+    this.__container = [];
   }
 
   /**
    * 清理过期节点
    */
   public lazyCleanup() {
-    const count = this.items.length;
+    const count = this.__container.length;
     if (count > 0) {
-      const item = this.items[count - 1];
+      const item = this.__container[count - 1];
       const expireAt = item.__expire_at__!;
       const now = time.now;
       if (expireAt > 0 && now >= expireAt) {
-        this.items.pop();
+        this.__container.pop();
         item.destroy();
         logcat
           .acquire("res")
@@ -105,7 +100,7 @@ export class NodePool {
 
   /** 节点剩余个数 */
   public get size() {
-    return this.items.length;
+    return this.__container.length;
   }
 }
 

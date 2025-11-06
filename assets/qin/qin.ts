@@ -1,10 +1,15 @@
 import { logcat } from "./ability";
 import {
-  Astc, Environment, EventBus, Incremental, Looper, Sensitives, ServiceRegistry
+  Astc,
+  Environment,
+  EventBus,
+  Incremental,
+  Looper,
+  Sensitives,
+  Timer,
 } from "./dependency";
 import { DependencyInjector } from "./dependency-injector";
-import { TimerService } from "./service";
-import { IDependency, IQinOptions, IService } from "./typings";
+import { IDependency, IQinOptions } from "./typings";
 
 /**
  * Qin
@@ -48,45 +53,25 @@ Version: 0.0.1`;
     this.__initializing = true;
 
     const dpi = DependencyInjector.Shared;
-    const svr = ServiceRegistry.Shared;
 
     // 注册内部依赖
-    dpi.inject(ServiceRegistry.Shared);
     dpi.inject(new Environment());
     dpi.inject(new Astc());
     dpi.inject(new Incremental());
     dpi.inject(new EventBus());
     dpi.inject(new Sensitives());
     dpi.inject(new Looper());
-
-    // 注册可选依赖
-    if (options.dependencies) {
-      options.dependencies.forEach((dep) => {
-        dpi.inject(dep);
-      });
-    }
-
-    // 注册内部服务
-    svr.inject(new TimerService());
-
-    // 注册可选服务
-    if (options.services) {
-      options.services.forEach((s) => {
-        svr.inject(s);
-      });
-    }
+    dpi.inject(new Timer());
 
     // 初始化依赖项
     await dpi.init();
+    logcat.qin.i("依赖项初始化完成");
+
+    // 应用环境参数
     dpi.environment.use(options);
     logcat.qin.i("应用环境参数", dpi.environment.args);
-    logcat.qin.i("依赖项初始化完成");
     
-    // 初始化服务项
-    await svr.init();
-    logcat.qin.i("服务项初始化完成");
-
-    // 设置运行时更新函数
+    // 启动应用循环
     dpi.looper.start();
 
     // 标记为初始化完成
@@ -96,12 +81,9 @@ Version: 0.0.1`;
 
   /**
    * 注销框架
-   * - 注销服务注册器
    * - 注销依赖注入器
    */
   async destroy() {
-    // 注销服务
-    await ServiceRegistry.Shared.destroy();
     // 注销依赖
     await DependencyInjector.Shared.destroy();
   }
@@ -113,14 +95,5 @@ Version: 0.0.1`;
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
     return DependencyInjector.Shared.resolve(name) as T;
-  }
-
-  /**
-   * 解析服务
-   * @param name 服务名称
-   * @returns 服务实例
-   */
-  serviceOf<T extends IService>(name: string): T | undefined {
-    return ServiceRegistry.Shared.resolve(name) as T;
   }
 }

@@ -1,5 +1,5 @@
 import { IObjectEntry, ITriggers } from "../ability";
-import { IService } from "./service";
+import { IDependency } from "./dependency";
 
 /**
  * 计数器接口
@@ -141,37 +141,32 @@ export interface ITick {
  * 定时器服务接口
  * @description 定时器服务接口定义了定时器服务的行为
  */
-export interface ITimerService extends IService {
+export interface ITimer extends IDependency {
   /**
    * 获取定时器
    * @param key 定时器标识
    */
   acquire(key: string): ITick;
   /**
-   * 获取应用级定时器
-   * - 一般的，不应对此定时器调速
-   */
-  get app(): ITick;
-  /**
    * 获取共享定时器
    * - 一般的，不应对此定时器调速
    */
   get shared(): ITick;
   /**
-   * 获取通用可变速定时器
-   * - 一般的，此定时器用于需要变速的环境
-   */
-  get varying(): ITick;
-  /**
    * 暂停所有定时器（不包括 Director）
    */
-  pauseAll(): void;
+  pause(): void;
   /**
    * 恢复所有定时器（不包括 Director）
    */
-  resumeAll(): void;
+  resume(): void;
   /**
    * 停止（清除）所有定时器（不包括 Director）
    */
-  stopAll(): void;
+  stop(): void;
+  /**
+   * 更新所有定时器（不包括 Director）
+   * @param dt 时间片
+   */
+  update(dt: number): void;
 }
