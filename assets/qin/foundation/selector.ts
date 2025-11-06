@@ -1,4 +1,4 @@
-import { obEntryOutline, ObjectEntry } from "../dependency";
+import { ObEntryOutline, ObjectEntry } from "../dependency";
 import ioc from "../ioc";
 import { Triggers } from "./trigger";
 
@@ -13,7 +13,7 @@ export enum SelectMode {
 /**
  * 选项
  */
-@obEntryOutline("Option")
+@ObEntryOutline("Option")
 export class Option<R> extends ObjectEntry {
   /** 原始内容 */
   private __raw: R | null = null;

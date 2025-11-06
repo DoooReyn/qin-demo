@@ -208,7 +208,7 @@ export class Pool extends Dependency implements IPool {
   private __container: Map<string, IObjectPool<IObjectEntry>> = new Map();
 
   register(cls: Constructor<IObjectEntry>) {
-    const name = obEntryOutlineOf(cls)?.name;
+    const name = ObEntryOutlineOf(cls)?.name;
 
     if (name == undefined) {
       throw new Error(`对象池条目必须调用装饰器 @pool.obEntryOutline`);
@@ -224,7 +224,7 @@ export class Pool extends Dependency implements IPool {
   }
 
   unregister(cls: Constructor<IObjectEntry>) {
-    const name = obEntryOutlineOf(cls)?.name;
+    const name = ObEntryOutlineOf(cls)?.name;
 
     if (name == undefined) {
       throw new Error(`对象池条目必须调用装饰器 @pool.obEntryOutline`);
@@ -238,7 +238,7 @@ export class Pool extends Dependency implements IPool {
   }
 
   poolOf(cls: Constructor<IObjectEntry>) {
-    const name = obEntryOutlineOf(cls)?.name;
+    const name = ObEntryOutlineOf(cls)?.name;
     if (name == undefined) return undefined;
     if (!this.__container.has(name)) return undefined;
     return this.__container.get(name);
@@ -278,7 +278,7 @@ export class Pool extends Dependency implements IPool {
  * @param name 对象池条目名称
  * @returns
  */
-export function obEntryOutline(name: string) {
+export function ObEntryOutline(name: string) {
   return function (target: any) {
     target.prototype[Pool.key] = {
       name,
@@ -295,6 +295,6 @@ export function obEntryOutline(name: string) {
  * @param target 对象池条目构造
  * @returns
  */
-export function obEntryOutlineOf(target: any) {
+export function ObEntryOutlineOf(target: any) {
   return mock.memberOf<IObjectEntryOutline>(target, Pool.key);
 }

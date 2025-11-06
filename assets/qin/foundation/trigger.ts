@@ -1,5 +1,5 @@
 import { might, misc } from "../ability";
-import { obEntryOutline, ObjectEntry } from "../dependency";
+import { ObEntryOutline, ObjectEntry } from "../dependency";
 import { IObjectEntry } from "../typings";
 import ioc from "../ioc";
 
@@ -76,7 +76,7 @@ export interface ITriggers {
 /**
  * 触发器
  */
-@obEntryOutline("Trigger")
+@ObEntryOutline("Trigger")
 export class Trigger extends ObjectEntry implements ITrigger {
   /** 回调方法 */
   private __handle: ((...args: any[]) => unknown) | null = null;
