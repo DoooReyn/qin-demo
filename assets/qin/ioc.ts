@@ -111,7 +111,7 @@ export class IoC {
     return this.resolve<IEnvironment>("Environment");
   }
 
-  /** 定时器 */
+  /** 定时器容器 */
   get timer() {
     return this.resolve<ITimer>("Timer");
   }

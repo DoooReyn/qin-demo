@@ -1,5 +1,6 @@
-import { IObjectEntry, ITriggers } from "../ability";
+import { ITriggers } from "../foundation";
 import { IDependency } from "./dependency";
+import { IObjectEntry } from "./pool";
 
 /**
  * 计数器接口
