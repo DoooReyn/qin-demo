@@ -1,6 +1,7 @@
 import { assetManager, director, gfx, js, sys, AssetManager, ImageAsset, SpriteFrame } from "cc";
 
 import { logcat } from "../ability";
+import { Injectable } from "../ioc";
 import { ASTC_FORMAT, IAstc, IMemoryImageSource } from "../typings";
 import { Dependency } from "./dependency";
 
@@ -44,10 +45,8 @@ enum PixelFormat {
 /**
  * ASTC 压缩纹理支持
  */
+@Injectable({ name: "ASTC", description: "ASTC 压缩纹理支持" })
 export class Astc extends Dependency implements IAstc {
-  readonly name: string = "Astc";
-  readonly description: string = "ASTC 压缩纹理支持";
-
   /** 目标纹理格式 */
   private __format: ASTC_FORMAT = gfx.Format.ASTC_RGBA_6X6;
 

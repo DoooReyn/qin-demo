@@ -1,15 +1,14 @@
-import { Dependency } from "../dependency";
+import { Injectable } from "../../ioc";
 import { ITimer } from "../../typings";
+import { Dependency } from "../dependency";
 import { Tick } from "./tick";
 
 /**
- * 定时器服务
- * @description 定时器服务类实现了定时器服务接口，提供了定时器的安装、卸载和更新功能
+ * 定时器
+ * @description 提供了时器的安装、卸载和更新功能
  */
+@Injectable({name: "Timer", description: "定时器"})
 export class Timer extends Dependency implements ITimer {
-  readonly name: string = "Timer";
-  readonly description: string = "定时器服务";
-
   /** 定时器容器 */
   private readonly __container: Map<string, Tick> = new Map();
 
@@ -32,27 +31,11 @@ export class Timer extends Dependency implements ITimer {
   }
 
   /**
-   * 获取应用级定时器
-   * - 一般的，不应对此定时器调速
-   */
-  public get app() {
-    return this.acquire("app");
-  }
-
-  /**
    * 获取共享定时器
    * - 一般的，不应对此定时器调速
    */
   public get shared() {
     return this.acquire("shared");
-  }
-
-  /**
-   * 获取通用可变速定时器
-   * - 一般的，此定时器用于需要变速的环境
-   */
-  public get varying() {
-    return this.acquire("varying");
   }
 
   /**

@@ -1,4 +1,5 @@
 import { dict, literal } from "../ability";
+import { Injectable } from "../ioc";
 import { IEnvironment, IQinOptions } from "../typings";
 import { Dependency } from "./dependency";
 
@@ -6,10 +7,8 @@ import { Dependency } from "./dependency";
  * 环境参数解析器
  * @description 提供环境参数解析能力
  */
+@Injectable({ name: "Environment", description: "环境参数解析器" })
 export class Environment extends Dependency implements IEnvironment {
-  readonly name: string = "Environment";
-  readonly description: string = "环境参数解析器";
-
   args: IQinOptions = {
     app: "qin",
     version: "0.0.1",

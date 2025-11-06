@@ -1,7 +1,8 @@
 import { director, System } from "cc";
+
 import { Dependency } from "../dependency";
+import { Injectable, IoC } from "../ioc";
 import { ILooper } from "../typings";
-import { DependencyInjector } from "../dependency-injector";
 
 /**
  * 循环系统
@@ -22,7 +23,7 @@ class LoopSystem extends System {
   update(dt: number): void {
     super.update(dt);
     if (this.__running) {
-      DependencyInjector.Shared.timer.update(dt);
+      IoC.Shared.timer.update(dt);
     }
   }
 }
@@ -31,16 +32,14 @@ class LoopSystem extends System {
  * 应用循环系统
  * @description 应用循环系统为框架提供应用级别的循环能力
  */
+@Injectable({ name: "Looper", description: "应用循环系统" })
 export class Looper extends Dependency implements ILooper {
-  readonly name: string = "Looper";
-  readonly description: string = "应用循环系统";
-
   /** 循环系统 */
   private __system: LoopSystem;
 
   onAttach() {
     this.__system = new LoopSystem();
-    director.registerSystem(this.name, this.__system, System.Priority.HIGH);
+    director.registerSystem(this.meta.name, this.__system, System.Priority.HIGH);
     return super.onAttach();
   }
 

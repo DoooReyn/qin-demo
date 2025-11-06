@@ -1,9 +1,10 @@
 import { instantiate, Node, Prefab } from "cc";
-import { time } from "./time";
+
+import { IoC } from "../ioc";
+import { IAbility } from "./ability";
 import { logcat } from "./logcat";
 import { might } from "./might";
-import { IAbility } from "./ability";
-import { DependencyInjector } from "../dependency-injector";
+import { time } from "./time";
 
 /**
  * 节点
@@ -63,7 +64,7 @@ export class NodePool {
       inst.removeFromParent();
       // 延迟一帧回收，避免同一帧重复使用
       const self = this;
-      DependencyInjector.Shared.timer.shared.nextTick(might.sync, might, () =>
+      IoC.Shared.timer.shared.nextTick(might.sync, might, () =>
         this.__container.push(inst)
       );
     }

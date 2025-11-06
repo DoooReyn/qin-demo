@@ -1,10 +1,11 @@
 import { DEV } from "cc/env";
+
 import { Qin } from "./qin";
 
 export * from "./foundation";
 export * from "./ability";
 export * from "./dependency";
-export * from "./dependency-injector";
+export * from "./ioc";
 
 /** 全局 Qin 实例 */
 const qin = new Qin();

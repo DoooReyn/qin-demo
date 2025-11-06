@@ -1,5 +1,6 @@
-import { Node, isValid } from "cc";
-import { DependencyInjector } from "../dependency-injector";
+import { isValid, Node } from "cc";
+
+import { IoC } from "../ioc";
 import { IIncremental } from "../typings";
 
 /**
@@ -17,7 +18,7 @@ export class Group<T extends object = any> {
 
   constructor() {
     this.id =
-      DependencyInjector.Shared.resolve<IIncremental>("Incremental").acquire(
+      IoC.Shared.resolve<IIncremental>("Incremental").acquire(
         "group"
       );
   }

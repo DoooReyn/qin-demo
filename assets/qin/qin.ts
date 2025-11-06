@@ -1,14 +1,5 @@
 import { logcat } from "./ability";
-import {
-  Astc,
-  Environment,
-  EventBus,
-  Incremental,
-  Looper,
-  Sensitives,
-  Timer,
-} from "./dependency";
-import { DependencyInjector } from "./dependency-injector";
+import { IoC } from "./ioc";
 import { IDependency, IQinOptions } from "./typings";
 
 /**
@@ -52,18 +43,9 @@ Version: 0.0.1`;
     // 标记为正在初始化
     this.__initializing = true;
 
-    const dpi = DependencyInjector.Shared;
-
-    // 注册内部依赖
-    dpi.inject(new Environment());
-    dpi.inject(new Astc());
-    dpi.inject(new Incremental());
-    dpi.inject(new EventBus());
-    dpi.inject(new Sensitives());
-    dpi.inject(new Looper());
-    dpi.inject(new Timer());
-
+    
     // 初始化依赖项
+    const dpi = IoC.Shared;
     await dpi.init();
     logcat.qin.i("依赖项初始化完成");
 
@@ -85,7 +67,7 @@ Version: 0.0.1`;
    */
   async destroy() {
     // 注销依赖
-    await DependencyInjector.Shared.destroy();
+    await IoC.Shared.destroy();
   }
 
   /**
@@ -94,6 +76,6 @@ Version: 0.0.1`;
    * @returns 依赖实例
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
-    return DependencyInjector.Shared.resolve(name) as T;
+    return IoC.Shared.resolve(name) as T;
   }
 }

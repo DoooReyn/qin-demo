@@ -1,7 +1,6 @@
 export * from "./common";
 export * from "./astc";
 export * from "./dependency";
-export * from "./dependency-injector";
 export * from "./environment";
 export * from "./event-bus";
 export * from "./incremental";

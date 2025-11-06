@@ -1,21 +1,30 @@
 import { logcat } from "./ability";
-import { IDependency, IDependencyInjector, IEnvironment, IEventBus, ILooper, ITimer } from "./typings";
+import { IDependency, IDependencyMeta, IEnvironment, IEventBus, ILooper, ITimer } from "./typings";
 
 /**
  * 依赖注入容器
  * @description 依赖注入容器用于管理和注入应用程序中的依赖项
  */
-export class DependencyInjector implements IDependencyInjector {
+export class IoC {
   /**
    * 单例
    */
-  public static get Shared(): DependencyInjector {
+  public static get Shared(): IoC {
     // @ts-ignore
-    return (DependencyInjector.__inst ??= new DependencyInjector());
+    return (IoC.__inst ??= new IoC());
   }
 
   /** 依赖容器 */
   private __container: Map<string, IDependency> = new Map();
+
+  /**
+   * 依赖是否已注入
+   * @param name 依赖名称
+   * @returns
+   */
+  has(name: string) {
+    return this.__container.has(name);
+  }
 
   /**
    * 注入依赖
@@ -23,11 +32,11 @@ export class DependencyInjector implements IDependencyInjector {
    * @param dependencies 依赖项的依赖
    */
   inject<D extends IDependency>(dep: D): D {
-    if (this.__container.has(dep.name)) {
-      throw new Error(`依赖 ${dep.name} 已注册.`);
+    if (this.__container.has(dep.meta.name)) {
+      throw new Error(`依赖 ${dep.meta.name} 已注册.`);
     }
-    this.__container.set(dep.name, dep);
-    logcat.qin.i("注册依赖:", dep.name, dep.description);
+    this.__container.set(dep.meta.name, dep);
+    logcat.qin.i("注册依赖:", dep.meta.name, dep.meta.description);
     return dep;
   }
 
@@ -39,9 +48,9 @@ export class DependencyInjector implements IDependencyInjector {
     if (typeof dep === "string") {
       dep = this.__container.get(dep) as IDependency;
     }
-    if (dep && this.__container.has(dep.name)) {
+    if (dep && this.__container.has(dep.meta.name)) {
       dep.onDetach();
-      this.__container.delete(dep.name);
+      this.__container.delete(dep.meta.name);
     }
   }
 
@@ -63,7 +72,7 @@ export class DependencyInjector implements IDependencyInjector {
     if (typeof dep === "string") {
       return this.__container.get(dep) as D;
     }
-    return this.__container.get(dep.name) as D;
+    return this.__container.get(dep.meta.name) as D;
   }
 
   /**
@@ -97,4 +106,20 @@ export class DependencyInjector implements IDependencyInjector {
   get timer() {
     return this.resolve<ITimer>("Timer");
   }
+}
+
+/**
+ * 依赖注册装饰器
+ * @param options 依赖配置选项
+ */
+export function Injectable(meta: IDependencyMeta) {
+  return function <T extends new (...args: any[]) => IDependency>(target: T) {
+    const injector = IoC.Shared;
+    if (!injector.has(meta.name)) {
+      const inst = new target();
+      inst.meta = meta;
+      injector.inject(inst);
+    }
+    return target;
+  };
 }
