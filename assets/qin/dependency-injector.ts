@@ -28,7 +28,6 @@ export class DependencyInjector implements IDependencyInjector {
     }
     this.__container.set(dep.name, dep);
     logcat.qin.i("注册依赖:", dep.name, dep.description);
-    dep.onAttach();
     return dep;
   }
 
@@ -43,6 +42,15 @@ export class DependencyInjector implements IDependencyInjector {
     if (dep && this.__container.has(dep.name)) {
       dep.onDetach();
       this.__container.delete(dep.name);
+    }
+  }
+
+  /**
+   * 初始化所有依赖项
+   */
+  async init() {
+    for (let [_, dep] of this.__container) {
+      await dep.onAttach();
     }
   }
 

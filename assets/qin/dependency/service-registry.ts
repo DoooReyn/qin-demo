@@ -19,7 +19,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
     return (ServiceRegistry.__inst ??= new ServiceRegistry());
   }
 
-  onDetach(): void {
+  async onDetach() {
     this.destroy()
       .then(() => {
         this.__container.clear();
@@ -27,7 +27,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
       .catch((err) => {
         logcat.qin.e("服务注销失败：", err);
       });
-    super.onDetach();
+    return super.onDetach();
   }
 
   /** 服务容器 */
@@ -93,7 +93,7 @@ export class ServiceRegistry extends Dependency implements IServiceRegistry {
     // 反向注销服务，确保先注册的后注销
     const services = Array.from(this.__container.entries()).reverse();
     for (let [_, svr] of services) {
-      await svr.onDetach();
+      await this.eject(svr);
     }
   }
 

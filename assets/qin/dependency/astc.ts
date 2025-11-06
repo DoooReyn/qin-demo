@@ -1,17 +1,8 @@
-import {
-  assetManager,
-  director,
-  gfx,
-  js,
-  sys,
-  AssetManager,
-  ImageAsset,
-  SpriteFrame,
-} from "cc";
+import { assetManager, director, gfx, js, sys, AssetManager, ImageAsset, SpriteFrame } from "cc";
 
+import { logcat } from "../ability";
 import { ASTC_FORMAT, IAstc, IMemoryImageSource } from "../typings";
 import { Dependency } from "./dependency";
-import { logcat } from "../ability";
 
 enum PixelFormat {
   RGB565 = gfx.Format.R5G6B5,
@@ -77,11 +68,7 @@ export class Astc extends Dependency implements IAstc {
    * @returns
    */
   public isFormatSupported(format: ASTC_FORMAT) {
-    return (
-      (director.root!.device.getFormatFeatures(format) &
-        gfx.FormatFeatureBit.SAMPLED_TEXTURE) >
-      0
-    );
+    return (director.root!.device.getFormatFeatures(format) & gfx.FormatFeatureBit.SAMPLED_TEXTURE) > 0;
   }
 
   /**
@@ -103,9 +90,7 @@ export class Astc extends Dependency implements IAstc {
   }
 
   onAttach() {
-    super.onAttach();
-
-    if (sys.isBrowser) return;
+    if (sys.isBrowser) return super.onAttach();
 
     // ------------------- ASTC 解析预备开始 -------------------
     const COMPRESSED_MIPMAP_MAGIC = 0x50494d43;
@@ -119,10 +104,7 @@ export class Astc extends Dependency implements IAstc {
     const ASTC_HEADER_SIZE_Y_BEGIN = 10;
     const CUSTOM_PIXEL_FORMAT = 1024;
 
-    function parseCompressedTextures(
-      file: ArrayBuffer | ArrayBufferView,
-      type: number
-    ): IMemoryImageSource {
+    function parseCompressedTextures(file: ArrayBuffer | ArrayBufferView, type: number): IMemoryImageSource {
       const out: IMemoryImageSource = {
         _data: new Uint8Array(0),
         _compressed: true,
@@ -139,10 +121,7 @@ export class Astc extends Dependency implements IAstc {
       // Do some sanity checks to make sure this is a valid compress file.
       if (magicNumber === COMPRESSED_MIPMAP_MAGIC) {
         // Get a view of the arrayBuffer that represents compress document.
-        const mipmapLevelNumber = bufferView.getUint32(
-          COMPRESSED_HEADER_LENGTH,
-          true
-        );
+        const mipmapLevelNumber = bufferView.getUint32(COMPRESSED_HEADER_LENGTH, true);
         const mipmapLevelDataSize = bufferView.getUint32(
           COMPRESSED_HEADER_LENGTH + COMPRESSED_MIPMAP_LEVEL_COUNT_LENGTH,
           true
@@ -153,21 +132,12 @@ export class Astc extends Dependency implements IAstc {
           mipmapLevelNumber * COMPRESSED_MIPMAP_DATA_SIZE_LENGTH;
 
         // Get a view of the arrayBuffer that represents compress chunks.
-        parseCompressedTexture(
-          file,
-          0,
-          fileHeaderByteLength,
-          mipmapLevelDataSize,
-          type,
-          out
-        );
+        parseCompressedTexture(file, 0, fileHeaderByteLength, mipmapLevelDataSize, type, out);
         let beginOffset = fileHeaderByteLength + mipmapLevelDataSize;
 
         for (let i = 1; i < mipmapLevelNumber; i++) {
           const endOffset = bufferView.getUint32(
-            COMPRESSED_HEADER_LENGTH +
-              COMPRESSED_MIPMAP_LEVEL_COUNT_LENGTH +
-              i * COMPRESSED_MIPMAP_DATA_SIZE_LENGTH,
+            COMPRESSED_HEADER_LENGTH + COMPRESSED_MIPMAP_LEVEL_COUNT_LENGTH + i * COMPRESSED_MIPMAP_DATA_SIZE_LENGTH,
             true
           );
           parseCompressedTexture(file, i, beginOffset, endOffset, type, out);
@@ -199,8 +169,7 @@ export class Astc extends Dependency implements IAstc {
     ): void {
       const buffer = file instanceof ArrayBuffer ? file : file.buffer;
       const header = new Uint8Array(buffer, beginOffset, ASTC_HEADER_LENGTH);
-      const magic_val =
-        header[0] + (header[1] << 8) + (header[2] << 16) + (header[3] << 24);
+      const magic_val = header[0] + (header[1] << 8) + (header[2] << 16) + (header[3] << 24);
       if (magic_val !== ASTC_MAGIC) {
         throw new Error("Invalid magic number in ASTC header");
       }
@@ -209,12 +178,7 @@ export class Astc extends Dependency implements IAstc {
       const ydim = header[ASTC_HEADER_MAGIC + 1];
       const zdim = header[ASTC_HEADER_MAGIC + 2];
       if (
-        (xdim < 3 ||
-          xdim > 6 ||
-          ydim < 3 ||
-          ydim > 6 ||
-          zdim < 3 ||
-          zdim > 6) &&
+        (xdim < 3 || xdim > 6 || ydim < 3 || ydim > 6 || zdim < 3 || zdim > 6) &&
         (xdim < 4 ||
           xdim === 7 ||
           xdim === 9 ||
@@ -235,9 +199,7 @@ export class Astc extends Dependency implements IAstc {
       const length = endOffset - ASTC_HEADER_LENGTH;
       if (endOffset > 0) {
         const srcView = new Uint8Array(buffer, byteOffset, length);
-        const dstView = new Uint8Array(
-          out._data!.byteLength + srcView.byteLength
-        );
+        const dstView = new Uint8Array(out._data!.byteLength + srcView.byteLength);
         dstView.set(out._data as Uint8Array);
         dstView.set(srcView, out._data!.byteLength);
         out._data = dstView;
@@ -317,14 +279,10 @@ export class Astc extends Dependency implements IAstc {
     const parser = assetManager.parser;
     const factory = assetManager.factory;
     downloader.register(".astc", (url, options, oncomplete) => {
-      downloader._downloadArrayBuffer(
-        url,
-        options,
-        (err: any, data: ArrayBuffer) => {
-          data && this.__dump("astc下载成功", url, js.getClassName(data));
-          oncomplete && oncomplete(err, { file: data, url });
-        }
-      );
+      downloader._downloadArrayBuffer(url, options, (err: any, data: ArrayBuffer) => {
+        data && this.__dump("astc下载成功", url, js.getClassName(data));
+        oncomplete && oncomplete(err, { file: data, url });
+      });
     });
     parser.register(".astc", function (data, options, oncomplete) {
       if (data && data.file instanceof ArrayBuffer) {
@@ -351,6 +309,8 @@ export class Astc extends Dependency implements IAstc {
       }
       onComplete(err, out);
     });
+
+    return super.onAttach();
   }
 
   /**

@@ -26,7 +26,6 @@ Version: 0.0.1`;
     logcat.qin.i(this.description);
     this.__initializing = false;
     this.__initialized = false;
-    DependencyInjector.Shared.inject(ServiceRegistry.Shared);
   }
 
   /**
@@ -52,9 +51,8 @@ Version: 0.0.1`;
     const svr = ServiceRegistry.Shared;
 
     // 注册内部依赖
-    const env = new Environment();
-    dpi.inject(env).use(options);
-    logcat.qin.i("应用环境参数", env.args);
+    dpi.inject(ServiceRegistry.Shared);
+    dpi.inject(new Environment());
     dpi.inject(new Astc());
     dpi.inject(new Incremental());
     dpi.inject(new EventBus());
@@ -78,8 +76,15 @@ Version: 0.0.1`;
       });
     }
 
-    // 初始化服务
+    // 初始化依赖项
+    await dpi.init();
+    dpi.environment.use(options);
+    logcat.qin.i("应用环境参数", dpi.environment.args);
+    logcat.qin.i("依赖项初始化完成");
+    
+    // 初始化服务项
     await svr.init();
+    logcat.qin.i("服务项初始化完成");
 
     // 设置运行时更新函数
     dpi.looper.start();

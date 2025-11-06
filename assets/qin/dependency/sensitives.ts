@@ -25,8 +25,9 @@ export class Sensitives extends Dependency implements ISensitives {
   private __noiseWordMap = Sensitives.GenerateNoiseWordMap(defaultNoiseWords);
   private static readonly WORD_END_TAG: symbol = Symbol.for("WORD_END_TAG");
 
-  onDetach(): void {
+  onDetach() {
     this.clearWords();
+    return super.onDetach();
   }
 
   /**

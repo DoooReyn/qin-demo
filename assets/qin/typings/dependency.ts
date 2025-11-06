@@ -10,7 +10,7 @@ export interface IDependency {
   /** 依赖描述 */
   readonly description: string;
   /** 依赖注入时调用 */
-  onAttach(): void;
+  onAttach(): Promise<void>;
   /** 依赖解注入时调用 */
-  onDetach(): void;
+  onDetach(): Promise<void>;
 }

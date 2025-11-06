@@ -7,9 +7,10 @@ import { Dependency } from "./dependency";
 export class Incremental extends Dependency implements IIncremental {
   readonly name: string = "Incremental";
   readonly description: string = "递增ID生成器";
-  onDetach(): void {
-    super.onDetach();
+  
+  onDetach() {
     this.__container.clear();
+    return super.onDetach();
   }
 
   /** 递增ID容器 */

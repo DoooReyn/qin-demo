@@ -39,16 +39,16 @@ export class Looper extends Dependency implements ILooper {
   /** 循环系统 */
   private __system: LoopSystem;
 
-  onAttach(): void {
-    super.onAttach();
+  onAttach() {
     this.__system = new LoopSystem();
     director.registerSystem(this.name, this.__system, System.Priority.HIGH);
+    return super.onAttach();
   }
 
-  onDetach(): void {
+  onDetach() {
     director.unregisterSystem(this.__system);
     this.__system = null;
-    super.onDetach();
+    return super.onDetach();
   }
 
   start() {

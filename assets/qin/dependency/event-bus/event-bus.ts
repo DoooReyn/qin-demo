@@ -1,4 +1,3 @@
-import { IDependency } from "../../typings/dependency";
 import { IEventBus, IEventChannel } from "../../typings/event-bus";
 import { Dependency } from "../dependency";
 import { EventChannel } from "./event-channel";
@@ -14,9 +13,10 @@ export class EventBus extends Dependency implements IEventBus {
   /** 事件渠道容器 */
   private __channels: Map<string, IEventChannel> = new Map();
 
-  onDetach(): void {
+  onDetach() {
     this.removeAll();
     super.onDetach();
+    return super.onDetach();
   }
 
   /**

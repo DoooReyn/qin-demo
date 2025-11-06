@@ -1,4 +1,4 @@
-import { dict, IDictionary, literal, logcat } from "../ability";
+import { dict, literal } from "../ability";
 import { IEnvironment, IQinOptions } from "../typings";
 import { Dependency } from "./dependency";
 
@@ -16,9 +16,9 @@ export class Environment extends Dependency implements IEnvironment {
     env: "dev",
   };
 
-  onAttach(): void {
-    super.onAttach();
+  onAttach() {
     this.parse();
+    return super.onAttach();
   }
 
   parse(url?: string) {
