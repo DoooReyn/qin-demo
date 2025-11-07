@@ -11,6 +11,13 @@
 当前已经创建了一个空白项目。项目结构如下：
 
 - assets 存放资源和代码文件的目录
+  - boot 仅存放首场景所需的静态资源
+  - resources 仅存放首场景所需的动态资源
+  - shared 存放共享的动态资源
+  - entry 游戏具体逻辑
+    - business 游戏业务层
+    - model 游戏数据层
+    - view 游戏视图层
   - qin 存放游戏框架代码
     - extends 原型扩展
     - atom 继承 Component 的组件
@@ -18,10 +25,6 @@
     - foundation 辅助功能（通常指需要实例化才能够使用的功能）
     - dependency 依赖容器（为框架提供强力功能支持的容器）
     - typings 类型定义、接口声明、枚举定义
-  - entry 游戏具体逻辑
-    - business 游戏业务层
-    - model 游戏数据层
-    - view 游戏视图层
 - doc 文档目录
 
 ## 路线图

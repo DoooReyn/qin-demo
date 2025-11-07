@@ -16,11 +16,11 @@ export const PRESET = {
   /** 常用预制体 */
   PREFAB: {
     /** 音频模块模板 */
-    AUDIO: "shared@pfb-tpl-audio",
+    AUDIO: "resources@pfb-tpl-audio",
     /** 全局等待模板 */
-    GLOBAL_WAITING: "shared@pfb-tpl-global-waiting",
+    GLOBAL_WAITING: "resources@pfb-tpl-global-waiting",
     /** 文本模块模板 */
-    LABEL: "shared@pfb-tpl-label",
+    LABEL: "resources@pfb-tpl-label",
   },
   /** 节点池 */
   ITEM_POOL: {
