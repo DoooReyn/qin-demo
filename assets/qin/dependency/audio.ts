@@ -44,7 +44,7 @@ class Sound implements ISound {
  */
 class Music extends Sound {
   /** 上一个背景音乐 */
-  private last: AudioAtom | null = null;
+  private __last: AudioAtom | null = null;
 
   /**
    * 播放音频
@@ -53,24 +53,24 @@ class Music extends Sound {
    * @returns 音频模块
    */
   public override play(url: string, volume: number = 1.0) {
-    if (this.last && this.last.available && this.last.url === url) {
+    if (this.__last && this.__last.available && this.__last.url === url) {
       // 已经在播放了
-      if (!this.last.playing) {
+      if (!this.__last.playing) {
         // 已经在播放，但是暂停了，可以恢复播放
-        this.last.resume();
+        this.__last.resume();
       }
-      return this.last;
+      return this.__last;
     }
 
-    if (this.last && this.last.available) {
+    if (this.__last && this.__last.available) {
       // 停止上一个背景音乐
-      this.last.stop();
+      this.__last.stop();
     }
 
-    this.last = super.play(url, volume, true);
-    this.last.type = "music";
+    this.__last = super.play(url, volume, true);
+    this.__last.type = "music";
 
-    return this.last;
+    return this.__last;
   }
 }
 
@@ -85,6 +85,7 @@ export class AudioPlayer extends Dependency implements IAudioPlayer {
   /** 音乐播放器 */
   public readonly bgm: Music = new Music();
 
+  /** 挂载容器 */
   private __container: Node;
 
   start() {
