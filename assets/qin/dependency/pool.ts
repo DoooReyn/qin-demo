@@ -218,7 +218,7 @@ export class ObjectPoolContainer extends Dependency implements IObPoC {
       throw new Error(`对象池条目 ${name} 已注册`);
     }
 
-    ioc.logcat.qin.i("注册对象池条目：" + name);
+    console.info(`注册对象池条目：${name}`);
 
     this.__container.set(name, new ObjectPool(cls));
   }

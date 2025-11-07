@@ -20,6 +20,8 @@ export class AudioAtom extends Loader<Node, AudioClip> {
   /** 循环次数 */
   protected _loopCount: number = 0;
 
+  type: "music" | "sound" = "sound";
+
   /** 音源 */
   protected get source() {
     return this.getComponent(AudioSource)!;

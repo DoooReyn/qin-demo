@@ -30,12 +30,11 @@ class Sound implements ISound {
    */
   public play(url: string, volume: number = 1.0, loop: boolean = false) {
     const audio = ioc.audio.acquire()!;
-    ioc.root.addChild(audio);
     const mod = audio.acquire(AudioAtom)!;
     mod.volume = this.volumeScale * volume;
     mod.loop = loop;
     mod.url = url;
-    ioc.audio.add(mod);
+    mod.type = "sound";
     return mod;
   }
 }
@@ -69,6 +68,7 @@ class Music extends Sound {
     }
 
     this.last = super.play(url, volume, true);
+    this.last.type = "music";
 
     return this.last;
   }
@@ -79,16 +79,18 @@ class Music extends Sound {
  */
 @Injectable({ name: "AudioPlayer" })
 export class AudioPlayer extends Dependency implements IAudioPlayer {
-  /** 音频模块列表 */
-  private readonly __container: AudioAtom[] = [];
-
   /** 音效播放器 */
   public readonly sfx: Sound = new Sound();
 
   /** 音乐播放器 */
   public readonly bgm: Music = new Music();
 
-  initialize() {
+  private __container: Node;
+
+  start() {
+    this.__container = new Node("AudioPlayer");
+    ioc.launcher.root.insertChild(this.__container, 0);
+
     const [ab, path] = PRESET.PREFAB.AUDIO.split("@");
     might.async(ioc.res.loadPrefab(path, ab)).then((res) => {
       const prefab = res[0];
@@ -96,30 +98,6 @@ export class AudioPlayer extends Dependency implements IAudioPlayer {
         ioc.nodePool.register(prefab, 0);
       }
     });
-    ioc.root.on(
-      Node.EventType.CHILD_REMOVED,
-      (item: Node) => {
-        if (item.listed(AudioAtom, false).length > 0) {
-          const mod = item.acquire(AudioAtom)!;
-          const index = this.__container.indexOf(mod);
-          if (index >= 0) {
-            this.__container.splice(index, 1);
-          }
-        }
-      },
-      this
-    );
-  }
-
-  /**
-   * 添加音频模块
-   * @description 音频模块停止播放后会自动移除
-   * @param mod 音频模块
-   */
-  public add(mod: AudioAtom) {
-    if (this.__container.indexOf(mod) < 0) {
-      this.__container.push(mod);
-    }
   }
 
   /**
@@ -127,39 +105,67 @@ export class AudioPlayer extends Dependency implements IAudioPlayer {
    * @returns
    */
   public acquire() {
-    return ioc.nodePool.acquire(PRESET.ITEM_POOL.AUDIO);
+    const inst = ioc.nodePool.acquire(PRESET.ITEM_POOL.AUDIO);
+    this.__container.addChild(inst!);
+    return inst;
   }
 
-  /**
-   * 暂停所有音频播放
-   */
+  /** 所有音频 */
+  private get audioList() {
+    return this.__container.listed(AudioAtom, true);
+  }
+
+  /** 所有音乐 */
+  private get music() {
+    return this.audioList.filter((item) => item.type === "music");
+  }
+
+  /** 所有音效 */
+  private get sound() {
+    return this.audioList.filter((item) => item.type === "sound");
+  }
+
+  /** 暂停所有音频播放 */
   public pauseAll() {
-    this.__container.forEach((item) => {
-      if (item.available) {
-        item.pause();
-      }
-    });
+    this.audioList.forEach((atom) => atom.available && atom.pause());
+  }
+  /** 暂停所有音乐播放 */
+  public pauseMusic() {
+    this.music.forEach((atom) => atom.available && atom.pause());
   }
 
-  /**
-   * 恢复所有音频播放
-   */
+  /** 暂停所有音效播放 */
+  public pauseSound() {
+    this.sound.forEach((atom) => atom.available && atom.pause());
+  }
+
+  /** 恢复所有音频播放 */
   public resumeAll() {
-    this.__container.forEach((item) => {
-      if (item.available) {
-        item.resume();
-      }
-    });
+    this.audioList.forEach((atom) => atom.available && atom.resume());
   }
 
-  /**
-   * 停止所有音频播放
-   */
+  /** 恢复所有音乐播放 */
+  public resumeMusic() {
+    this.music.forEach((atom) => atom.available && atom.resume());
+  }
+
+  /** 恢复所有音效播放 */
+  public resumeSound() {
+    this.sound.forEach((atom) => atom.available && atom.resume());
+  }
+
+  /** 停止所有音频播放 */
   public stopAll() {
-    this.__container.forEach((item) => {
-      if (item.available) {
-        item.stop();
-      }
-    });
+    this.audioList.forEach((atom) => atom.available && atom.stop());
+  }
+
+  /** 停止所有音乐播放 */
+  public stopMusic() {
+    this.music.forEach((atom) => atom.available && atom.stop());
+  }
+
+  /** 停止所有音效播放 */
+  public stopSound() {
+    this.sound.forEach((atom) => atom.available && atom.stop());
   }
 }

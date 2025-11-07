@@ -1,7 +1,7 @@
 import {
-  IAstc, IAudioPlayer, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental, ILogcat,
-  ILooper, INodePoC, IObPoC, IReleasableContainer, IRemoteContainer, IResContainer, ISensitives,
-  ITimer
+  IAstc, IAudioPlayer, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental,
+  ILauncher, ILogcat, ILooper, INodePoC, IObPoC, IReleasableContainer, IRemoteContainer,
+  IResContainer, ISensitives, ITimer
 } from "./dependency";
 
 /**
@@ -157,6 +157,11 @@ export class IoC {
   /** 音频播放器 */
   get audio() {
     return this.resolve<IAudioPlayer>("AudioPlayer");
+  }
+
+  /** 启动器 */
+  get launcher() {
+    return this.resolve<ILauncher>("Launcher");
   }
 }
 

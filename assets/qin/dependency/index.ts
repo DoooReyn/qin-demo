@@ -10,6 +10,8 @@ export * from "./environment.typings";
 export * from "./environment";
 export * from "./incremental.typings";
 export * from "./incremental";
+export * from "./launcher.typings";
+export * from "./launcher";
 export * from "./logcat.typings";
 export * from "./logcat";
 export * from "./looper.typings";

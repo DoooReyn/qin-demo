@@ -6,7 +6,7 @@ import { IDependency } from "../dependency/dependency.typings";
  */
 export interface ILooper extends IDependency {
   /** 启动循环 */
-  start: () => void;
+  start(): void;
   /** 暂停循环 */
-  pause: () => void;
+  pause(): void;
 }

@@ -38,14 +38,8 @@ export interface IAudioPlayer extends IDependency {
   readonly bgm: IMusic;
 
   /** 初始化 */
-  initialize(): void;
-  /**
-   * 添加音频模块
-   * @description 音频模块停止播放后会自动移除
-   * @param mod 音频模块
-   */
-  add(mod: AudioAtom): void;
-
+  start(): void;
+  
   /**
    * 获取一个新的音频模块
    * @returns

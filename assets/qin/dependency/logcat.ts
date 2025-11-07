@@ -9,12 +9,12 @@ import { ILogcat, ILogger, LoggerLevel } from "./logcat.typings";
  * 日志颜色
  */
 const LOGGER_COLOR: Record<LoggerLevel, string> = {
-  [LoggerLevel.V]: "background-color:#9F9F9F;color:#222222;",
+  [LoggerLevel.V]: "background-color:#888888;color:#222222;",
   [LoggerLevel.D]: "background-color:#6A6A6A;color:#FFFFFF;",
-  [LoggerLevel.I]: "background-color:#00FF00;color:#222222;",
-  [LoggerLevel.W]: "background-color:#FFFF00;color:#222222;",
-  [LoggerLevel.E]: "background-color:#FF0000;color:#222222;",
-  [LoggerLevel.F]: "background-color:#AA0000;color:#FFFFFF;",
+  [LoggerLevel.I]: "background-color:#21A3D1;color:#222222;",
+  [LoggerLevel.W]: "background-color:#F9BB4B;color:#222222;",
+  [LoggerLevel.E]: "background-color:#F47800;color:#222222;",
+  [LoggerLevel.F]: "background-color:#9E83C3;color:#FFFFFF;",
   [LoggerLevel.N]: "background-color:#CCCCCC;color:#222222;",
 } as const;
 

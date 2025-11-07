@@ -50,7 +50,10 @@ export class Qin {
     ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
 
     // 启动应用循环
-    ioc.looper.start();
+    ioc.launcher.start(() => {
+      ioc.looper.start();
+      ioc.audio.start();
+    });
 
     // 标记为初始化完成
     this.__initializing = false;
