@@ -89,7 +89,7 @@ export class AudioPlayer extends Dependency implements IAudioPlayer {
   private __container: Node;
 
   start() {
-    this.__container = new Node("AudioPlayer");
+    this.__container = new Node(PRESET.MACRO.AUDIO_PLAYER);
     ioc.launcher.root.insertChild(this.__container, 0);
 
     const [ab, path] = PRESET.PREFAB.AUDIO.split("@");

@@ -1,6 +1,7 @@
 import { director, game, Camera, Canvas, Director, Game, Node, Scene } from "cc";
 
 import ioc, { Injectable } from "../ioc";
+import { PRESET } from "../preset";
 import { Dependency } from "./dependency";
 import { ILauncher } from "./launcher.typings";
 
@@ -29,9 +30,11 @@ export class Launcher extends Dependency implements ILauncher {
   onReady(scene: Scene) {
     ioc.logcat.qin.i("场景启动完成:", scene.name);
     this.scene = scene;
-    this.stage = scene.getComponentInChildren(Canvas);
-    this.root = this.stage.node;
-    this.cameraUi = this.root.getComponentInChildren(Camera);
+    this.root = scene.getChildByName(PRESET.MACRO.STAGE) ?? scene.children[0];
+    this.stage = this.root.getComponent(Canvas) ?? scene.getComponentInChildren(Canvas);
+    this.cameraUi =
+      this.root.getChildByName(PRESET.MACRO.CAMERA_UI)?.getComponent(Camera) ??
+      this.root.getComponentInChildren(Camera);
     this.__onLaunched?.();
     this.__onLaunched = null;
   }

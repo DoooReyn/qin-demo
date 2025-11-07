@@ -7,6 +7,12 @@ import {
  * 预设集
  */
 export const PRESET = {
+  /** 常量宏定义 */
+  MACRO: {
+    STAGE: "root",
+    CAMERA_UI: "camera-ui",
+    AUDIO_PLAYER: "audio-player"
+  },
   /** 常用预制体 */
   PREFAB: {
     /** 音频模块模板 */

@@ -1,5 +1,4 @@
-import qin, { ioc } from "../qin";
-import { PRESET } from "../qin/preset";
+import qin, { ioc, PRESET } from "../qin";
 
 qin.initialize({
   env: "dev",
@@ -7,11 +6,9 @@ qin.initialize({
   version: "0.0.1",
 });
 
-ioc.eventBus.shared.subscribes(
-  {
-    event: PRESET.EVENT.QIN.APP_AFTER_LAUNCHED,
-    handle() {
-      ioc.logcat.qin.i("Qin's application is launched.");
-    },
-  }
-);
+ioc.eventBus.shared.subscribes({
+  event: PRESET.EVENT.QIN.APP_AFTER_LAUNCHED,
+  handle() {
+    ioc.logcat.qin.i("Qin's application is launched.");
+  },
+});

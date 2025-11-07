@@ -6,6 +6,7 @@ export * from "./foundation";
 export * from "./ability";
 export * from "./dependency";
 export * from "./ioc";
+export * from "./preset";
 
 /** 全局 Qin 实例 */
 const qin = new Qin();
