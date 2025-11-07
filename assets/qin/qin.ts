@@ -1,3 +1,5 @@
+import { EDITOR } from "cc/env";
+
 import { IDependency } from "./dependency";
 import ioc, { IoC } from "./ioc";
 import { PRESET } from "./preset";
@@ -9,13 +11,12 @@ import { IQinOptions } from "./typings";
  */
 export class Qin {
   /** 框架描述 */
-  readonly description: string = `
---------------------------------------------------
-  Qin Framework 
-  Copyright © 2025 Qin Team ❤ Reyn
-  Version: 0.0.1
---------------------------------------------------
-`;
+  readonly description: string =
+    "\n--------------------------------------------------" +
+    "\n  Qin Framework" +
+    "\n  Copyright © 2025 Qin Team ❤ Reyn" +
+    "\n  Version: 0.0.1" +
+    "\n--------------------------------------------------";
 
   /** 是否已初始化 */
   private __initialized: boolean;
@@ -31,6 +32,8 @@ export class Qin {
 
   /** 初始化框架 */
   async initialize(options: IQinOptions) {
+    if (EDITOR) return Promise.resolve();
+
     if (this.__initializing) {
       throw new Error("Qin 正在初始化中.");
     }
@@ -41,7 +44,7 @@ export class Qin {
 
     // 标记为正在初始化
     this.__initializing = true;
-    
+
     // 初始化依赖项
     ioc.eventBus.shared.publish(PRESET.EVENT.QIN.DEP_BEFORE_INITIALIZED);
     await ioc.initialize();

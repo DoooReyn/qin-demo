@@ -11,16 +11,32 @@ export const PRESET = {
   MACRO: {
     STAGE: "root",
     CAMERA_UI: "camera-ui",
-    AUDIO_PLAYER: "audio-player"
+    AUDIO_PLAYER: "audio-player",
   },
   /** 常用预制体 */
   PREFAB: {
     /** 音频模块模板 */
-    AUDIO: "shared@prefab/template/audio-node",
+    AUDIO: "shared@prefab/template/audio",
     /** 全局等待模板 */
     GLOBAL_WAITING: "shared@prefab/template/global-waiting",
     /** 文本模块模板 */
     LABEL: "shared@prefab/template/label",
+  },
+  /** 节点池 */
+  ITEM_POOL: {
+    /** 音频 */
+    AUDIO: "audio",
+    /** 文本 */
+    LABEL: "label",
+  },
+  /** 时间 */
+  TIME: {
+    /** 懒清理间隔时间（秒） */
+    LAZY_CLEANUP_S: 1,
+    /** 自动释放池过期时间（毫秒） */
+    AUTO_RELEASE_MS: 120_000,
+    /** 每次点击最短间隔时间（毫秒） */
+    CLICK_INTERVAL_MS: 200,
   },
   /** 内置事件 */
   EVENT: {
@@ -109,22 +125,6 @@ export const PRESET = {
     TOP_CENTER: new Vec3(0.5, 1),
     /** 下中点 */
     BOTTOM_CENTER: new Vec3(0.5, 0),
-  },
-  /** 节点池 */
-  ITEM_POOL: {
-    /** 音频 */
-    AUDIO: "audio-node",
-    /** 文本 */
-    LABEL: "label",
-  },
-  /** 时间 */
-  TIME: {
-    /** 懒清理间隔时间（秒） */
-    LAZY_CLEANUP_S: 1,
-    /** 自动释放池过期时间（毫秒） */
-    AUTO_RELEASE_MS: 120_000,
-    /** 每次点击最短间隔时间（毫秒） */
-    CLICK_INTERVAL_MS: 200,
   },
   /** 常用色码映射 */
   COLOR: {
