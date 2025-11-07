@@ -15,7 +15,7 @@ export class ReleasableContainer extends Dependency implements IReleasableContai
 
   onDetach(): Promise<void> {
     for (const [_, asset] of this.__container) {
-      this.remove(asset);
+      this._remove(asset);
     }
     this.__container.clear();
     return super.onDetach();
@@ -25,7 +25,7 @@ export class ReleasableContainer extends Dependency implements IReleasableContai
     const now = time.now;
     for (const [_, asset] of this.__container) {
       if (asset.__expires__ != undefined && asset.__expires__ < now) {
-        this.remove(asset);
+        this._remove(asset);
       }
     }
   }
@@ -47,7 +47,7 @@ export class ReleasableContainer extends Dependency implements IReleasableContai
    * 移除资源
    * @param asset 资源
    */
-  protected remove(asset: Asset) {
+  protected _remove(asset: Asset) {
     if (asset && asset.isValid) {
       const { refCount, uuid } = asset;
       asset.decRef(true);

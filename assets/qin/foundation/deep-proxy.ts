@@ -71,7 +71,7 @@ export class DeepProxy<T extends object> implements IDeepProxy<T> {
    * @returns
    */
   public create(): T {
-    return this.makeDeepProxy(this.__target, []);
+    return this.__makeDeepProxy(this.__target, []);
   }
 
   /**
@@ -80,14 +80,14 @@ export class DeepProxy<T extends object> implements IDeepProxy<T> {
    * @param path 属性路径
    * @returns
    */
-  private makeDeepProxy(obj: any, path: string[]): any {
+  private __makeDeepProxy(obj: any, path: string[]): any {
     // 检查深度限制
     if (path.length >= this.__options.maxDepth) {
       return obj;
     }
 
     // 基础类型检查
-    if (!this.shouldProxy(obj, path)) {
+    if (!this.__shouldProxy(obj, path)) {
       return obj;
     }
 
@@ -102,8 +102,8 @@ export class DeepProxy<T extends object> implements IDeepProxy<T> {
         const newPath = [...path, String(prop)];
 
         // 递归代理嵌套对象
-        if (this.shouldProxy(value, newPath)) {
-          const proxiedValue = this.makeDeepProxy(value, newPath);
+        if (this.__shouldProxy(value, newPath)) {
+          const proxiedValue = this.__makeDeepProxy(value, newPath);
           this.__pathCache.set(proxiedValue, newPath);
           return proxiedValue;
         }
@@ -120,8 +120,8 @@ export class DeepProxy<T extends object> implements IDeepProxy<T> {
         const newPath = [...path, String(prop)];
 
         // 代理新设置的对象
-        if (this.shouldProxy(value, newPath) && !this.isProxied(value)) {
-          const proxiedValue = this.makeDeepProxy(value, newPath);
+        if (this.__shouldProxy(value, newPath) && !this.isProxied(value)) {
+          const proxiedValue = this.__makeDeepProxy(value, newPath);
           this.__pathCache.set(proxiedValue, newPath);
         }
 
@@ -169,7 +169,7 @@ export class DeepProxy<T extends object> implements IDeepProxy<T> {
    * @param path 路径
    * @returns
    */
-  private shouldProxy(obj: any, path: string[]): boolean {
+  private __shouldProxy(obj: any, path: string[]): boolean {
     // 基础类型检查
     if (typeof obj !== "object" || obj === null) {
       return false;

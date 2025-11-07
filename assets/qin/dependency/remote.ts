@@ -85,7 +85,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    * @param parser 解析器
    * @returns
    */
-  private load<T extends Asset>(key: string, urls: string | string[], parser: (asset: any) => T) {
+  private __load<T extends Asset>(key: string, urls: string | string[], parser: (asset: any) => T) {
     return new Promise<T | null>((res) => {
       let asset: Asset | undefined | null = this.__container.get(key);
       if (asset) {
@@ -157,7 +157,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadAudio(url: string) {
     const urls = [url];
-    return this.load<AudioClip>(url, urls, (nativeAsset) => {
+    return this.__load<AudioClip>(url, urls, (nativeAsset) => {
       const asset = new AudioClip();
       asset._nativeAsset = nativeAsset;
       asset._uuid = asset._nativeUrl = this.nativeUrlOf(urls[0]);
@@ -176,7 +176,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadBinary(url: string) {
     const urls = [url];
-    return this.load<BufferAsset>(url, urls, (nativeAsset) => {
+    return this.__load<BufferAsset>(url, urls, (nativeAsset) => {
       const asset = new BufferAsset();
       asset._nativeAsset = nativeAsset;
       asset._uuid = asset._nativeUrl = this.nativeUrlOf(urls[0]);
@@ -195,7 +195,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadASTC(url: string) {
     const urls = [url];
-    return this.load<SpriteFrame>(url, urls, (nativeAsset) => {
+    return this.__load<SpriteFrame>(url, urls, (nativeAsset) => {
       const info = sys.isBrowser ? nativeAsset : nativeAsset.file;
       const image = ioc.astc.createImageAsset(info);
       if (!image) return null as unknown as SpriteFrame;
@@ -219,7 +219,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadTTFFont(url: string) {
     const urls = [url];
-    return this.load<TTFFont>(url, urls, (nativeAsset) => {
+    return this.__load<TTFFont>(url, urls, (nativeAsset) => {
       const asset = new TTFFont();
       asset._nativeAsset = nativeAsset;
       asset._uuid = asset._nativeUrl = this.nativeUrlOf(urls[0]);
@@ -238,7 +238,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
   public loadBitmapFont(url: string) {
     const ext = path.extname(url);
     const urls = [url, url.replace(ext, ".json")];
-    return this.load<BitmapFont>(url, urls, (natives) => {
+    return this.__load<BitmapFont>(url, urls, (natives) => {
       const [nImage, nJson] = natives;
       const image = this.createImageAsset(nImage);
       const frame = SpriteFrame.createWithImage(image);
@@ -267,7 +267,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadImage(url: string) {
     const urls = [url];
-    return this.load<ImageAsset>(url, urls, (native) => {
+    return this.__load<ImageAsset>(url, urls, (native) => {
       const asset = this.createImageAsset(native);
       asset._nativeAsset = native;
       asset._uuid = asset._nativeUrl = this.nativeUrlOf(urls[0]);
@@ -286,7 +286,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadJson(url: string) {
     const urls = [url];
-    return this.load<JsonAsset>(url, urls, (native) => {
+    return this.__load<JsonAsset>(url, urls, (native) => {
       const asset = new JsonAsset();
       asset.json = native;
       asset._nativeAsset = native;
@@ -307,7 +307,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
   public loadSpine(url: string) {
     const ext = path.extname(url);
     const urls = [url, url.replace(ext, ".json"), url.replace(ext, ".atlas")];
-    return this.load<sp.SkeletonData>(url, urls, (natives) => {
+    return this.__load<sp.SkeletonData>(url, urls, (natives) => {
       const [nImage, nAtlas, nJsonOrBin] = natives;
       const image = this.createImageAsset(nImage);
       const tex = new Texture2D();
@@ -340,7 +340,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
   public loadSpriteAtlas(url: string) {
     const ext = path.extname(url);
     const urls = [url, url.replace(ext, ".plist")];
-    return this.load<SpriteAtlas>(url, urls, (native) => {
+    return this.__load<SpriteAtlas>(url, urls, (native) => {
       const [nImage, nPlist] = native;
       const image = this.createImageAsset(nImage);
       const tex = new Texture2D();
@@ -386,7 +386,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadSpriteFrame(url: string) {
     const urls = [url];
-    return this.load<SpriteFrame>(url, urls, (native) => {
+    return this.__load<SpriteFrame>(url, urls, (native) => {
       const image = this.createImageAsset(native);
       const asset = SpriteFrame.createWithImage(image);
       const uuid = this.nativeUrlOf(urls[0]);
@@ -409,7 +409,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadText(url: string) {
     const urls = [url];
-    return this.load<TextAsset>(url, urls, (native) => {
+    return this.__load<TextAsset>(url, urls, (native) => {
       const asset = new TextAsset();
       asset.text = native;
       asset._nativeAsset = native;
@@ -429,7 +429,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadTexture(url: string) {
     const urls = [url];
-    return this.load<Texture2D>(url, urls, (native) => {
+    return this.__load<Texture2D>(url, urls, (native) => {
       const image = this.createImageAsset(native);
       const asset = new Texture2D();
       const uuid = this.nativeUrlOf(urls[0]);
@@ -453,7 +453,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    */
   public loadVideo(url: string) {
     const urls = [url];
-    return this.load<VideoClip>(url, urls, (native) => {
+    return this.__load<VideoClip>(url, urls, (native) => {
       const asset = new VideoClip();
       asset._nativeAsset = native;
       asset._uuid = asset._nativeUrl = this.nativeUrlOf(urls[0]);

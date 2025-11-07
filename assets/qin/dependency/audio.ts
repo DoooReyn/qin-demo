@@ -12,13 +12,13 @@ import { Dependency } from "./dependency";
  */
 class Sound implements ISound {
   /** 音量缩放系数 */
-  private _volumeScale: number = 1;
+  private __volumeScale: number = 1;
   /** 音量缩放系数 */
   public get volumeScale() {
-    return this._volumeScale;
+    return this.__volumeScale;
   }
   public set volumeScale(v: number) {
-    this._volumeScale = v;
+    this.__volumeScale = v;
   }
 
   /**

@@ -15,38 +15,39 @@ export class AudioAtom extends Loader<Node, AudioClip> {
   public readonly onFinish: Triggers = new Triggers();
 
   /** （暂停时）时间记录点#上次播放时间 */
-  protected lastTime: number = 0;
+  protected _lastTime: number = 0;
 
   /** 循环次数 */
   protected _loopCount: number = 0;
 
-  type: "music" | "sound" = "sound";
+  /** 音频类型 */
+  public type: "music" | "sound" = "sound";
 
   /** 音源 */
-  protected get source() {
+  protected get _source() {
     return this.getComponent(AudioSource)!;
   }
 
-  protected clearContent(): void {
-    if (this.source.clip) {
+  protected _clearContent(): void {
+    if (this._source.clip) {
       this.stop();
-      this.source.clip = null;
-      this.decRef();
+      this._source.clip = null;
+      this._decRef();
     }
   }
 
-  protected doDeactivate(): void {
-    super.doDeactivate();
+  protected _doDeactivate(): void {
+    super._doDeactivate();
     this.onFinish.clear();
   }
 
-  protected loadContent(url: string): Promise<AudioClip> {
+  protected _loadContent(url: string): Promise<AudioClip> {
     return new Promise<AudioClip>((resolve) => {
       const self = this;
       function Handle(res: MightResultSync<AudioClip | null, Error>) {
         const [clip, err] = res;
         if (err) {
-          self.recycle();
+          self._recycle();
         }
         resolve(clip as AudioClip);
       }
@@ -60,35 +61,35 @@ export class AudioAtom extends Loader<Node, AudioClip> {
     });
   }
 
-  protected doLoadComplete(res: AudioClip): void {
-    this.addRef();
+  protected _doLoadComplete(res: AudioClip): void {
+    this._addRef();
     this._content = this.node;
     this._view = this.node;
-    this.source.clip = res;
+    this._source.clip = res;
     this.play();
   }
 
   /** 是否可用 */
   public get available(): boolean {
-    return !!this.source.clip && this.source.clip.isValid;
+    return !!this._source.clip && this._source.clip.isValid;
   }
 
   /** 是否循环 */
   public get loop() {
-    return this.source.loop;
+    return this._source.loop;
   }
 
   public set loop(v: boolean) {
-    this.source.loop = v;
+    this._source.loop = v;
   }
 
   /** 音量 */
   public get volume() {
-    return this.source.volume;
+    return this._source.volume;
   }
 
   public set volume(v: number) {
-    this.source.volume = v;
+    this._source.volume = v;
   }
 
   /** 循环次数 */
@@ -98,13 +99,13 @@ export class AudioAtom extends Loader<Node, AudioClip> {
 
   /** 是否播放中 */
   public get playing() {
-    return this.source.playing;
+    return this._source.playing;
   }
 
   /** 播放 */
   public play() {
-    if (this.available && !this.source.playing) {
-      this.source.play();
+    if (this.available && !this._source.playing) {
+      this._source.play();
       this._loopCount = 0;
     }
   }
@@ -112,37 +113,37 @@ export class AudioAtom extends Loader<Node, AudioClip> {
   /** 暂停 */
   public pause() {
     if (this.available) {
-      this.lastTime = this.source.currentTime;
-      this.source.pause();
+      this._lastTime = this._source.currentTime;
+      this._source.pause();
     }
   }
 
   /** 恢复 */
   public resume() {
-    if (this.available && !this.source.playing) {
-      this.source.play();
-      this.source.currentTime = this.lastTime;
+    if (this.available && !this._source.playing) {
+      this._source.play();
+      this._source.currentTime = this._lastTime;
     }
   }
 
   /** 停止 */
   public stop() {
     if (this.available) {
-      this.recycle();
+      this._recycle();
     }
   }
 
   /** 资源回收 */
-  protected recycle() {
-    this.lastTime = 0;
-    this.source.stop();
+  protected _recycle() {
+    this._lastTime = 0;
+    this._source.stop();
     ioc.nodePool.recycle(this.node);
   }
 
-  protected doUpdate(dt: number): void {
-    super.doUpdate(dt);
-    if (this.available && this.source.playing) {
-      if (digit.equals(this.source.currentTime, this.source.duration, 0.02)) {
+  protected _doUpdate(dt: number): void {
+    super._doUpdate(dt);
+    if (this.available && this._source.playing) {
+      if (digit.equals(this._source.currentTime, this._source.duration, 0.02)) {
         this._loopCount++;
         this.onFinish.runWith(this._loopCount);
         if (!this.loop) {
