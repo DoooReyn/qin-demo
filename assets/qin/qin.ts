@@ -1,5 +1,6 @@
 import { IDependency } from "./dependency";
-import ioc from "./ioc";
+import ioc, { IoC } from "./ioc";
+import { PRESET } from "./preset";
 import { IQinOptions } from "./typings";
 
 /**
@@ -40,19 +41,29 @@ export class Qin {
 
     // 标记为正在初始化
     this.__initializing = true;
-
+    
     // 初始化依赖项
+    ioc.eventBus.shared.publish(PRESET.EVENT.QIN.DEP_BEFORE_INITIALIZED);
     await ioc.initialize();
     ioc.logcat.qin.i("依赖项初始化完成");
+    ioc.eventBus.shared.publish(PRESET.EVENT.QIN.DEP_AFTER_INITIALIZED);
 
-    // 应用环境参数
-    ioc.environment.use(options);
-    ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
-
-    // 启动应用循环
+    // 启动应用
     ioc.launcher.start(() => {
+      ioc.eventBus.shared.publish(PRESET.EVENT.QIN.APP_BEFORE_LAUNCHED);
+
+      // 应用环境参数
+      ioc.environment.use(options);
+      ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
+      ioc.eventBus.shared.publish(PRESET.EVENT.QIN.APP_ARGS_APPLIED);
+
+      // 启动应用循环
       ioc.looper.start();
+
+      // 启动音频播放器
       ioc.audio.start();
+
+      ioc.eventBus.shared.publish(PRESET.EVENT.QIN.APP_AFTER_LAUNCHED);
     });
 
     // 标记为初始化完成
@@ -76,5 +87,10 @@ export class Qin {
    */
   dependencyOf<T extends IDependency>(name: string): T | undefined {
     return ioc.resolve<T>(name) as T;
+  }
+
+  /** 依赖注入容器 */
+  get dpi() {
+    return IoC.Shared;
   }
 }

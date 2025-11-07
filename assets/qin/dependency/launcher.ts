@@ -27,12 +27,13 @@ export class Launcher extends Dependency implements ILauncher {
   }
 
   onReady(scene: Scene) {
+    ioc.logcat.qin.i("场景启动完成:", scene.name);
     this.scene = scene;
     this.stage = scene.getComponentInChildren(Canvas);
     this.root = this.stage.node;
     this.cameraUi = this.root.getComponentInChildren(Camera);
-    ioc.logcat.qin.i("场景启动完毕:", scene.name);
     this.__onLaunched?.();
+    this.__onLaunched = null;
   }
 
   onEnded() {

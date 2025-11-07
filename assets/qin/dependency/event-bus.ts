@@ -49,9 +49,20 @@ export class EventChannel implements IEventChannel {
    */
   subscribe(listener: IEventListener): void {
     if (!this.__listeners.has(listener.event)) {
-      this.__listeners.set(listener.event, []);
+      this.__listeners.set(listener.event, [listener]);
+    } else {
+      this.__listeners.get(listener.event)!.push(listener);
     }
-    this.__listeners.get(listener.event)!.push(listener);
+  }
+
+  /**
+   * 批量订阅事件
+   * @param listeners 事件监听器
+   */
+  subscribes(...listeners: IEventListener[]): void {
+    for (const listener of listeners) {
+      this.subscribe(listener);
+    }
   }
 
   /**

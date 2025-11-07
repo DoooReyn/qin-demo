@@ -18,6 +18,14 @@ export const PRESET = {
   },
   /** 内置事件 */
   EVENT: {
+    /** Qin 框架事件 */
+    QIN: {
+      APP_BEFORE_LAUNCHED: "qin:app:before-launched",
+      APP_AFTER_LAUNCHED: "qin:app:after-launched",
+      APP_ARGS_APPLIED: "qin:app:args-applied",
+      DEP_BEFORE_INITIALIZED: "qin:dep:before-initialized",
+      DEP_AFTER_INITIALIZED: "qin:dep:after-initialized",
+    },
     /** 窗口尺寸变化 */
     SCREEN_SIZE_CHANGED: "window-resize" as __private._pal_screen_adapter_enum_type_screen_event__PalScreenEvent,
     /** 全屏状态变化 */

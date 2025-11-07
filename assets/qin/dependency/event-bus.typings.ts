@@ -32,6 +32,8 @@ export interface IEventChannel {
   has(event: string): boolean;
   /** 订阅事件 */
   subscribe(listener: IEventListener): void;
+  /** 批量订阅事件 */
+  subscribes(...listeners: IEventListener[]): void;
   /** 取消订阅事件 */
   unsubscribe(event?: string, ctx?: any): void;
   /** 取消所有订阅事件 */
@@ -47,7 +49,7 @@ export interface IEventListener {
   /** 事件名称 */
   readonly event: string;
   /** 事件上下文 */
-  readonly context: any;
+  readonly context?: any;
   /** 事件处理函数 */
   handle(data?: any): void;
 }
