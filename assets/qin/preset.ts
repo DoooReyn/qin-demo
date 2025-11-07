@@ -16,18 +16,18 @@ export const PRESET = {
   /** 常用预制体 */
   PREFAB: {
     /** 音频模块模板 */
-    AUDIO: "shared@prefab/template/audio",
+    AUDIO: "shared@pfb-tpl-audio",
     /** 全局等待模板 */
-    GLOBAL_WAITING: "shared@prefab/template/global-waiting",
+    GLOBAL_WAITING: "shared@pfb-tpl-global-waiting",
     /** 文本模块模板 */
-    LABEL: "shared@prefab/template/label",
+    LABEL: "shared@pfb-tpl-label",
   },
   /** 节点池 */
   ITEM_POOL: {
     /** 音频 */
-    AUDIO: "audio",
+    AUDIO: "pfb-tpl-audio",
     /** 文本 */
-    LABEL: "label",
+    LABEL: "pfb-tpl-label",
   },
   /** 时间 */
   TIME: {
