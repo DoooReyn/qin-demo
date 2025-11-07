@@ -76,7 +76,7 @@ export interface IResContainer extends IDependency {
    * @param ab 包名称
    * @returns
    */
-  loadSprite(raw: string, ab?: string): Promise<SpriteFrame | null>;
+  loadSpriteFrame(raw: string, ab?: string): Promise<SpriteFrame | null>;
 
   /**
    * 加载图集

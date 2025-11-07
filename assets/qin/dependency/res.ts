@@ -141,7 +141,7 @@ export class ResContainer extends Dependency implements IResContainer {
   loadTexture(raw: string, ab?: string) {
     return this.loadRes(raw, Texture2D, ab);
   }
-  loadSprite(raw: string, ab?: string) {
+  loadSpriteFrame(raw: string, ab?: string) {
     return this.loadRes(raw, SpriteFrame, ab);
   }
 
