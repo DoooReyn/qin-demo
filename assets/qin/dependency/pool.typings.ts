@@ -107,10 +107,7 @@ export interface IObPoC extends IDependency {
    * @param args 实例化参数
    * @returns
    */
-  acquire<T extends IObjectEntry>(
-    cls: Constructor<T>,
-    ...args: any[]
-  ): T | null;
+  acquire<T extends IObjectEntry>(cls: Constructor<T>, ...args: any[]): T | null;
   /**
    * 回收对象池条目实例
    * @param instance 对象池条目实例
@@ -143,6 +140,20 @@ export interface INodePoC extends IDependency {
   /**
    * 注册节点池
    * @param key 节点池名称
+   * @param template 模板
+   * @@param expires 过期时间（毫秒）
+   */
+  registerByNodeConstructor(key: string, node: Constructor<IPoolNode>, expires?: number): void;
+    /**
+   * 注册节点池
+   * @param key 节点池名称
+   * @param template 模板
+   * @@param expires 过期时间（毫秒）
+   */
+  registerByNodeInstance(key: string, node: IPoolNode, expires?: number): void;
+  /**
+   * 注册节点池
+   * @param key 节点池名称
    * @param template 预制体模板
    * @@param expires 过期时间（毫秒）
    */
@@ -163,7 +174,7 @@ export interface INodePoC extends IDependency {
    * @param key 节点池名称
    * @returns
    */
-  templateOf(key: string): Prefab | null;
+  templateOf(key: string): Prefab | IPoolNode | null;
   /**
    * 获取节点
    * @param key 节点池名称

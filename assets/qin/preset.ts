@@ -15,8 +15,6 @@ export const PRESET = {
   },
   /** 常用预制体 */
   PREFAB: {
-    /** 音频模块模板 */
-    AUDIO: "resources@pfb-tpl-audio",
     /** 全局等待模板 */
     GLOBAL_WAITING: "resources@pfb-tpl-global-waiting",
     /** 文本模块模板 */
@@ -24,8 +22,6 @@ export const PRESET = {
   },
   /** 节点池 */
   ITEM_POOL: {
-    /** 音频 */
-    AUDIO: "pfb-tpl-audio",
     /** 文本 */
     LABEL: "pfb-tpl-label",
   },

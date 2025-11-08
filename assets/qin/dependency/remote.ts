@@ -28,6 +28,11 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
     return super.onAttach();
   }
 
+  onDetach(): Promise<void> {
+    this.__container.clear();
+    return super.onDetach();
+  }
+
   /**
    * 创建图像资源
    * @param img 原始图像

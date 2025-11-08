@@ -131,3 +131,6 @@ export class ReferImage extends ReferBase<Sprite, SpriteFrame> {
     this.container.spriteFrame = null;
   }
 }
+
+// todo
+// 统一资源增持与减持逻辑 ioc.res.(load/unload)

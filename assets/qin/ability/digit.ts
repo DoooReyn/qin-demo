@@ -33,6 +33,8 @@ export interface IDigit extends IAbility {
   sqrt(d: number): number;
   /** 限制数字在指定范围内 */
   clamp(d: number, min: number, max: number): number;
+  /** 限制数字在0~1范围内 */
+  clamp01(d: number): number;
   /** 校验数字是否近似等于另一个数字 */
   equals(d: number, e: number, tolerance?: number): boolean;
   /** 获取数字的符号 */
@@ -131,6 +133,9 @@ export const digit: IDigit = {
   },
   clamp(d: number, min: number, max: number): number {
     return Math.min(Math.max(d, min), max);
+  },
+  clamp01(d: number): number {
+    return this.clamp(d, 0, 1);
   },
   equals(d: number, e: number, tolerance: number = Number.EPSILON): boolean {
     return d === e || Math.abs(d - e) <= tolerance;

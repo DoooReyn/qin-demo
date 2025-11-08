@@ -244,10 +244,7 @@ export class ObjectPoolContainer extends Dependency implements IObPoC {
     return this.__container.get(name);
   }
 
-  acquire<T extends IObjectEntry>(
-    cls: Constructor<T>,
-    ...args: any[]
-  ): T | null {
+  acquire<T extends IObjectEntry>(cls: Constructor<T>, ...args: any[]): T | null {
     const inst = this.poolOf(cls);
     if (inst == undefined) return null;
     return inst.acquire(...args) as T;
@@ -316,7 +313,7 @@ export class NodePool {
    * @warn Expires <= 0 表示永不过期
    */
   public constructor(
-    public readonly template: Prefab,
+    public readonly template: Prefab | IPoolNode,
     public readonly expires: number = NodePool.EXPIRES
   ) {}
 
@@ -329,7 +326,7 @@ export class NodePool {
     if (this.__container.length > 0) {
       node = this.__container.shift()!;
     } else {
-      node = instantiate(this.template);
+      node = instantiate(this.template) as IPoolNode;
     }
     delete node.__recycled__;
     delete node.__expire_at__;
@@ -346,9 +343,7 @@ export class NodePool {
       inst.__expire_at__ = this.expires > 0 ? time.now + this.expires : 0;
       inst.removeFromParent();
       // 延迟一帧回收，避免同一帧重复使用
-      ioc.timer.shared.nextTick(might.sync, might, () =>
-        this.__container.push(inst)
-      );
+      ioc.timer.shared.nextTick(might.sync, might, () => this.__container.push(inst));
     }
   }
 
@@ -372,9 +367,7 @@ export class NodePool {
       if (expireAt > 0 && now >= expireAt) {
         this.__container.pop();
         item.destroy();
-        ioc.logcat.res.d(
-          `节点池: 节点过期，自动销毁 池子 ${this.template.name} 剩余 ${this.size}`
-        );
+        ioc.logcat.res.d(`节点池: 节点过期，自动销毁 池子 ${this.template.name} 剩余 ${this.size}`);
       }
     }
   }
@@ -393,6 +386,32 @@ export class NodePoolContainer extends Dependency implements INodePoC {
   /** 节点池容器 */
   private __container: Map<string, NodePool> = new Map();
 
+  registerByNodeConstructor(key: string, node: Constructor<IPoolNode>, expires: number = NodePool.EXPIRES) {
+    if (this.__container.has(key)) {
+      throw new Error(`节点池: 注册失败，节点池已存在 ${key}`);
+    }
+
+    const template = new node();
+    template.name = key;
+    const pool = new NodePool(template, expires);
+    this.__container.set(key, pool);
+
+    ioc.logcat.res.i(`注册节点池条目: ${key}`);
+  }
+
+  registerByNodeInstance(key: string, node: IPoolNode, expires: number = NodePool.EXPIRES) {
+    if (this.__container.has(key)) {
+      throw new Error(`节点池: 注册失败，节点池已存在 ${key}`);
+    }
+
+    const template = node;
+    template.name = key;
+    const pool = new NodePool(template, expires);
+    this.__container.set(key, pool);
+
+    ioc.logcat.res.i(`注册节点池条目: ${key}`);
+  }
+
   register(template: Prefab, expires: number = NodePool.EXPIRES) {
     const key = template.data.name;
 
@@ -402,6 +421,8 @@ export class NodePoolContainer extends Dependency implements INodePoC {
 
     const pool = new NodePool(template, expires);
     this.__container.set(key, pool);
+
+    ioc.logcat.res.i(`注册节点池条目: ${key}`);
   }
 
   unregister(key: string) {
@@ -437,8 +458,11 @@ export class NodePoolContainer extends Dependency implements INodePoC {
   }
 
   recycle(inst: IPoolNode) {
-    if (inst && inst.isValid && inst["_prefab"] && inst["_prefab"]["asset"]) {
-      const key = inst["_prefab"]["asset"]["name"];
+    if (inst && inst.isValid) {
+      let key = inst.name;
+      if (inst["_prefab"] && inst["_prefab"]["asset"]) {
+        key = inst["_prefab"]["asset"]["name"];
+      }
       if (this.__container.has(key)) {
         this.__container.get(key)!.recycle(inst);
       } else {
