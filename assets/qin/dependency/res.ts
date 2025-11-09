@@ -1,7 +1,23 @@
 import {
-  assetManager, js, sp, AnimationClip, Asset, AssetManager, AudioClip, BufferAsset, Font,
-  ImageAsset, JsonAsset, ParticleAsset, Prefab, SpriteAtlas, SpriteFrame, Texture2D, TextAsset,
-  TiledMapAsset, VideoClip
+  assetManager,
+  js,
+  sp,
+  AnimationClip,
+  Asset,
+  AssetManager,
+  AudioClip,
+  BufferAsset,
+  Font,
+  ImageAsset,
+  JsonAsset,
+  ParticleAsset,
+  Prefab,
+  SpriteAtlas,
+  SpriteFrame,
+  Texture2D,
+  TextAsset,
+  TiledMapAsset,
+  VideoClip,
 } from "cc";
 
 import ioc, { Injectable } from "../ioc";
@@ -47,7 +63,10 @@ export class ResContainer extends Dependency implements IResContainer {
   }
 
   hasAB(ab: string): boolean {
-    return assetManager.bundles.has(ab) || (<any>assetManager)._projectBundles.includes(ab);
+    return (
+      assetManager.bundles.has(ab) ||
+      (<any>assetManager)._projectBundles.includes(ab)
+    );
   }
 
   loadAB(ab: string) {
@@ -99,7 +118,40 @@ export class ResContainer extends Dependency implements IResContainer {
     });
   }
 
-  loadRes<T extends Asset>(raw: string, type: Constructor<T>, ab: string = "shared") {
+  preloadRes<T extends Asset>(
+    raw: string,
+    type: Constructor<T>,
+    ab: string = "shared",
+  ) {
+    return new Promise<boolean>(async (resolve) => {
+      if (raw.indexOf("@") > -1) {
+        const [_ab, _raw] = raw.split("@");
+        [raw, ab] = [_raw, _ab];
+      }
+      const bun = await this.loadAB(ab);
+      if (bun) {
+        let url = raw;
+        const typeName = js.getClassName(type);
+        if (typeName === "cc.SpriteFrame") {
+          url += "/spriteFrame";
+        } else if (typeName === "cc.Texture2D") {
+          url += "/texture";
+        }
+        const info = bun.getInfoWithPath(url, type);
+        if (info) {
+          bun.preload(url, type, (err, data) => {
+            resolve(err ? false : true);
+          });
+        }
+      }
+    });
+  }
+
+  loadRes<T extends Asset>(
+    raw: string,
+    type: Constructor<T>,
+    ab: string = "shared",
+  ) {
     return new Promise<T | null>(async (resolve) => {
       if (raw.indexOf("@") > -1) {
         const [_ab, _raw] = raw.split("@");

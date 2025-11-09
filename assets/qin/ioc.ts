@@ -1,7 +1,23 @@
 import {
-  IAstc, IAudioPlayer, IDependency, IDependencyMeta, IEnvironment, IEventBus, IIncremental,
-  ILauncher, ILogcat, ILooper, INodePoC, IObPoC, IReleasableContainer, IRemoteContainer,
-  IResContainer, ISensitives, ITimer
+  IAstc,
+  IAudioPlayer,
+  IAssetLoader,
+  ICacheContainer,
+  IDependency,
+  IDependencyMeta,
+  IEnvironment,
+  IEventBus,
+  IIncremental,
+  ILauncher,
+  ILogcat,
+  ILooper,
+  INodePoC,
+  IObPoC,
+  IReleasableContainer,
+  IRemoteContainer,
+  IResContainer,
+  ISensitives,
+  ITimer,
 } from "./dependency";
 
 /**
@@ -162,6 +178,16 @@ export class IoC {
   /** 启动器 */
   get launcher() {
     return this.resolve<ILauncher>("Launcher");
+  }
+
+  /** 缓存容器 */
+  get cache() {
+    return this.resolve<ICacheContainer>("CacheContainer");
+  }
+
+  /** 资源加载器 */
+  get loader() {
+    return this.resolve<IAssetLoader>("AssetLoader");
   }
 }
 

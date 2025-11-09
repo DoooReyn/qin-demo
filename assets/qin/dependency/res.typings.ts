@@ -1,6 +1,21 @@
 import {
-  sp, AnimationClip, Asset, AssetManager, AudioClip, BufferAsset, Font, ImageAsset, JsonAsset,
-  ParticleAsset, Prefab, SpriteAtlas, SpriteFrame, Texture2D, TextAsset, TiledMapAsset, VideoClip
+  sp,
+  AnimationClip,
+  Asset,
+  AssetManager,
+  AudioClip,
+  BufferAsset,
+  Font,
+  ImageAsset,
+  JsonAsset,
+  ParticleAsset,
+  Prefab,
+  SpriteAtlas,
+  SpriteFrame,
+  Texture2D,
+  TextAsset,
+  TiledMapAsset,
+  VideoClip,
 } from "cc";
 
 import { Constructor } from "../typings";
@@ -54,13 +69,30 @@ export interface IResContainer extends IDependency {
   hasRes(raw: string, ab?: string): Promise<boolean>;
 
   /**
+   * 预加载包内指定资源
+   * @param raw 资源路径
+   * @param type 资源类型
+   * @param ab 包名称
+   * @returns
+   */
+  preloadRes<T extends Asset>(
+    raw: string,
+    type: Constructor<T>,
+    ab?: string,
+  ): Promise<boolean>;
+
+  /**
    * 加载包内指定资源
    * @param raw 资源路径
    * @param type 资源类型
    * @param ab 包名称
    * @returns
    */
-  loadRes<T extends Asset>(raw: string, type: Constructor<T>, ab?: string): Promise<T | null>;
+  loadRes<T extends Asset>(
+    raw: string,
+    type: Constructor<T>,
+    ab?: string,
+  ): Promise<T | null>;
 
   /**
    * 加载原始图片
