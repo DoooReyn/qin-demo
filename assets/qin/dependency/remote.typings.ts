@@ -1,28 +1,17 @@
 import {
-  sp,
-  __private,
-  AudioClip,
-  BitmapFont,
-  BufferAsset,
-  ImageAsset,
-  JsonAsset,
-  Rect,
-  SpriteAtlas,
-  SpriteFrame,
-  Texture2D,
-  TextAsset,
-  TTFFont,
-  VideoClip,
+  sp, __private, Asset, AudioClip, BitmapFont, BufferAsset, ImageAsset, JsonAsset, Rect,
+  SpriteAtlas, SpriteFrame, Texture2D, TextAsset, TTFFont, VideoClip
 } from "cc";
 
-import { IDependency } from "./dependency.typings";
-import { Asset } from "cc";
 import { Constructor } from "../typings";
+import { IDependency } from "./dependency.typings";
 
 /**
  * 远程资源容器接口
  */
 export interface IRemoteContainer extends IDependency {
+  /** 资源服务器地址 */
+  server: string;
   /**
    * 创建图像资源
    * @param img 原始图像

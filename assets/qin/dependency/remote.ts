@@ -1,30 +1,13 @@
 import {
-  assetManager,
-  js,
-  path,
-  sp,
-  sys,
-  __private,
-  Asset,
-  AudioClip,
-  BitmapFont,
-  BufferAsset,
-  ImageAsset,
-  JsonAsset,
-  Rect,
-  SpriteAtlas,
-  SpriteFrame,
-  Texture2D,
-  TextAsset,
-  TTFFont,
-  VideoClip,
+  assetManager, js, path, sp, sys, __private, Asset, AudioClip, BitmapFont, BufferAsset, ImageAsset,
+  JsonAsset, Rect, SpriteAtlas, SpriteFrame, Texture2D, TextAsset, TTFFont, VideoClip
 } from "cc";
 
 import { time } from "../ability";
 import ioc, { Injectable } from "../ioc";
+import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
 import { IRemoteContainer } from "./remote.typings";
-import { Constructor } from "../typings";
 
 /**
  * 远程资源容器
@@ -32,18 +15,19 @@ import { Constructor } from "../typings";
  */
 @Injectable({ name: "RemoteContainer" })
 export class RemoteContainer extends Dependency implements IRemoteContainer {
-  /** 资源服务器地址 */
-  private __server: string = "";
-
   /** 携带参数 */
   private __params: Record<string, string> = Object.create(null);
 
   /** 资源缓存 */
   private __container: Map<string, Asset> = new Map();
 
-  onAttach(): Promise<void> {
-    this.__server = assetManager.downloader.remoteServerAddress;
-    return super.onAttach();
+  /** 资源服务器地址 */
+  get server() {
+    return assetManager.downloader.remoteServerAddress;
+  }
+  set server(value: string) {
+    // @ts-ignore
+    assetManager.downloader._remoteServerAddress = value;
   }
 
   onDetach(): Promise<void> {
@@ -56,9 +40,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    * @param img 原始图像
    * @returns
    */
-  public createImageAsset(
-    img: __private._cocos_asset_assets_image_asset__ImageSource,
-  ) {
+  public createImageAsset(img: __private._cocos_asset_assets_image_asset__ImageSource) {
     return img instanceof ImageAsset ? img : new ImageAsset(img);
   }
 
@@ -110,11 +92,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    * @param parser 解析器
    * @returns
    */
-  private __load<T extends Asset>(
-    key: string,
-    urls: string | string[],
-    parser: (asset: any) => T,
-  ) {
+  private __load<T extends Asset>(key: string, urls: string | string[], parser: (asset: any) => T) {
     return new Promise<T | null>((res) => {
       let asset: Asset | undefined | null = this.__container.get(key);
       if (asset) {
@@ -167,7 +145,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
     if (timestamp) {
       ret.push(`t=${time.time()}`);
     }
-    let url = path.join(this.__server, raw);
+    let url = path.join(this.server, raw);
     if (ret.length) {
       url += "?" + ret.join("&");
     }
@@ -176,7 +154,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
 
   /** 原始网址 */
   public nativeUrlOf(url: string) {
-    return path.join(this.__server, url);
+    return path.join(this.server, url);
   }
 
   /**
@@ -385,12 +363,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
         if (data.textureRect) {
           frame.rect = this.parseRect(data.textureRect);
         } else if (data.frame) {
-          frame.rect = new Rect(
-            data.frame.x,
-            data.frame.y,
-            data.frame.w,
-            data.frame.h,
-          );
+          frame.rect = new Rect(data.frame.x, data.frame.y, data.frame.w, data.frame.h);
         } else {
           frame.rect = new Rect(data.x, data.y, data.w, data.h);
         }
@@ -505,10 +478,7 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    * @param path 资源路径
    * @returns 资源实例
    */
-  async load<T extends Asset>(
-    type: Constructor<T>,
-    path: string,
-  ): Promise<T | null> {
+  async load<T extends Asset>(type: Constructor<T>, path: string): Promise<T | null> {
     const typeName = js.getClassName(type);
     // 根据类型调用对应的远程加载方法
     switch (typeName) {
