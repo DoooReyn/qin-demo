@@ -1,12 +1,30 @@
 import {
-  assetManager, path, sp, sys, __private, Asset, AudioClip, BitmapFont, BufferAsset, ImageAsset,
-  JsonAsset, Rect, SpriteAtlas, SpriteFrame, Texture2D, TextAsset, TTFFont, VideoClip
+  assetManager,
+  js,
+  path,
+  sp,
+  sys,
+  __private,
+  Asset,
+  AudioClip,
+  BitmapFont,
+  BufferAsset,
+  ImageAsset,
+  JsonAsset,
+  Rect,
+  SpriteAtlas,
+  SpriteFrame,
+  Texture2D,
+  TextAsset,
+  TTFFont,
+  VideoClip,
 } from "cc";
 
 import { time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
 import { IRemoteContainer } from "./remote.typings";
+import { Constructor } from "../typings";
 
 /**
  * 远程资源容器
@@ -38,7 +56,9 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    * @param img 原始图像
    * @returns
    */
-  public createImageAsset(img: __private._cocos_asset_assets_image_asset__ImageSource) {
+  public createImageAsset(
+    img: __private._cocos_asset_assets_image_asset__ImageSource,
+  ) {
     return img instanceof ImageAsset ? img : new ImageAsset(img);
   }
 
@@ -90,7 +110,11 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
    * @param parser 解析器
    * @returns
    */
-  private __load<T extends Asset>(key: string, urls: string | string[], parser: (asset: any) => T) {
+  private __load<T extends Asset>(
+    key: string,
+    urls: string | string[],
+    parser: (asset: any) => T,
+  ) {
     return new Promise<T | null>((res) => {
       let asset: Asset | undefined | null = this.__container.get(key);
       if (asset) {
@@ -361,7 +385,12 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
         if (data.textureRect) {
           frame.rect = this.parseRect(data.textureRect);
         } else if (data.frame) {
-          frame.rect = new Rect(data.frame.x, data.frame.y, data.frame.w, data.frame.h);
+          frame.rect = new Rect(
+            data.frame.x,
+            data.frame.y,
+            data.frame.w,
+            data.frame.h,
+          );
         } else {
           frame.rect = new Rect(data.x, data.y, data.w, data.h);
         }
@@ -468,5 +497,48 @@ export class RemoteContainer extends Dependency implements IRemoteContainer {
       });
       return asset;
     });
+  }
+
+  /**
+   * 加载远程资源
+   * @param type 资源类型
+   * @param path 资源路径
+   * @returns 资源实例
+   */
+  async load<T extends Asset>(
+    type: Constructor<T>,
+    path: string,
+  ): Promise<T | null> {
+    const typeName = js.getClassName(type);
+    // 根据类型调用对应的远程加载方法
+    switch (typeName) {
+      case "cc.ImageAsset":
+        return (await ioc.remote.loadImage(path)) as unknown as T | null;
+      case "cc.SpriteFrame":
+        return (await ioc.remote.loadSpriteFrame(path)) as unknown as T | null;
+      case "cc.SpriteAtlas":
+        return (await ioc.remote.loadSpriteAtlas(path)) as unknown as T | null;
+      case "cc.Texture2D":
+        return (await ioc.remote.loadTexture(path)) as unknown as T | null;
+      case "cc.TextAsset":
+        return (await ioc.remote.loadText(path)) as unknown as T | null;
+      case "cc.JsonAsset":
+        return (await ioc.remote.loadJson(path)) as unknown as T | null;
+      case "sp.SkeletonData":
+        return (await ioc.remote.loadSpine(path)) as unknown as T | null;
+      case "cc.TTFFont":
+        return (await ioc.remote.loadTTFFont(path)) as unknown as T | null;
+      case "cc.BitmapFont":
+        return (await ioc.remote.loadBitmapFont(path)) as unknown as T | null;
+      case "cc.AudioClip":
+        return (await ioc.remote.loadAudio(path)) as unknown as T | null;
+      case "cc.BufferAsset":
+        return (await ioc.remote.loadBinary(path)) as unknown as T | null;
+      case "cc.VideoClip":
+        return (await ioc.remote.loadVideo(path)) as unknown as T | null;
+      default:
+        ioc.logcat.res.ef("资源加载器: 不支持的远程资源类型 {0}", typeName);
+        return null;
+    }
   }
 }

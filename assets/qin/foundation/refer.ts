@@ -1,7 +1,8 @@
 import { Asset, Component, Sprite, SpriteFrame } from "cc";
 
-import { be, regexp } from "../ability";
+import { be } from "../ability";
 import ioc from "../ioc";
+import { Constructor } from "../typings";
 
 /**
  * 资源引用策略
@@ -18,7 +19,10 @@ export abstract class ReferBase<K extends Component, T extends Asset> {
    * 构造
    * @param container 容器
    */
-  constructor(public readonly container: K) {}
+  constructor(
+    public readonly container: K,
+    public readonly cls: Constructor<T>,
+  ) {}
 
   /** 容器是否有效 */
   protected get isContainerValid(): boolean {
@@ -44,11 +48,7 @@ export abstract class ReferBase<K extends Component, T extends Asset> {
     let asset: T | null = null;
 
     // 选择加载策略
-    if (regexp.isUrl(url)) {
-      asset = await this._loadRemote(url);
-    } else {
-      asset = await this._loadLocal(url);
-    }
+    asset = await ioc.loader.load<T>(this.cls, { path: url });
 
     if (be.empty(asset)) {
       // 如果资源无效，尝试加载保底资源
@@ -63,18 +63,6 @@ export abstract class ReferBase<K extends Component, T extends Asset> {
 
     return Promise.resolve();
   }
-
-  /**
-   * 加载远程资源
-   * @param url 资源路径
-   */
-  protected abstract _loadRemote(url: string): Promise<T>;
-
-  /**
-   * 加载本地资源
-   * @param url 资源路径
-   */
-  protected abstract _loadLocal(url: string): Promise<T>;
 
   /** 应用资源 */
   protected abstract _apply(): void;
@@ -95,7 +83,7 @@ export abstract class ReferBase<K extends Component, T extends Asset> {
 
     this.__load(url, fallback).then(() => {
       if (this.isValid) {
-        this._asset.addRef();
+        ioc.cache.addRef(url);
         this._apply();
       }
     });
@@ -105,7 +93,7 @@ export abstract class ReferBase<K extends Component, T extends Asset> {
   unload() {
     this._discard();
     if (this.isAssetValid) {
-      this._asset.decRef();
+      ioc.cache.decRef(this._url);
       this._asset = null;
     }
   }
@@ -115,12 +103,8 @@ export abstract class ReferBase<K extends Component, T extends Asset> {
  * 图片资源引用
  */
 export class ReferImage extends ReferBase<Sprite, SpriteFrame> {
-  protected async _loadLocal(url: string): Promise<SpriteFrame> {
-    return ioc.res.loadSpriteFrame(url);
-  }
-
-  protected _loadRemote(url: string): Promise<SpriteFrame> {
-    return ioc.remote.loadSpriteFrame(url);
+  constructor(public readonly container: Sprite) {
+    super(container, SpriteFrame);
   }
 
   protected _apply(): void {
@@ -131,6 +115,3 @@ export class ReferImage extends ReferBase<Sprite, SpriteFrame> {
     this.container.spriteFrame = null;
   }
 }
-
-// todo
-// 统一资源增持与减持逻辑 ioc.res.(load/unload)

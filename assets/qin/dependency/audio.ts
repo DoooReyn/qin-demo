@@ -17,25 +17,25 @@ abstract class AudioContainer extends Node {
     v = digit.clamp01(v);
     if (v == this.__vs) {
       this.__vs = v;
-      this._container.forEach((entry) => {
-        entry.zoom(v);
-      });
+      this._container.forEach((entry) => entry.zoom(v));
     }
   }
 
-  play(url: string, volume?: number, loop?: boolean) {
-    if (regexp.isUrl(url)) {
-      ioc.remote.loadAudio(url).then((clip) => {
-        clip && this._play(clip, volume, loop);
-      });
-    } else {
-      ioc.res.loadAudio(url).then((clip) => {
-        clip && this._play(clip, volume, loop);
-      });
-    }
+  play(path: string, volume?: number, loop?: boolean) {
+    ioc.loader.load(AudioClip, { path }).then((clip) => {
+      if (clip) {
+        ioc.cache.addRef(path);
+        const id = this._play(clip, volume, loop);
+        this.get(id)!.url = path;
+      }
+    });
   }
 
-  protected abstract _play(clip: AudioClip, volume?: number, loop?: boolean): number;
+  protected abstract _play(
+    clip: AudioClip,
+    volume?: number,
+    loop?: boolean,
+  ): number;
 
   get(id: number) {
     return this._container.get(id);
@@ -125,11 +125,20 @@ class AudioEntry extends Node {
   private __aid: number = 0;
   private __loopCount: number = 0;
   private __volume: number = 1.0;
+  private __url: string;
   public readonly onFinished: Triggers = new Triggers();
 
   constructor() {
     super();
     this.__source = this.addComponent(AudioSource);
+  }
+
+  get url() {
+    return this.__url;
+  }
+
+  set url(value: string) {
+    this.__url = value;
   }
 
   init() {
@@ -145,7 +154,9 @@ class AudioEntry extends Node {
   }
 
   equals(clip: AudioClip) {
-    return this.__source && this.__source.isValid && this.__source.clip === clip;
+    return (
+      this.__source && this.__source.isValid && this.__source.clip === clip
+    );
   }
 
   get aid() {
@@ -164,7 +175,12 @@ class AudioEntry extends Node {
     return this.__source.duration;
   }
 
-  play(clip: AudioClip, volume: number, targetVolume: number, loop: boolean = false) {
+  play(
+    clip: AudioClip,
+    volume: number,
+    targetVolume: number,
+    loop: boolean = false,
+  ) {
     this.__volume = volume;
     this.__source.clip = clip;
     this.__source.volume = targetVolume;
@@ -189,6 +205,8 @@ class AudioEntry extends Node {
     this.__aid = 0;
     this.__pauseAt = 0;
     this.__loopCount = 0;
+    ioc.cache.decRef(this.url);
+    this.__url = "";
     this.__source.stop();
     this.__source.unscheduleAllCallbacks();
     this.onFinished.clear();
@@ -197,7 +215,9 @@ class AudioEntry extends Node {
 
   protected _onUpdate() {
     if (this.__source.playing) {
-      if (digit.equals(this.__source.currentTime, this.__source.duration, 0.02)) {
+      if (
+        digit.equals(this.__source.currentTime, this.__source.duration, 0.02)
+      ) {
         this.__loopCount++;
         this.onFinished.runWith(this.__loopCount);
         if (!this.__source.loop) {

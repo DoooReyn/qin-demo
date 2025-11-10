@@ -10,7 +10,6 @@ import {
   ICacheOptions,
   ICacheStats,
 } from "./cache.typings";
-import { ICounter } from "./timer.typings";
 
 /**
  * 缓存容器
@@ -21,19 +20,11 @@ export class CacheContainer extends Dependency implements ICacheContainer {
   /** 缓存容器 */
   private __container: Map<string, ICacheEntry> = new Map();
 
-  /** 缓存命中次数 */
-  private __hits: number = 0;
-
-  /** 缓存未命中次数 */
-  private __misses: number = 0;
-
   /** 日志开关 */
   public logEnabled: boolean = false;
 
   onDetach(): Promise<void> {
     this.clear(true);
-    this.__hits = 0;
-    this.__misses = 0;
     return super.onDetach();
   }
 
@@ -83,7 +74,6 @@ export class CacheContainer extends Dependency implements ICacheContainer {
     const entry = this.__container.get(key);
 
     if (!entry) {
-      this.__misses++;
       return null;
     }
 
@@ -93,7 +83,6 @@ export class CacheContainer extends Dependency implements ICacheContainer {
         ioc.logcat.res.wf("缓存: 资源已失效 {0}", key);
       }
       this.__container.delete(key);
-      this.__misses++;
       return null;
     }
 
@@ -103,13 +92,11 @@ export class CacheContainer extends Dependency implements ICacheContainer {
         ioc.logcat.res.df("缓存: 资源已过期 {0}", key);
       }
       this.__container.delete(key);
-      this.__misses++;
       return null;
     }
 
     // 更新最后访问时间
     entry.lastAccessTime = time.now;
-    this.__hits++;
 
     return entry.asset as T;
   }
@@ -228,7 +215,7 @@ export class CacheContainer extends Dependency implements ICacheContainer {
       }
 
       // 清理过期资源
-      if (entry.expiresAt > 0 && entry.expiresAt < now) {
+      if (entry.expiresAt > 0 && entry.expiresAt < now && entry.refCount <= 0) {
         if (entry.asset.isValid) {
           entry.asset.decRef();
         }
@@ -295,8 +282,6 @@ export class CacheContainer extends Dependency implements ICacheContainer {
       remote,
       permanent,
       temporary,
-      hits: this.__hits,
-      misses: this.__misses,
     };
   }
 

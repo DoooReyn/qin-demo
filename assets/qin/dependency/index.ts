@@ -26,8 +26,6 @@ export * from "./sensitives.typings";
 export * from "./sensitives";
 export * from "./timer.typings";
 export * from "./timer";
-export * from "./releasable.typings";
-export * from "./releasable";
 export * from "./cache.typings";
 export * from "./cache";
 export * from "./loader.typings";

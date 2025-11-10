@@ -13,7 +13,6 @@ import {
   ILooper,
   INodePoC,
   IObPoC,
-  IReleasableContainer,
   IRemoteContainer,
   IResContainer,
   ISensitives,
@@ -163,11 +162,6 @@ export class IoC {
   /** ASTC 解析器 */
   get astc() {
     return this.resolve<IAstc>("ASTC");
-  }
-
-  /** 资源自动释放池 */
-  get roc() {
-    return this.resolve<IReleasableContainer>("ReleasableContainer");
   }
 
   /** 音频播放器 */

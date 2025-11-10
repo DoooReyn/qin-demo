@@ -1,9 +1,23 @@
 import {
-  sp, __private, AudioClip, BitmapFont, BufferAsset, ImageAsset, JsonAsset, Rect, SpriteAtlas,
-  SpriteFrame, Texture2D, TextAsset, TTFFont, VideoClip
+  sp,
+  __private,
+  AudioClip,
+  BitmapFont,
+  BufferAsset,
+  ImageAsset,
+  JsonAsset,
+  Rect,
+  SpriteAtlas,
+  SpriteFrame,
+  Texture2D,
+  TextAsset,
+  TTFFont,
+  VideoClip,
 } from "cc";
 
 import { IDependency } from "./dependency.typings";
+import { Asset } from "cc";
+import { Constructor } from "../typings";
 
 /**
  * 远程资源容器接口
@@ -14,7 +28,9 @@ export interface IRemoteContainer extends IDependency {
    * @param img 原始图像
    * @returns
    */
-  createImageAsset(img: __private._cocos_asset_assets_image_asset__ImageSource): ImageAsset;
+  createImageAsset(
+    img: __private._cocos_asset_assets_image_asset__ImageSource,
+  ): ImageAsset;
   /** 获取图集名称 */
   getAtlasName(atlas: string): string;
   /** 解析矩形信息 TexturePacker */
@@ -118,4 +134,11 @@ export interface IRemoteContainer extends IDependency {
    * @returns
    */
   loadVideo(url: string): Promise<VideoClip | null>;
+  /**
+   * 加载远程资源
+   * @param type 资源类型
+   * @param path 资源路径
+   * @returns 资源实例
+   */
+  load<T extends Asset>(type: Constructor<T>, path: string): Promise<T | null>;
 }

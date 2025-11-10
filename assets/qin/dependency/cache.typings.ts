@@ -6,6 +6,8 @@ import { IDependency } from "./dependency.typings";
  * 缓存资源来源
  */
 export enum CacheSource {
+  /** 未知来源 */
+  Unknown = "unknown",
   /** 本地资源 */
   Local = "local",
   /** 远程资源 */
@@ -62,10 +64,6 @@ export interface ICacheStats {
   permanent: number;
   /** 临时缓存数量 */
   temporary: number;
-  /** 缓存命中次数 */
-  hits: number;
-  /** 缓存未命中次数 */
-  misses: number;
 }
 
 /**

@@ -24,16 +24,26 @@ import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
 import { IResContainer } from "./res.typings";
+import { BitmapFont } from "cc";
 
 /**
  * 资源容器
  */
 @Injectable({ name: "ResContainer" })
 export class ResContainer extends Dependency implements IResContainer {
+  parsePath(path: string): [string, string] {
+    const arr = path.split("@");
+    if (arr.length == 1) {
+      return ["resources", arr[0]];
+    } else {
+      arr[0] ||= "resources";
+      return arr as [string, string];
+    }
+  }
+
   pathOf(uuid: string) {
-    const bundles = assetManager.bundles;
     let path = "";
-    bundles.find((ab) => {
+    assetManager.bundles.find((ab) => {
       // @ts-ignore
       return ab.config.assetInfos.find((cfg: any) => {
         if (cfg.uuid === uuid) {
@@ -47,9 +57,8 @@ export class ResContainer extends Dependency implements IResContainer {
   }
 
   uuidOf(path: string) {
-    const bundles = assetManager.bundles;
     let uuid = "";
-    bundles.find((bun) => {
+    assetManager.bundles.find((bun) => {
       // @ts-ignore
       return bun.config.assetInfos.find((cfg: any) => {
         if (cfg.path === path) {
@@ -98,16 +107,12 @@ export class ResContainer extends Dependency implements IResContainer {
       if (releaseAll) {
         bun.releaseAll();
       }
-      assetManager.removeBundle(bun);
     }
   }
 
-  hasRes(raw: string, ab: string = "shared") {
+  hasRes(path: string) {
     return new Promise<boolean>(async (resolve) => {
-      if (raw.indexOf("@") > -1) {
-        const [_ab, _raw] = raw.split("@");
-        [raw, ab] = [_raw, _ab];
-      }
+      const [ab, raw] = this.parsePath(path);
       const bun = await this.loadAB(ab);
       if (bun) {
         const info = bun.getInfoWithPath(raw);
@@ -118,16 +123,9 @@ export class ResContainer extends Dependency implements IResContainer {
     });
   }
 
-  preloadRes<T extends Asset>(
-    raw: string,
-    type: Constructor<T>,
-    ab: string = "shared",
-  ) {
+  preloadRes<T extends Asset>(type: Constructor<T>, path: string) {
     return new Promise<boolean>(async (resolve) => {
-      if (raw.indexOf("@") > -1) {
-        const [_ab, _raw] = raw.split("@");
-        [raw, ab] = [_raw, _ab];
-      }
+      const [ab, raw] = this.parsePath(path);
       const bun = await this.loadAB(ab);
       if (bun) {
         let url = raw;
@@ -147,16 +145,9 @@ export class ResContainer extends Dependency implements IResContainer {
     });
   }
 
-  loadRes<T extends Asset>(
-    raw: string,
-    type: Constructor<T>,
-    ab: string = "shared",
-  ) {
+  loadRes<T extends Asset>(type: Constructor<T>, path: string) {
     return new Promise<T | null>(async (resolve) => {
-      if (raw.indexOf("@") > -1) {
-        const [_ab, _raw] = raw.split("@");
-        [raw, ab] = [_raw, _ab];
-      }
+      const [ab, raw] = this.parsePath(path);
       const bun = await this.loadAB(ab);
       if (bun) {
         let url = raw;
@@ -186,62 +177,67 @@ export class ResContainer extends Dependency implements IResContainer {
     });
   }
 
-  loadImage(raw: string, ab?: string) {
-    return this.loadRes<ImageAsset>(raw, ImageAsset, ab);
+  loadImage(path: string) {
+    return this.loadRes<ImageAsset>(ImageAsset, path);
   }
 
-  loadTexture(raw: string, ab?: string) {
-    return this.loadRes(raw, Texture2D, ab);
-  }
-  loadSpriteFrame(raw: string, ab?: string) {
-    return this.loadRes(raw, SpriteFrame, ab);
+  loadTexture(path: string) {
+    return this.loadRes(Texture2D, path);
   }
 
-  loadAtlas(raw: string, ab?: string) {
-    return this.loadRes(raw, SpriteAtlas, ab);
+  loadSpriteFrame(path: string) {
+    return this.loadRes(SpriteFrame, path);
   }
 
-  loadPrefab(raw: string, ab?: string) {
-    return this.loadRes(raw, Prefab, ab);
+  loadAtlas(path: string) {
+    return this.loadRes(SpriteAtlas, path);
   }
 
-  loadText(raw: string, ab?: string) {
-    return this.loadRes(raw, TextAsset, ab);
+  loadPrefab(path: string) {
+    return this.loadRes(Prefab, path);
   }
 
-  loadJson(raw: string, ab?: string) {
-    return this.loadRes(raw, JsonAsset, ab);
+  loadText(path: string) {
+    return this.loadRes(TextAsset, path);
   }
 
-  loadSpine(raw: string, ab?: string) {
-    return this.loadRes(raw, sp.SkeletonData, ab);
+  loadJson(path: string) {
+    return this.loadRes(JsonAsset, path);
   }
 
-  loadFont(raw: string, ab?: string) {
-    return this.loadRes(raw, Font, ab);
+  loadSpine(path: string) {
+    return this.loadRes(sp.SkeletonData, path);
   }
 
-  loadAudio(raw: string, ab?: string) {
-    return this.loadRes(raw, AudioClip, ab);
+  loadFont(path: string) {
+    return this.loadRes(Font, path);
   }
 
-  loadParticle(raw: string, ab?: string) {
-    return this.loadRes(raw, ParticleAsset, ab);
+  loadBitmapFont(path: string) {
+    return this.loadRes(BitmapFont, path);
   }
 
-  loadTmx(raw: string, ab?: string) {
-    return this.loadRes(raw, TiledMapAsset, ab);
+  loadAudio(path: string) {
+    return this.loadRes(AudioClip, path);
   }
 
-  loadBinary(raw: string, ab?: string) {
-    return this.loadRes(raw, BufferAsset, ab);
+  loadParticle(path: string) {
+    return this.loadRes(ParticleAsset, path);
   }
 
-  loadVideo(raw: string, ab?: string) {
-    return this.loadRes(raw, VideoClip, ab);
+  loadTmx(path: string) {
+    return this.loadRes(TiledMapAsset, path);
   }
 
-  loadAnimation(raw: string, ab?: string) {
-    return this.loadRes(raw, AnimationClip, ab);
+  loadBinary(path: string) {
+    return this.loadRes(BufferAsset, path);
+  }
+
+  loadVideo(path: string) {
+    return this.loadRes(VideoClip, path);
+  }
+
+  loadAnimation(path: string) {
+    return this.loadRes(AnimationClip, path);
   }
 }
