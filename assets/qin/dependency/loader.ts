@@ -431,18 +431,119 @@ export class AssetLoader extends Dependency implements IAssetLoader {
         finished++;
       }
 
+      const url = options.bundle + "@" + options.path;
+
       if (onProgress) {
-        onProgress(finished, total, options.path, asset != null);
+        onProgress(finished, total, url, asset != null);
       }
 
       if (!asset && this.logEnabled) {
-        ioc.logcat.res.ef("资源加载器: 加载失败 {0}", options.path);
+        ioc.logcat.res.ef("资源加载器: 加载失败 {0}", url);
       }
     }
 
     if (this.logEnabled) {
       ioc.logcat.res.df("资源加载器: 加载完成 {0}/{1}", finished, total);
     }
+  }
+
+  loadSequence(
+    tasks: LoadItem[],
+    onProgress?: (
+      finished: number,
+      total: number,
+      path: string,
+      success: boolean,
+    ) => void,
+  ): () => void {
+    const total = tasks.length;
+    let index = 0;
+    let finished = 0;
+    let aborted = false;
+    let current: ILoadTask | undefined = undefined;
+
+    const next = () => {
+      if (aborted) {
+        return;
+      }
+
+      if (index >= total) {
+        return;
+      }
+
+      const task = tasks[index++];
+      const [type, options] = task;
+      current = new LoadTask(type, options, (asset) => {
+        if (asset) {
+          finished++;
+        }
+
+        const url = options.bundle + "@" + options.path;
+
+        if (onProgress) {
+          onProgress(finished, total, url, asset != null);
+        }
+
+        if (!asset && this.logEnabled) {
+          ioc.logcat.res.ef("资源加载器: 加载失败 {0}", url);
+        }
+
+        next();
+      });
+      current.load();
+    };
+
+    next();
+
+    return function abort() {
+      if (!aborted) {
+        aborted = true;
+        current?.abort();
+        current = undefined;
+      }
+    };
+  }
+
+  loadParallel(
+    items: LoadItem[],
+    onProgress?: (
+      finished: number,
+      total: number,
+      path: string,
+      success: boolean,
+    ) => void,
+  ) {
+    let finished = 0;
+    let total = items.length;
+    let aborted = false;
+
+    const tasks = items.map(
+      (item) =>
+        new LoadTask(...item, (asset) => {
+          if (asset) {
+            finished++;
+          }
+
+          const options = item[1];
+          const url = options.bundle + "@" + options.path;
+
+          if (onProgress) {
+            onProgress(finished, total, url, asset != null);
+          }
+
+          if (!asset && this.logEnabled) {
+            ioc.logcat.res.ef("资源加载器: 加载失败 {0}", url);
+          }
+        }),
+    );
+    tasks.forEach((task) => task.load());
+
+    return function abort() {
+      if (!aborted) {
+        aborted = true;
+        tasks.forEach((task) => task.abort());
+      }
+    };
   }
 }
 
@@ -459,7 +560,8 @@ export class LoadTask<T extends Asset> implements ILoadTask {
   constructor(
     public readonly type: Constructor<T>,
     public readonly options: ILoadOptions,
-    public readonly onsuccess: (asset: T) => void,
+    public readonly oncomplete?: (asset: T | null) => void,
+    public readonly onsuccess?: (asset: T) => void,
     public readonly onfail?: () => void,
   ) {
     this.__loading = false;
@@ -471,10 +573,11 @@ export class LoadTask<T extends Asset> implements ILoadTask {
       this.__loading = true;
 
       ioc.loader.load(this.type, this.options).then((asset) => {
+        this?.oncomplete?.(asset);
         if (asset && this.__aborted) {
-          this.onsuccess(asset);
+          this?.onsuccess?.(asset);
         } else {
-          this.onfail?.();
+          this?.onfail?.();
         }
       });
     }

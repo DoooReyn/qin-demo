@@ -307,6 +307,30 @@ export interface IAssetLoader extends IDependency {
       loaded?: boolean,
     ) => void,
   ): Promise<void>;
+
+  /**
+   * 顺序加载资源队列（串行）
+   * @param items 资源项列表
+   * @param onProgress 进度回调
+   * @returns 队列ID和进度信息
+   * @example
+   * const abort = await ioc.loader.loadSequence([
+   *   ["img-hero", SpriteFrame],
+   *   ["pfb-dialog", Prefab],
+   * ], (progress) => {
+   *   console.log(`进度: ${(progress.progress * 100).toFixed(0)}%`);
+   * });
+   * setTimeout(abort, 5000);
+   */
+  loadSequence(
+    tasks: LoadItem[],
+    onProgress?: (
+      finished: number,
+      total: number,
+      path: string,
+      success: boolean,
+    ) => void,
+  ): () => void;
 }
 
 /**
@@ -317,8 +341,10 @@ export interface ILoadTask {
   type: Constructor<Asset>;
   /** 加载选项 */
   options: ILoadOptions;
+  /** 完成回调 */
+  oncomplete?: (asset: Asset | null) => void;
   /** 成功回调 */
-  onsuccess: (asset: Asset) => void;
+  onsuccess?: (asset: Asset) => void;
   /** 失败回调 */
   onfail?: () => void;
   /** 任务是否已取消 */
