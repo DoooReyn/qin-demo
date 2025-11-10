@@ -1,22 +1,7 @@
 import {
-  sp,
-  AnimationClip,
-  Asset,
-  AssetManager,
-  AudioClip,
-  BufferAsset,
-  BitmapFont,
-  Font,
-  ImageAsset,
-  JsonAsset,
-  ParticleAsset,
-  Prefab,
-  SpriteAtlas,
-  SpriteFrame,
-  Texture2D,
-  TextAsset,
-  TiledMapAsset,
-  VideoClip,
+  sp, __private, AnimationClip, Asset, AssetManager, AudioClip, BitmapFont, BufferAsset, Font,
+  ImageAsset, JsonAsset, ParticleAsset, Prefab, Rect, SpriteAtlas, SpriteFrame, Texture2D,
+  TextAsset, TiledMapAsset, TTFFont, VideoClip
 } from "cc";
 
 import { Constructor } from "../typings";
@@ -98,9 +83,329 @@ export enum AssetType {
 }
 
 /**
+ * 本地资源容器接口
+ */
+export interface ILocalContainer {
+  /**
+   * 解析资源本地路径
+   * @param path 资源本地路径
+   * @returns
+   */
+  parsePath(path: string): [string, string];
+
+  /**
+   * 项目内是否包含指定包（不论是否已加载）
+   * @param ab 包名称
+   * @returns
+   */
+  hasAB(ab: string): boolean;
+
+  /**
+   * 根据 uuid 获取资源路径
+   * @param uuid 资源 uuid
+   * @returns
+   */
+  pathOf(uuid: string): string;
+
+  /**
+   * 根据路径获取资源 uuid
+   * @param path 资源路径
+   * @returns
+   */
+  uuidOf(path: string): string;
+
+  /**
+   * 加载项目内部包
+   * @param ab 包名称
+   * @returns
+   */
+  loadAB(ab: string): Promise<AssetManager.Bundle | null>;
+
+  /**
+   * 卸载项目内部包
+   * @param ab 包名称
+   * @param releaseAll 是否卸载包内资源
+   */
+  unloadAB(ab: string, releaseAll?: boolean): void;
+
+  /**
+   * 包内是否包含指定资源
+   * @param path 资源路径
+   * @returns
+   */
+  hasRes(path: string): Promise<boolean>;
+
+  /**
+   * 预加载包内指定资源
+   * @param path 资源路径
+   * @param type 资源类型
+   * @returns
+   */
+  preloadRes<T extends Asset>(
+    type: Constructor<T>,
+    path: string,
+  ): Promise<boolean>;
+
+  /**
+   * 加载包内指定资源
+   * @param path 资源路径
+   * @param type 资源类型
+   * @returns
+   */
+  loadRes<T extends Asset>(
+    type: Constructor<T>,
+    path: string,
+  ): Promise<T | null>;
+
+  /**
+   * 加载原始图片
+   * @param path 资源路径
+   * @returns
+   */
+  loadImage(path: string): Promise<ImageAsset | null>;
+
+  /**
+   * 加载精灵
+   * @param path 资源路径
+   * @returns
+   */
+  loadSpriteFrame(path: string): Promise<SpriteFrame | null>;
+
+  /**
+   * 加载图集
+   * @param path 资源路径
+   * @returns
+   */
+  loadAtlas(path: string): Promise<SpriteAtlas | null>;
+
+  /**
+   * 加载纹理
+   * @param path 资源路径
+   * @returns
+   */
+  loadTexture(path: string): Promise<Texture2D | null>;
+
+  /**
+   * 加载预制体
+   * @param path 资源路径
+   * @returns
+   */
+  loadPrefab(path: string): Promise<Prefab | null>;
+
+  /**
+   * 加载文本
+   * @param path 资源路径
+   * @returns
+   */
+  loadText(path: string): Promise<TextAsset | null>;
+
+  /**
+   * 加载 JSON
+   * @param path 资源路径
+   * @returns
+   */
+  loadJson(path: string): Promise<JsonAsset | null>;
+
+  /**
+   * 加载骨骼动画
+   * @param path 资源路径
+   * @returns
+   */
+  loadSpine(path: string): Promise<sp.SkeletonData | null>;
+
+  /**
+   * 加载字体
+   * @param path 资源路径
+   * @returns
+   */
+  loadFont(path: string): Promise<Font | null>;
+
+  /**
+   * 加载位图字体
+   * @param path 资源路径
+   * @returns
+   */
+  loadBitmapFont(path: string): Promise<BitmapFont | null>;
+
+  /**
+   * 加载音频切片
+   * @param path 资源路径
+   * @returns
+   */
+  loadAudio(path: string): Promise<AudioClip | null>;
+
+  /**
+   * 加载粒子
+   * @param path 资源路径
+   * @returns
+   */
+  loadParticle(path: string): Promise<ParticleAsset>;
+
+  /**
+   * 加载瓦片地图
+   * @param path 资源路径
+   * @returns
+   */
+  loadTmx(path: string): Promise<TiledMapAsset | null>;
+
+  /**
+   * 加载二进制文件
+   * @param path 资源路径
+   * @returns
+   */
+  loadBinary(path: string): Promise<BufferAsset | null>;
+
+  /**
+   * 加载视频切片
+   * @param path 资源路径
+   * @returns
+   */
+  loadVideo(path: string): Promise<VideoClip | null>;
+
+  /**
+   * 加载动画切片
+   * @param path 资源路径
+   * @returns
+   */
+  loadAnimation(path: string): Promise<AnimationClip | null>;
+}
+
+/**
+ * 远程资源容器接口
+ */
+export interface IRemoteContainer {
+  /** 资源服务器地址 */
+  server: string;
+  /** 清空容器 */
+  clear(): void;
+  /**
+   * 创建图像资源
+   * @param img 原始图像
+   * @returns
+   */
+  createImageAsset(
+    img: __private._cocos_asset_assets_image_asset__ImageSource,
+  ): ImageAsset;
+  /** 获取图集名称 */
+  getAtlasName(atlas: string): string;
+  /** 解析矩形信息 TexturePacker */
+  parseRect(rect: string): Rect;
+  /**
+   * 添加参数
+   * @param key 键
+   * @param val 值
+   */
+  appendParam(key: string, val: string): void;
+  /**
+   * 设置参数
+   * @param params 参数
+   */
+  setParams(params: Record<string, string>): void;
+  /** 清空参数 */
+  clearParams(): void;
+  /**
+   * 组织网址
+   * @param raw 资源地址
+   * @param timestamp 是否添加时间戳
+   * @returns
+   */
+  makeUrl(raw: string, timestamp: boolean): string;
+  /** 原始网址 */
+  nativeUrlOf(url: string): string;
+  /**
+   * 加载音频切片
+   * @param url 资源路径
+   * @returns
+   */
+  loadAudio(url: string): Promise<AudioClip | null>;
+  /**
+   * 加载二进制文件
+   * @param url 资源路径
+   * @returns
+   */
+  loadBinary(url: string): Promise<BufferAsset | null>;
+  /**
+   * 加载 astc 图像
+   * @param url 资源路径
+   * @returns
+   */
+  loadASTC(url: string): Promise<SpriteFrame | null>;
+  /**
+   * 加载 ttf 字体
+   * @param url 资源路径
+   * @returns
+   */
+  loadTTFFont(url: string): Promise<TTFFont | null>;
+  /**
+   * 加载位图字体
+   * @param url 资源路径
+   */
+  loadBitmapFont(url: string): Promise<BitmapFont | null>;
+  /**
+   * 加载图片
+   * @param url 资源路径
+   * @returns
+   */
+  loadImage(url: string): Promise<ImageAsset | null>;
+  /**
+   * 加载 JSON
+   * @param url 资源路径
+   * @returns
+   */
+  loadJson(url: string): Promise<JsonAsset | null>;
+  /**
+   * 加载骨骼动画
+   * @param url 资源路径
+   * @returns
+   */
+  loadSpine(url: string): Promise<sp.SkeletonData | null>;
+  /**
+   * 加载图集
+   * @param url 资源路径
+   * @returns
+   */
+  loadSpriteAtlas(url: string): Promise<SpriteAtlas | null>;
+  /**
+   * 加载精灵
+   * @param url 资源路径
+   * @returns
+   */
+  loadSpriteFrame(url: string): Promise<SpriteFrame | null>;
+  /**
+   * 加载纹理
+   * @param url 资源路径
+   * @returns
+   */
+  loadTexture(url: string): Promise<Texture2D | null>;
+  /**
+   * 加载文本
+   * @param url 资源路径
+   * @returns
+   */
+  loadText(url: string): Promise<TextAsset | null>;
+  /**
+   * 加载视频
+   * @param url 资源路径
+   * @returns
+   */
+  loadVideo(url: string): Promise<VideoClip | null>;
+  /**
+   * 加载远程资源
+   * @param type 资源类型
+   * @param path 资源路径
+   * @returns 资源实例
+   */
+  load<T extends Asset>(type: Constructor<T>, path: string): Promise<T | null>;
+}
+
+/**
  * 资源加载器接口
  */
 export interface IAssetLoader extends IDependency {
+  /** 本地资源容器 */
+  readonly local: ILocalContainer;
+  /** 远程资源容器 */
+  readonly remote: IRemoteContainer;
   /**
    * 日志开关
    */

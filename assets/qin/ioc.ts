@@ -14,7 +14,7 @@ import {
   INodePoC,
   IObPoC,
   IRemoteContainer,
-  IResContainer,
+  ILocalContainer,
   ISensitives,
   ITimer,
 } from "./dependency";
@@ -147,16 +147,6 @@ export class IoC {
   /** 敏感词过滤器 */
   get sensitives() {
     return this.resolve<ISensitives>("Sensitives");
-  }
-
-  /** 资源容器 */
-  get res() {
-    return this.resolve<IResContainer>("ResContainer");
-  }
-
-  /** 远程资源容器 */
-  get remote() {
-    return this.resolve<IRemoteContainer>("RemoteContainer");
   }
 
   /** ASTC 解析器 */
