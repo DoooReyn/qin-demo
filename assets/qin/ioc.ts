@@ -1,7 +1,23 @@
 import {
-  IAssetLoader, IAstc, IAudioPlayer, ICacheContainer, IDependency, IDependencyMeta, IEnvironment,
-  IEventBus, IIncremental, ILauncher, ILogcat, ILooper, INodePoC, IObPoC, IPriorityInput, IProfiler,
-  ISensitives, ITimer
+  IAssetLoader,
+  IAstc,
+  IAudioPlayer,
+  ICacheContainer,
+  IDependency,
+  IDependencyMeta,
+  IEnvironment,
+  IEventBus,
+  IIncremental,
+  ILauncher,
+  ILogcat,
+  ILooper,
+  INodePoC,
+  IObPoC,
+  IPriorityInput,
+  IProfiler,
+  ISensitives,
+  IStoreContainer,
+  ITimer,
 } from "./dependency";
 
 /**
@@ -167,6 +183,11 @@ export class IoC {
   /** 性能分析器 */
   get profiler() {
     return this.resolve<IProfiler>("Profiler");
+  }
+
+  /** 存储容器 */
+  get store() {
+    return this.resolve<IStoreContainer>("Store");
   }
 }
 
