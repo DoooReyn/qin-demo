@@ -10,6 +10,8 @@ import { ICounter, ITick, ITimer } from "./timer.typings";
  */
 @ObEntryOutline("Counter", 32, 600_000)
 export class Counter extends ObjectEntry implements ICounter {
+  /** 计数器ID */
+  private __cid: number = 0;
   /** 设定#计次间隔 */
   protected _interval: number = 0;
   /** 设定#计次总数 */
@@ -56,7 +58,13 @@ export class Counter extends ObjectEntry implements ICounter {
     return this._accumulated;
   }
 
+  /** 计时器ID */
+  public get cid() {
+    return this.__cid;
+  }
+
   protected _onStart(interval: number = 0, total: number = 1): void {
+    this.__cid = ioc.incremental.next("timer");
     this._interval = interval;
     this._total = total;
     this._accumulated = 0;
@@ -152,12 +160,19 @@ export class Tick implements ITick {
 
   /**
    * 移除计数器
-   * @param counter 计数器
+   * @param counter 计数器(ID)
    */
-  public del(counter: Counter) {
-    const index = this.__container.indexOf(counter);
-    if (index >= 0) {
-      this.__container.splice(index, 1);
+  public del(counter: Counter | number) {
+    if (counter instanceof Counter) {
+      const index = this.__container.indexOf(counter);
+      if (index >= 0) {
+        this.__container.splice(index, 1);
+      }
+    } else {
+      const index = this.__container.findIndex((item) => item.cid === counter);
+      if (index >= 0) {
+        this.__container.splice(index, 1);
+      }
     }
   }
 
@@ -208,13 +223,7 @@ export class Tick implements ITick {
    * @param args 回调入参
    * @returns
    */
-  public repeat(
-    interval: number,
-    total: number,
-    fn: Function,
-    context: any,
-    ...args: any[]
-  ) {
+  public repeat(interval: number, total: number, fn: Function, context: any, ...args: any[]) {
     const counter = this.add(interval, total);
     counter.onCount.add(fn, context, false, ...args);
     return counter;
@@ -254,12 +263,7 @@ export class Tick implements ITick {
    * @param args 回调入参
    * @returns
    */
-  public fixedTick(
-    interval: number,
-    fn: Function,
-    context: any,
-    ...args: any[]
-  ) {
+  public fixedTick(interval: number, fn: Function, context: any, ...args: any[]) {
     const counter = this.add(interval, 0);
     counter.onFixedTick.add(fn, context, false, ...args);
     return counter;
@@ -290,11 +294,7 @@ export class Tick implements ITick {
    */
   public update(dt: number) {
     if (this.__running) {
-      for (
-        let i = 0, l = this.__container.length, counter: Counter;
-        i < l;
-        i++
-      ) {
+      for (let i = 0, l = this.__container.length, counter: Counter; i < l; i++) {
         counter = this.__container[i];
         counter.update(dt * this.__speed);
         if (counter.done) {

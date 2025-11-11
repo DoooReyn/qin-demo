@@ -7,9 +7,9 @@ qin.initialize({
 });
 
 ioc.eventBus.app.subscribes({
-  event: PRESET.EVENT.QIN.APP_AFTER_LAUNCHED,
+  event: PRESET.EVENT.APP_AFTER_LAUNCHED,
   handle() {
     ioc.logcat.qin.i("Qin's application is launched.");
   },
-  once: true
+  once: true,
 });

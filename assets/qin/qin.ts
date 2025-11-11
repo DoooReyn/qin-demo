@@ -1,4 +1,3 @@
-import { screen } from "cc";
 import { EDITOR } from "cc/env";
 
 import { IDependency } from "./dependency";
@@ -47,20 +46,20 @@ export class Qin {
     this.__initializing = true;
 
     // 初始化依赖项
-    ioc.eventBus.app.publish(PRESET.EVENT.QIN.DEP_BEFORE_INITIALIZED);
+    ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_BEFORE_INITIALIZED);
     await ioc.initialize();
     ioc.logcat.qin.i("依赖项初始化完成");
-    ioc.eventBus.app.publish(PRESET.EVENT.QIN.DEP_AFTER_INITIALIZED);
+    ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_AFTER_INITIALIZED);
 
     // 启动应用
     ioc.launcher.start(function () {
       // 通知应用启动开始
-      ioc.eventBus.app.publish(PRESET.EVENT.QIN.APP_BEFORE_LAUNCHED);
+      ioc.eventBus.app.publish(PRESET.EVENT.APP_BEFORE_LAUNCHED);
 
       // 应用环境参数
       ioc.environment.use(options);
       ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
-      ioc.eventBus.app.publish(PRESET.EVENT.QIN.APP_ARGS_APPLIED);
+      ioc.eventBus.app.publish(PRESET.EVENT.APP_ARGS_APPLIED);
 
       // 启动音频播放器
       ioc.audio.start();
@@ -69,13 +68,10 @@ export class Qin {
       ioc.profiler.start();
 
       // 通知应用启动完成
-      ioc.eventBus.app.publish(PRESET.EVENT.QIN.APP_AFTER_LAUNCHED);
+      ioc.eventBus.app.publish(PRESET.EVENT.APP_AFTER_LAUNCHED);
 
       // 启动应用循环
       ioc.looper.start();
-
-      // 通知屏幕尺寸变化
-      ioc.eventBus.gui.publish(PRESET.EVENT.SCREEN_SIZE_CHANGED, screen.windowSize);
     });
 
     // 标记为初始化完成

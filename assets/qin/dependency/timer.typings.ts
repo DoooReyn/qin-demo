@@ -14,6 +14,8 @@ export interface ICounter extends IObjectEntry {
   onFixedTick: ITriggers;
   /** 触发器#完成 */
   onDone: ITriggers;
+  /** 计时器ID */
+  get cid(): number;
   /** 计时#累计次数 */
   get count(): number;
   /** 计时#是否完成 */
@@ -54,7 +56,7 @@ export interface ITick {
    * 移除计数器
    * @param counter 计数器
    */
-  del(counter: ICounter): void;
+  del(counter: ICounter | number): void;
   /**
    * 下一帧执行
    * @param fn 回调方法
@@ -90,13 +92,7 @@ export interface ITick {
    * @param args 回调入参
    * @returns
    */
-  repeat(
-    interval: number,
-    total: number,
-    fn: Function,
-    context: any,
-    ...args: any[]
-  ): ICounter;
+  repeat(interval: number, total: number, fn: Function, context: any, ...args: any[]): ICounter;
   /**
    * 重复执行
    * @param interval 设定间隔
@@ -121,12 +117,7 @@ export interface ITick {
    * @param args 回调入参
    * @returns
    */
-  fixedTick(
-    interval: number,
-    fn: Function,
-    context: any,
-    ...args: any[]
-  ): ICounter;
+  fixedTick(interval: number, fn: Function, context: any, ...args: any[]): ICounter;
   /**
    * 当前速率
    */
