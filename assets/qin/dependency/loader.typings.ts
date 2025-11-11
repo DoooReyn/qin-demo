@@ -19,7 +19,7 @@ import { IDependency } from "./dependency.typings";
  * ["img-hero", SpriteFrame]  // 使用默认 bundle (shared)
  * ["resources@img-hero", SpriteFrame]
  */
-export type PreloadItem = [string, Constructor<Asset>];
+export type PreloadItem = [Constructor<Asset>, string];
 
 /**
  * 加载资源项
@@ -133,7 +133,7 @@ export interface ILocalContainer {
    * @param path 资源路径
    * @returns
    */
-  hasRes(path: string): Promise<boolean>;
+  has(path: string): Promise<boolean>;
 
   /**
    * 预加载包内指定资源
@@ -141,10 +141,7 @@ export interface ILocalContainer {
    * @param type 资源类型
    * @returns
    */
-  preloadRes<T extends Asset>(
-    type: Constructor<T>,
-    path: string,
-  ): Promise<boolean>;
+  preload<T extends Asset>(type: Constructor<T>, path: string): Promise<boolean>;
 
   /**
    * 加载包内指定资源
@@ -152,10 +149,7 @@ export interface ILocalContainer {
    * @param type 资源类型
    * @returns
    */
-  loadRes<T extends Asset>(
-    type: Constructor<T>,
-    path: string,
-  ): Promise<T | null>;
+  load<T extends Asset>(type: Constructor<T>, path: string): Promise<T | null>;
 
   /**
    * 加载原始图片
@@ -283,9 +277,7 @@ export interface IRemoteContainer {
    * @param img 原始图像
    * @returns
    */
-  createImageAsset(
-    img: __private._cocos_asset_assets_image_asset__ImageSource,
-  ): ImageAsset;
+  createImageAsset(img: __private._cocos_asset_assets_image_asset__ImageSource): ImageAsset;
   /** 获取图集名称 */
   getAtlasName(atlas: string): string;
   /** 解析矩形信息 TexturePacker */
@@ -450,10 +442,7 @@ export interface IAssetLoader extends IDependency {
    * @param options 加载选项
    * @returns 资源实例
    */
-  load<T extends Asset>(
-    type: Constructor<T>,
-    options: ILoadOptions,
-  ): Promise<T | null>;
+  load<T extends Asset>(type: Constructor<T>, options: ILoadOptions): Promise<T | null>;
 
   /**
    * 加载图片资源
@@ -579,6 +568,7 @@ export interface IAssetLoader extends IDependency {
    * @param onProgress 进度回调
    * @returns 加载结果
    * @example
+   * ```typescript
    * // 使用默认 bundle (shared)
    * await ioc.loader.preload([
    *   ["l:img-hero", SpriteFrame],
@@ -591,15 +581,11 @@ export interface IAssetLoader extends IDependency {
    *   ["l:img-hero", SpriteFrame],
    *   ["l:shared@aud-bgm", AudioClip],
    * ]);
+   * ```
    */
   preload(
     items: PreloadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path: string,
-      loaded: boolean,
-    ) => void,
+    onProgress?: (finished: number, total: number, path: string, loaded: boolean) => void
   ): Promise<void>;
 
   /**
@@ -609,36 +595,31 @@ export interface IAssetLoader extends IDependency {
    */
   loadMany(
     items: LoadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path?: string,
-      loaded?: boolean,
-    ) => void,
+    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void
   ): Promise<void>;
 
   /**
    * 顺序加载资源队列（串行）
    * @param items 资源项列表
    * @param onProgress 进度回调
-   * @returns 队列ID和进度信息
-   * @example
-   * const abort = await ioc.loader.loadSequence([
-   *   ["l:img-hero", SpriteFrame],
-   *   ["l:pfb-dialog", Prefab],
-   * ], (progress) => {
-   *   console.log(`进度: ${(progress.progress * 100).toFixed(0)}%`);
-   * });
-   * setTimeout(abort, 5000);
+   * @returns 取消加载函数
    */
   loadSequence(
     tasks: LoadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path: string,
-      success: boolean,
-    ) => void,
+    onProgress?: (finished: number, total: number, path: string, success: boolean) => void
+  ): () => void;
+
+  /**
+   * 加载资源队列（并行）
+   * @param items 资源项列表
+   * @param onProgress 进度回调
+   * @param concurrency 并发数
+   * @returns 取消加载函数
+   */
+  loadParallel(
+    items: LoadItem[],
+    onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
+    concurrency?: number
   ): () => void;
 }
 
@@ -651,11 +632,11 @@ export interface ILoadTask {
   /** 加载选项 */
   options: ILoadOptions;
   /** 完成回调 */
-  oncomplete?: (asset: Asset | null) => void;
+  onComplete?: (asset: Asset | null) => void;
   /** 成功回调 */
-  onsuccess?: (asset: Asset) => void;
+  onSuccess?: (asset: Asset) => void;
   /** 失败回调 */
-  onfail?: () => void;
+  onFail?: () => void;
   /** 任务是否已取消 */
   get aborted(): boolean;
   /** 任务是否加载中 */

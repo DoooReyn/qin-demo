@@ -4,7 +4,7 @@ import {
   SpriteFrame, Texture2D, TextAsset, TiledMapAsset, TTFFont, VideoClip
 } from "cc";
 
-import { list, time } from "../ability";
+import { list } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { PRESET } from "../preset";
 import { Constructor } from "../typings";
@@ -59,10 +59,7 @@ class LocalContainer implements ILocalContainer {
   }
 
   hasAB(ab: string): boolean {
-    return (
-      assetManager.bundles.has(ab) ||
-      (<any>assetManager)._projectBundles.includes(ab)
-    );
+    return assetManager.bundles.has(ab) || (<any>assetManager)._projectBundles.includes(ab);
   }
 
   loadAB(ab: string) {
@@ -97,7 +94,7 @@ class LocalContainer implements ILocalContainer {
     }
   }
 
-  hasRes(path: string) {
+  has(path: string) {
     return new Promise<boolean>(async (resolve) => {
       const [ab, raw] = this.parsePath(path);
       const bun = await this.loadAB(ab);
@@ -110,7 +107,7 @@ class LocalContainer implements ILocalContainer {
     });
   }
 
-  preloadRes<T extends Asset>(type: Constructor<T>, path: string) {
+  preload<T extends Asset>(type: Constructor<T>, path: string) {
     return new Promise<boolean>(async (resolve) => {
       const [ab, raw] = this.parsePath(path);
       const bun = await this.loadAB(ab);
@@ -132,7 +129,7 @@ class LocalContainer implements ILocalContainer {
     });
   }
 
-  loadRes<T extends Asset>(type: Constructor<T>, path: string) {
+  load<T extends Asset>(type: Constructor<T>, path: string) {
     return new Promise<T | null>(async (resolve) => {
       const [ab, raw] = this.parsePath(path);
       const bun = await this.loadAB(ab);
@@ -165,88 +162,88 @@ class LocalContainer implements ILocalContainer {
   }
 
   loadImage(path: string) {
-    return this.loadRes<ImageAsset>(ImageAsset, path);
+    return this.load<ImageAsset>(ImageAsset, path);
   }
 
   loadTexture(path: string) {
-    return this.loadRes(Texture2D, path);
+    return this.load(Texture2D, path);
   }
 
   loadSpriteFrame(path: string) {
-    return this.loadRes(SpriteFrame, path);
+    return this.load(SpriteFrame, path);
   }
 
   loadAtlas(path: string) {
-    return this.loadRes(SpriteAtlas, path);
+    return this.load(SpriteAtlas, path);
   }
 
   loadPrefab(path: string) {
-    return this.loadRes(Prefab, path);
+    return this.load(Prefab, path);
   }
 
   loadText(path: string) {
-    return this.loadRes(TextAsset, path);
+    return this.load(TextAsset, path);
   }
 
   loadJson(path: string) {
-    return this.loadRes(JsonAsset, path);
+    return this.load(JsonAsset, path);
   }
 
   loadSpine(path: string) {
-    return this.loadRes(sp.SkeletonData, path);
+    return this.load(sp.SkeletonData, path);
   }
 
   loadFont(path: string) {
-    return this.loadRes(Font, path);
+    return this.load(Font, path);
   }
 
   loadBitmapFont(path: string) {
-    return this.loadRes(BitmapFont, path);
+    return this.load(BitmapFont, path);
   }
 
   loadAudio(path: string) {
-    return this.loadRes(AudioClip, path);
+    return this.load(AudioClip, path);
   }
 
   loadParticle(path: string) {
-    return this.loadRes(ParticleAsset, path);
+    return this.load(ParticleAsset, path);
   }
 
   loadTmx(path: string) {
-    return this.loadRes(TiledMapAsset, path);
+    return this.load(TiledMapAsset, path);
   }
 
   loadBinary(path: string) {
-    return this.loadRes(BufferAsset, path);
+    return this.load(BufferAsset, path);
   }
 
   loadVideo(path: string) {
-    return this.loadRes(VideoClip, path);
+    return this.load(VideoClip, path);
   }
 
   loadAnimation(path: string) {
-    return this.loadRes(AnimationClip, path);
+    return this.load(AnimationClip, path);
   }
 }
 
+/**
+ * 远程资源容器
+ */
 class RemoteContainer implements IRemoteContainer {
   /** 携带参数 */
   private __params: Record<string, string> = Object.create(null);
 
-  /** 资源缓存 */
-  private __container: Map<string, Asset> = new Map();
-
   /** 资源服务器地址 */
-  get server() {
+  public get server() {
     return assetManager.downloader.remoteServerAddress;
   }
-  set server(value: string) {
+  public set server(value: string) {
     // @ts-ignore
     assetManager.downloader._remoteServerAddress = value;
   }
 
-  clear() {
-    this.__container.clear();
+  public clear() {
+    ioc.cache.clearBySource(CacheSource.Remote);
   }
 
   /**
@@ -254,9 +251,7 @@ class RemoteContainer implements IRemoteContainer {
    * @param img 原始图像
    * @returns
    */
-  public createImageAsset(
-    img: __private._cocos_asset_assets_image_asset__ImageSource,
-  ) {
+  public createImageAsset(img: __private._cocos_asset_assets_image_asset__ImageSource) {
     return img instanceof ImageAsset ? img : new ImageAsset(img);
   }
 
@@ -308,42 +303,22 @@ class RemoteContainer implements IRemoteContainer {
    * @param parser 解析器
    * @returns
    */
-  private __load<T extends Asset>(
-    key: string,
-    urls: string | string[],
-    parser: (asset: any) => T,
-  ) {
-    return new Promise<T | null>((res) => {
-      let asset: Asset | undefined | null = this.__container.get(key);
+  private __load<T extends Asset>(key: string, urls: string | string[], parser: (asset: any) => T) {
+    return new Promise<T | null>((resolve) => {
+      const cacheKey = "r:" + key;
+      let asset: T | null = ioc.cache.get<T>(cacheKey);
       if (asset) {
-        if (asset.isValid) {
-          // 缓存已存在
-          return res(asset as T);
-        } else {
-          // 缓存已存在，但资源已被释放
-          this.__container.delete(key);
-          asset = null;
-        }
+        return resolve(asset as T);
       }
       if (!Array.isArray(urls)) urls = [urls];
       const ret = urls.map((v) => {
         return { url: this.makeUrl(v) };
       });
       assetManager.loadAny(ret, null, (err, data) => {
-        if (err) {
-          // 资源加载失败
-          asset = null;
-        } else {
+        if (data) {
           asset = parser(data!);
-          if (asset) {
-            // 资源解析成功
-            this.__container.set(key, asset);
-          } else {
-            // 资源解析失败
-            asset = null;
-          }
         }
-        return res(asset as T);
+        return resolve(asset as T | null);
       });
     });
   }
@@ -351,24 +326,23 @@ class RemoteContainer implements IRemoteContainer {
   /**
    * 组织网址
    * @param raw 资源地址
-   * @param timestamp 是否添加时间戳
    * @returns
    */
-  public makeUrl(raw: string, timestamp: boolean = false) {
-    const ret = [];
+  public makeUrl(raw: string) {
+    const params = [];
+
     const keys = Object.keys(this.__params);
     if (keys.length > 0) {
       keys.forEach((k) => {
-        ret.push(`${k}=${this.__params[k]}`);
+        params.push(`${k}=${this.__params[k]}`);
       });
     }
-    if (timestamp) {
-      ret.push(`t=${time.time()}`);
-    }
+
     let url = path.join(this.server, raw);
-    if (ret.length) {
-      url += "?" + ret.join("&");
+    if (params.length) {
+      url += "?" + params.join("&");
     }
+
     return url;
   }
 
@@ -583,12 +557,7 @@ class RemoteContainer implements IRemoteContainer {
         if (data.textureRect) {
           frame.rect = this.parseRect(data.textureRect);
         } else if (data.frame) {
-          frame.rect = new Rect(
-            data.frame.x,
-            data.frame.y,
-            data.frame.w,
-            data.frame.h,
-          );
+          frame.rect = new Rect(data.frame.x, data.frame.y, data.frame.w, data.frame.h);
         } else {
           frame.rect = new Rect(data.x, data.y, data.w, data.h);
         }
@@ -703,10 +672,7 @@ class RemoteContainer implements IRemoteContainer {
    * @param path 资源路径
    * @returns 资源实例
    */
-  async load<T extends Asset>(
-    type: Constructor<T>,
-    path: string,
-  ): Promise<T | null> {
+  async load<T extends Asset>(type: Constructor<T>, path: string): Promise<T | null> {
     const typeName = js.getClassName(type);
     // 根据类型调用对应的远程加载方法
     switch (typeName) {
@@ -803,19 +769,14 @@ export class AssetLoader extends Dependency implements IAssetLoader {
 
   async preload(
     items: PreloadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path?: string,
-      loaded?: boolean,
-    ) => void,
+    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void
   ): Promise<void> {
     const total = items.length;
     let finished = 0;
 
     for (const item of items) {
-      const [path, type] = item;
-      const loaded = await this.local.preloadRes(type, path);
+      const [type, path] = item;
+      const loaded = await this.local.preload(type, path);
 
       if (loaded) {
         finished++;
@@ -835,10 +796,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
     }
   }
 
-  async load<T extends Asset>(
-    type: Constructor<T>,
-    options: ILoadOptions,
-  ): Promise<T | null> {
+  async load<T extends Asset>(type: Constructor<T>, options: ILoadOptions): Promise<T | null> {
     const { path, cacheExpires = this.defaultCacheExpires } = options;
     const [source, key, raw] = this.__parsePath(path);
     if (source == CacheSource.Unknown) {
@@ -860,7 +818,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
     if (source == CacheSource.Remote) {
       asset = await this.remote.load<T>(type, raw);
     } else {
-      asset = await this.local.loadRes<T>(type, raw);
+      asset = await this.local.load<T>(type, raw);
     }
 
     // 缓存资源
@@ -957,12 +915,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
 
   async loadMany(
     items: LoadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path?: string,
-      loaded?: boolean,
-    ) => void,
+    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void
   ): Promise<void> {
     const total = items.length;
     let finished = 0;
@@ -993,12 +946,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
 
   loadSequence(
     tasks: LoadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path: string,
-      success: boolean,
-    ) => void,
+    onProgress?: (finished: number, total: number, path: string, success: boolean) => void
   ): () => void {
     const total = tasks.length;
     let index = 0;
@@ -1050,13 +998,8 @@ export class AssetLoader extends Dependency implements IAssetLoader {
 
   loadParallel(
     items: LoadItem[],
-    onProgress?: (
-      finished: number,
-      total: number,
-      path: string,
-      success: boolean,
-    ) => void,
-    concurrency: number = 0,
+    onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
+    concurrency: number = 0
   ) {
     let finished = 0;
     let total = items.length;
@@ -1080,7 +1023,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
             if (!asset && this.logEnabled) {
               ioc.logcat.res.ef("资源加载器: 加载失败 {0}", url);
             }
-          }),
+          })
       );
       tasks.forEach((task) => task.load());
 
@@ -1108,7 +1051,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
             if (!asset && this.logEnabled) {
               ioc.logcat.res.ef("资源加载器: 加载失败 {0}", url);
             }
-          }),
+          })
       );
 
       const queue = list.split(tasks, concurrency);
@@ -1149,32 +1092,12 @@ export class LoadTask<T extends Asset> implements ILoadTask {
   constructor(
     public readonly type: Constructor<T>,
     public readonly options: ILoadOptions,
-    public readonly oncomplete?: (asset: T | null) => void,
-    public readonly onsuccess?: (asset: T) => void,
-    public readonly onfail?: () => void,
+    public readonly onComplete?: (asset: T | null) => void,
+    public readonly onSuccess?: (asset: T) => void,
+    public readonly onFail?: () => void
   ) {
     this.__loading = false;
     this.__aborted = false;
-  }
-
-  load() {
-    if (!this.__loading) {
-      this.__loading = true;
-
-      ioc.loader.load(this.type, this.options).then((asset) => {
-        this?.oncomplete?.(asset);
-        if (asset && this.__aborted) {
-          this?.onsuccess?.(asset);
-        } else {
-          this?.onfail?.();
-        }
-      });
-    }
-  }
-
-  abort() {
-    this.__aborted = true;
-    this.__loading = false;
   }
 
   get aborted() {
@@ -1183,5 +1106,25 @@ export class LoadTask<T extends Asset> implements ILoadTask {
 
   get loading() {
     return this.__loading;
+  }
+
+  load() {
+    if (!this.__loading) {
+      this.__loading = true;
+
+      ioc.loader.load(this.type, this.options).then((asset) => {
+        this?.onComplete?.(asset);
+        if (asset && this.__aborted) {
+          this?.onSuccess?.(asset);
+        } else {
+          this?.onFail?.();
+        }
+      });
+    }
+  }
+
+  abort() {
+    this.__aborted = true;
+    this.__loading = false;
   }
 }
