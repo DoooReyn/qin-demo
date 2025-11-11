@@ -15,7 +15,7 @@ export class Qin {
   readonly description: string =
     "\n--------------------------------------------------" +
     "\n  Qin Framework" +
-    "\n  Copyright © 2025 Qin Team ❤ Reyn" +
+    "\n  Copyright © 2025 Qin Team ❤️ DoooReyn" +
     "\n  Version: 0.0.1" +
     "\n--------------------------------------------------";
 
@@ -62,14 +62,17 @@ export class Qin {
       ioc.logcat.qin.i("应用环境参数", ioc.environment.args);
       ioc.eventBus.app.publish(PRESET.EVENT.QIN.APP_ARGS_APPLIED);
 
-      // 启动应用循环
-      ioc.looper.start();
-
       // 启动音频播放器
       ioc.audio.start();
 
+      // 启动性能监控
+      ioc.profiler.start();
+
       // 通知应用启动完成
       ioc.eventBus.app.publish(PRESET.EVENT.QIN.APP_AFTER_LAUNCHED);
+
+      // 启动应用循环
+      ioc.looper.start();
 
       // 通知屏幕尺寸变化
       ioc.eventBus.gui.publish(PRESET.EVENT.SCREEN_SIZE_CHANGED, screen.windowSize);

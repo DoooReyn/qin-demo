@@ -17,6 +17,12 @@ export class ObjectEntry implements IObjectEntry {
     return this[ObjectPoolContainer.Key] as IObjectEntryOutline;
   }
 
+  /** 创建时间点 */
+  protected _createAt: number = 0;
+
+  /** 回收时间点 */
+  protected _recycleAt: number = 0;
+
   /** 条目名称 */
   public get name(): string {
     return this._outline.name;
@@ -27,7 +33,7 @@ export class ObjectEntry implements IObjectEntry {
    * @description 容量 <= 0 时表示不限制（默认不限制）
    */
   public get capacity() {
-    return 0;
+    return this._outline.capacity;
   }
 
   /**
@@ -35,7 +41,7 @@ export class ObjectEntry implements IObjectEntry {
    * @description 过期时间 <= 0 时表示不过期（默认不过期）
    */
   public get expires() {
-    return 0;
+    return this._outline.expires;
   }
 
   /**
@@ -51,7 +57,7 @@ export class ObjectEntry implements IObjectEntry {
       return false;
     }
 
-    return time.now >= expires + this._outline.recycleAt;
+    return time.now >= expires + this._recycleAt;
   }
 
   /**
@@ -61,7 +67,7 @@ export class ObjectEntry implements IObjectEntry {
    */
   public initialize(...args: any[]) {
     if (!this.initialized) {
-      this._outline.createAt = Date.now();
+      this._createAt = Date.now();
       this._onStart(...args);
     }
   }
@@ -72,8 +78,8 @@ export class ObjectEntry implements IObjectEntry {
    */
   public recycle() {
     if (!this.destroyed) {
-      this._outline.recycleAt = Date.now();
-      this._outline.createAt = 0;
+      this._recycleAt = Date.now();
+      this._createAt = 0;
       this._onEnded();
       return true;
     }
@@ -82,12 +88,18 @@ export class ObjectEntry implements IObjectEntry {
 
   /** 是否已初始化 */
   public get initialized() {
-    return this._outline.createAt > 0;
+    return this._createAt > 0;
   }
 
   /** 是否已销毁 */
   public get destroyed() {
-    return this._outline.recycleAt > 0;
+    return this._recycleAt > 0;
+  }
+
+  /** 重置 */
+  public reset() {
+    this._recycleAt = 0;
+    this._createAt = 0;
   }
 
   /**
@@ -125,7 +137,9 @@ export class ObjectPool<T extends IObjectEntry> implements IObjectPool<T> {
 
   /** 创建条目 */
   private __create(): T {
-    return new this._cls();
+    const inst = new this._cls();
+    inst.reset();
+    return inst;
   }
 
   /** 取出条目 */
@@ -272,15 +286,17 @@ export class ObjectPoolContainer extends Dependency implements IObPoC {
 
 /**
  * 对象池条目装饰器
- * @param name 对象池条目名称
+ * @param name 对象池条目
+ * @param capacity 容量
+ * @param expires 过期时间（毫秒）
  * @returns
  */
-export function ObEntryOutline(name: string) {
+export function ObEntryOutline(name: string, capacity: number = 0, expires: number = 0) {
   return function (target: any) {
     target.prototype[ObjectPoolContainer.Key] = {
       name,
-      createAt: 0,
-      recycleAt: 0,
+      capacity,
+      expires,
     };
     ioc.objPool.register(target);
     return target;

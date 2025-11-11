@@ -197,33 +197,33 @@ export const time: ITime = {
     return Math.abs((d2 ??= time.date).getTime() - d1.getTime());
   },
   diffDays(d1: Date, d2?: Date): number {
-    return this.diff(d1, d2) / MACRO.DAY;
+    return time.diff(d1, d2) / MACRO.DAY;
   },
   diffWeeks(d1: Date, d2?: Date): number {
-    return this.diffDays(d1, d2) / 7;
+    return time.diffDays(d1, d2) / 7;
   },
   diffMonths(d1: Date, d2?: Date): number {
-    return this.diffDays(d1, d2) / 30;
+    return time.diffDays(d1, d2) / 30;
   },
   diffYears(d1: Date, d2?: Date): number {
-    return this.diffDays(d1, d2) / 365;
+    return time.diffDays(d1, d2) / 365;
   },
   diffHours(d1: Date, d2?: Date): number {
-    return this.diff(d1, d2) / MACRO.HOUR;
+    return time.diff(d1, d2) / MACRO.HOUR;
   },
   diffMinutes(d1: Date, d2?: Date): number {
-    return this.diff(d1, d2) / MACRO.MINUTE;
+    return time.diff(d1, d2) / MACRO.MINUTE;
   },
   diffSeconds(d1: Date, d2?: Date): number {
-    return this.diff(d1, d2) / MACRO.SECOND;
+    return time.diff(d1, d2) / MACRO.SECOND;
   },
   isLeapYear(year?: number): boolean {
-    year ??= this.year();
+    year ??= time.year();
     return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   },
   daysInMonth(year?: number, month?: number): number {
-    year ??= this.year();
-    month ??= this.month();
+    year ??= time.year();
+    month ??= time.month();
     return new Date(year, month + 1, 0).getDate();
   },
   addDays(days: number, d?: Date): Date {
@@ -251,16 +251,16 @@ export const time: ITime = {
     ms: number;
     ts: number;
   } {
-    d ??= this.date();
+    d ??= time.date;
     return {
-      yy: this.year(d),
-      mm: this.month(d),
-      dd: this.monthDay(d),
-      h: this.hour(d),
-      m: this.minute(d),
-      s: this.second(d),
-      ms: this.milliSecond(d),
-      ts: this.time(d),
+      yy: time.year(d),
+      mm: time.month(d),
+      dd: time.monthDay(d),
+      h: time.hour(d),
+      m: time.minute(d),
+      s: time.second(d),
+      ms: time.millisecond(d),
+      ts: time.time(d),
     };
   },
   ymd: function (d?: Date): string {
@@ -294,7 +294,7 @@ export const time: ITime = {
       minutes = 0,
       seconds = 0,
       text = "";
-    const now = this.timestamp();
+    const now = time.time();
     const remaining = stamp - now;
     if (remaining > 0) {
       days = Math.floor(remaining / MACRO.DAY);

@@ -7,10 +7,10 @@ import { IDependency } from "./dependency.typings";
 export interface IObjectEntryOutline {
   /** 标记 */
   name: string;
-  /** 创建时间 */
-  createAt: number;
-  /** 回收时间 */
-  recycleAt: number;
+  /** 容量 */
+  capacity: number;
+  /** 过期时间（毫秒） */
+  expires: number;
 }
 
 /**
@@ -48,6 +48,8 @@ export interface IObjectEntry {
    * @warn 请勿手动调用
    */
   recycle(): boolean;
+  /** 重置 */
+  reset(): void;
 }
 
 /**

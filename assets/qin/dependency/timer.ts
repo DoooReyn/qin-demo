@@ -8,7 +8,7 @@ import { ICounter, ITick, ITimer } from "./timer.typings";
 /**
  * 计数器
  */
-@ObEntryOutline("Counter")
+@ObEntryOutline("Counter", 32, 600_000)
 export class Counter extends ObjectEntry implements ICounter {
   /** 设定#计次间隔 */
   protected _interval: number = 0;
@@ -54,14 +54,6 @@ export class Counter extends ObjectEntry implements ICounter {
   /** 计时#累计时间 */
   public get accumulated() {
     return this._accumulated;
-  }
-
-  public get capacity() {
-    return 32;
-  }
-
-  public get expires() {
-    return 600_000;
   }
 
   protected _onStart(interval: number = 0, total: number = 1): void {

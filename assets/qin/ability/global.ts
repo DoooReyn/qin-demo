@@ -54,7 +54,7 @@ export const gg: IGlobal = {
     }
   },
   acquire<T>(key: string): T | undefined {
-    for (let i = gg.env.length; i >= 0; i--) {
+    for (let i = gg.env.length - 1; i >= 0; i--) {
       if (gg.env[i][key] !== undefined) {
         return gg.env[i][key] as T;
       }
