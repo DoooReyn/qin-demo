@@ -1,23 +1,7 @@
 import {
-  IAssetLoader,
-  IAstc,
-  IAudioPlayer,
-  ICacheContainer,
-  IDependency,
-  IDependencyMeta,
-  IEnvironment,
-  IEventBus,
-  IIncremental,
-  ILauncher,
-  ILogcat,
-  ILooper,
-  INodePoC,
-  IObPoC,
-  IPriorityInput,
-  IProfiler,
-  ISensitives,
-  IStoreContainer,
-  ITimer,
+  IAssetLoader, IAstc, IAudioPlayer, ICacheContainer, IDependency, IDependencyMeta, IEnvironment,
+  IEventBus, IIncremental, ILauncher, ILogcat, ILooper, INodePoC, IObPoC, IPriorityInput, IProfiler,
+  ISensitives, IStoreContainer, ITimer
 } from "./dependency";
 
 /**
