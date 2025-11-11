@@ -132,6 +132,14 @@ export class EventBus extends Dependency implements IEventBus {
     return this.acquire("shared");
   }
 
+  get app() {
+    return this.acquire("app");
+  }
+
+  get gui() {
+    return this.acquire("gui");
+  }
+
   onDetach() {
     this.removeAll();
     return super.onDetach();

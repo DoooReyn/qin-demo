@@ -16,6 +16,10 @@ export interface IEventBus extends IDependency {
   removeAll(): void;
   /** 共享事件渠道 */
   get shared(): IEventChannel;
+  /** GUI 事件频道 */
+  get gui(): IEventChannel;
+  /** 应用事件频道 */
+  get app(): IEventChannel;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { director, game, Camera, Canvas, Director, Game, Node, Scene } from "cc";
 
+import { MainAtom } from "../atom";
 import ioc, { Injectable } from "../ioc";
 import { PRESET } from "../preset";
 import { Dependency } from "./dependency";
@@ -14,6 +15,7 @@ export class Launcher extends Dependency implements ILauncher {
   stage: Canvas;
   root: Node;
   cameraUi: Camera;
+  main: MainAtom;
 
   private __onLaunched: () => void;
 
@@ -35,11 +37,13 @@ export class Launcher extends Dependency implements ILauncher {
     this.cameraUi =
       this.root.getChildByName(PRESET.MACRO.CAMERA_UI)?.getComponent(Camera) ??
       this.root.getComponentInChildren(Camera);
+    this.main = this.root.addComponent(MainAtom);
     this.__onLaunched?.();
     this.__onLaunched = null;
   }
 
   onEnded() {
+    ioc.destroy();
     ioc.logcat.qin.i("应用退出");
   }
 }

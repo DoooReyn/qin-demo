@@ -23,7 +23,7 @@ export interface IGlobal extends IAbility {
 }
 
 /** 全局环境能力 */
-const gg: IGlobal = {
+export const gg: IGlobal = {
   name: "Global",
   description: "全局环境",
   env: [{}, globalThis || window || self || frames || {}],

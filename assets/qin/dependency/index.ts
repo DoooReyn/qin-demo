@@ -26,3 +26,7 @@ export * from "./cache.typings";
 export * from "./cache";
 export * from "./loader.typings";
 export * from "./loader";
+export * from "./priority-input.typings";
+export * from "./priority-input";
+export * from "./profiler.typings";
+export * from "./profiler";
