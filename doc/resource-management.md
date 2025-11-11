@@ -1,193 +1,300 @@
-# 资源管理优化文档
+# 资源管理系统完整文档
 
-## 概述
+## 📋 概述
 
-Qin 框架的资源管理系统已经过优化，现在提供了统一的资源加载和缓存管理机制。新架构包含以下核心组件：
+Qin 框架提供了一套完整的资源管理系统，统一管理本地和远程资源的加载、缓存和释放。
 
-- **CacheContainer** - 统一缓存管理容器
-- **AssetLoader** - 统一资源加载器
+### 核心组件
+
+- **CacheContainer** - 统一缓存管理容器（自动清理）
+- **AssetLoader** - 统一资源加载器（支持单个、批量、队列加载）
 - **ResContainer** - 本地资源容器（底层）
 - **RemoteContainer** - 远程资源容器（底层）
 
-## 架构设计
+## 🏗️ 架构设计
 
 ```
-┌─────────────────────────────────────────┐
-│          AssetLoader (统一接口)          │
-│  - 自动判断本地/远程                      │
-│  - 统一加载接口                           │
-│  - 自动缓存管理                           │
-└──────────────┬──────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────┐
-│       CacheContainer (缓存管理)          │
-│  - 统一缓存存储                           │
-│  - 引用计数管理                           │
-│  - 过期时间控制                           │
-│  - 缓存统计信息                           │
-└──────────────┬──────────────────────────┘
-               │
-       ┌───────┴───────┐
-       ▼               ▼
-┌─────────────┐  ┌─────────────┐
-│ResContainer │  │RemoteContainer│
-│  (本地资源)  │  │  (远程资源)   │
-└─────────────┘  └─────────────┘
+┌─────────────────────────────────────────────────────┐
+│            AssetLoader (统一加载接口)                 │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ 单个资源加载                                  │   │
+│  │ - load(), loadSpriteFrame(), loadPrefab()... │   │
+│  └─────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ 批量预加载                                    │   │
+│  │ - preload([路径, 类型, bundle?])              │   │
+│  └─────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ 队列加载 (新)                                 │   │
+│  │ - loadSequence() 顺序加载                     │   │
+│  │ - loadParallel() 并行加载 (支持并发数控制)    │   │
+│  │ - loadQueue() 通用队列加载                    │   │
+│  └─────────────────────────────────────────────┘   │
+└──────────────────┬──────────────────────────────────┘
+                   ↓
+┌─────────────────────────────────────────────────────┐
+│         CacheContainer (缓存管理)                    │
+│  - 统一缓存存储                                       │
+│  - 引用计数管理                                       │
+│  - 过期时间控制                                       │
+│  - 自动定时清理                                       │
+│  - 缓存统计信息                                       │
+└──────────────────┬──────────────────────────────────┘
+                   │
+         ┌─────────┴─────────┐
+         ↓                   ↓
+┌─────────────────┐  ┌──────────────────┐
+│  ResContainer   │  │ RemoteContainer  │
+│   (本地资源)     │  │   (远程资源)      │
+└─────────────────┘  └──────────────────┘
 ```
 
-## 核心特性
+## ✨ 核心特性
 
 ### 1. 统一加载接口
 
-无需关心资源来源（本地/远程），使用统一的 API 加载资源：
-
-```typescript
-import qin, { ioc } from "../qin";
-
-// 加载本地资源
-const sprite = await ioc.loader.loadSpriteFrame("img-hero", "shared");
-
-// 加载远程资源（自动识别）
-const remoteSprite = await ioc.loader.loadSpriteFrame("https://cdn.example.com/hero.png");
-```
+- 自动识别本地/远程资源
+- 统一的 API，无需区分来源
+- 自动缓存管理
 
 ### 2. 智能缓存管理
 
 - 自动缓存加载的资源
-- 支持缓存命中/未命中统计
-- 支持过期时间控制
-- 支持引用计数管理
+- 缓存命中率统计
+- 过期时间控制
+- 引用计数管理
+- 自动定时清理
 
-### 3. 资源来源区分
+### 3. 多种加载模式
 
-缓存系统自动区分资源来源：
+- 单个资源加载
+- 批量预加载
+- 顺序队列加载（串行）
+- 并行队列加载（支持并发数控制）
 
-- `CacheSource.Local` - 本地资源
-- `CacheSource.Remote` - 远程资源
+### 4. 任务状态管理
 
-### 4. 自动清理机制
+- 5 种任务状态（等待、加载中、完成、失败、取消）
+- 实时进度追踪
+- 支持取消队列
 
-- 定时清理过期缓存
-- 支持手动清理
-- 支持按来源清理
+## 🚀 快速开始
 
-## 使用指南
-
-### 基础用法
-
-#### 1. 加载资源
+### 1. 基础加载
 
 ```typescript
 import { ioc } from "../qin";
 
 // 加载精灵帧
-const sprite = await ioc.loader.loadSpriteFrame("img-hero");
+const sprite = await ioc.loader.loadSpriteFrame("l:resources@img-hero");
 
 // 加载预制体
-const prefab = await ioc.loader.loadPrefab("pfb-dialog");
+const prefab = await ioc.loader.loadPrefab("l:resources@pfb-dialog");
 
-// 加载 JSON 配置
-const config = await ioc.loader.loadJson("cfg-game");
+// 加载 JSON
+const config = await ioc.loader.loadJson("l:resources@cfg-game");
 
 // 加载音频
-const audio = await ioc.loader.loadAudio("aud-bgm");
+const audio = await ioc.loader.loadAudio("l:resources@aud-bgm");
 ```
 
-#### 2. 指定资源包
+### 2. 指定资源包
 
 ```typescript
 // 从指定资源包加载
-const sprite = await ioc.loader.loadSpriteFrame("img-hero", "resources");
+const sprite = await ioc.loader.loadSpriteFrame("l:shared@img-hero");
 ```
 
-#### 3. 高级加载选项
+### 3. 预加载
 
 ```typescript
-import { ioc, SpriteFrame } from "../qin";
+import { SpriteFrame, Prefab, AudioClip } from "cc";
+
+await ioc.loader.preload(
+  [
+    [SpriteFrame, "l:resources@img-hero"],
+    [SpriteFrame, "l:resources@img-enemy"],
+    [Prefab, "l:resources@pfb-dialog"],
+    [AudioClip, "l:resources@aud-bgm"],
+  ],
+  (finished, total, path, loaded) => {
+    console.log(`加载进度: ${finished}/${total}`);
+  },
+);
+```
+
+## 📦 单个资源加载
+
+### 基础用法
+
+```typescript
+import { ioc } from "../qin";
+
+// 加载各种类型的资源
+const image = await ioc.loader.loadImage("l:resources@img-hero");
+const spriteFrame = await ioc.loader.loadSpriteFrame("l:resources@img-hero");
+const atlas = await ioc.loader.loadAtlas("l:resources@atl-ui");
+const texture = await ioc.loader.loadTexture("l:resources@img-bg");
+const prefab = await ioc.loader.loadPrefab("l:resources@pfb-dialog");
+const text = await ioc.loader.loadText("l:resources@data-config");
+const json = await ioc.loader.loadJson("l:resources@cfg-game");
+const spine = await ioc.loader.loadSpine("l:resources@ani-hero");
+const font = await ioc.loader.loadFont("l:resources@fnt-custom");
+const audio = await ioc.loader.loadAudio("l:resources@aud-bgm");
+const particle = await ioc.loader.loadParticle("l:resources@ptc-fire");
+const tmx = await ioc.loader.loadTmx("l:resources@map-level1");
+const binary = await ioc.loader.loadBinary("l:resources@data-save");
+const video = await ioc.loader.loadVideo("l:resources@vid-intro");
+const animation = await ioc.loader.loadAnimation("l:resources@ani-walk");
+```
+
+### 高级选项
+
+```typescript
+import { SpriteFrame } from "cc";
 
 // 使用完整配置
 const sprite = await ioc.loader.load(SpriteFrame, {
-  path: "img-hero",
-  bundle: "shared",
-  useCache: true,           // 是否使用缓存
-  cacheExpires: 60000,      // 缓存过期时间（毫秒）
-  forceReload: false,       // 是否强制重新加载
+  path: "l:resources@img-hero",
+  cacheExpires: 300000, // 缓存过期时间（毫秒）
 });
 ```
 
-#### 4. 加载远程资源
+### 加载远程资源
 
 ```typescript
-// 加载远程图片
-const remoteSprite = await ioc.loader.loadSpriteFrame(
-  "https://cdn.example.com/images/hero.png"
+// 加载远程图片（自动识别）
+const remoteSprite = await ioc.loader.loadSpriteFrame("l:images/hero.png");
+```
+
+## 🔄 队列加载系统
+
+### 1. 顺序加载（串行）
+
+一个接一个加载，保证加载顺序。
+
+```typescript
+import { ioc } from "../qin";
+import { SpriteFrame, Prefab, AudioClip } from "cc";
+
+// 顺序加载资源
+const result = await ioc.loader.loadSequence(
+  [
+    [SpriteFrame, { path: "l:resources@img-bg" }],
+    [SpriteFrame, { path: "l:resources@img-hero" }],
+    [Prefab, { path: "l:resources@pfb-dialog" }],
+    [AudioClip, { path: "l:resources@aud-bgm" }],
+  ],
+  (progress) => {
+    console.log(`进度: ${(progress.progress * 100).toFixed(0)}%`);
+    console.log(`已完成: ${progress.finished}/${progress.total}`);
+  },
 );
 
-// 加载远程 JSON
-const remoteConfig = await ioc.loader.loadJson(
-  "https://api.example.com/config.json"
+// 检查结果
+if (result.succeeded === result.total) {
+  console.log("✅ 所有资源加载成功");
+} else {
+  console.warn(`⚠️ 部分资源加载失败: ${result.failed}`);
+}
+```
+
+### 2. 并行加载（支持并发数控制）
+
+同时加载多个资源，可以限制并发数量。
+
+```typescript
+import { ioc } from "../qin";
+import { SpriteFrame, Prefab } from "cc";
+
+// 无限制并发（适合少量资源）
+const result1 = await ioc.loader.loadParallel(
+  [
+    [SpriteFrame, { path: "l:resources@img-bg" }],
+    [SpriteFrame, { path: "l:resources@img-hero" }],
+    [Prefab, { path: "l:resources@pfb-dialog" }],
+  ],
+  Infinity,
+  (progress) => {
+    console.log(`进度: ${(progress.progress * 100).toFixed(0)}%`);
+  },
+);
+
+// 限制并发数为 3（推荐，适合大量资源）
+const result2 = await ioc.loader.loadParallel(
+  [
+    [SpriteFrame, { path: "l:resources@img-1" }],
+    [SpriteFrame, { path: "l:resources@img-2" }],
+    [SpriteFrame, { path: "l:resources@img-3" }],
+    [SpriteFrame, { path: "l:resources@img-4" }],
+    [SpriteFrame, { path: "l:resources@img-5" }],
+    [SpriteFrame, { path: "l:resources@img-6" }],
+    [SpriteFrame, { path: "l:resources@img-7" }],
+    [SpriteFrame, { path: "l:resources@img-8" }],
+  ],
+  3,
+  (progress) => {
+    console.log(`加载中: ${progress.finished}/${progress.total}`);
+  },
 );
 ```
 
-### 缓存管理
+## 💾 缓存管理
 
-#### 1. 手动设置缓存
+### 1. 手动设置缓存
 
 ```typescript
 import { ioc, CacheSource } from "../qin";
 
-// 手动添加到缓存
 ioc.cache.set({
   key: "my-asset",
   asset: myAsset,
   source: CacheSource.Local,
-  expires: 120000,  // 2分钟后过期
+  expires: 120000, // 2分钟后过期
   refCount: 0,
 });
 ```
 
-#### 2. 获取缓存
+### 2. 获取缓存
 
 ```typescript
 // 获取缓存的资源
-const cached = ioc.cache.get<SpriteFrame>("local:shared@img-hero");
+const cached = ioc.cache.get<SpriteFrame>("l:shared@img-hero");
 
 if (cached) {
-  console.log("缓存命中");
+  console.log("✅ 缓存命中");
 }
 ```
 
-#### 3. 检查缓存
+### 3. 检查缓存
 
 ```typescript
-// 检查缓存是否存在
-if (ioc.cache.has("local:shared@img-hero")) {
+if (ioc.cache.has("l:shared@img-hero")) {
   console.log("缓存存在");
 }
 ```
 
-#### 4. 删除缓存
+### 4. 删除缓存
 
 ```typescript
 // 删除缓存（不释放资源）
-ioc.cache.delete("local:shared@img-hero", false);
+ioc.cache.delete("l:shared@img-hero", false);
 
 // 删除缓存并释放资源
-ioc.cache.delete("local:shared@img-hero", true);
+ioc.cache.delete("l:shared@img-hero", true);
 ```
 
-#### 5. 引用计数管理
+### 5. 引用计数管理
 
 ```typescript
 // 增加引用计数
-ioc.cache.addRef("local:shared@img-hero");
+ioc.cache.addRef("l:shared@img-hero");
 
 // 减少引用计数（引用为0时自动释放）
-ioc.cache.decRef("local:shared@img-hero", true);
+ioc.cache.decRef("l:shared@img-hero", true);
 ```
 
-#### 6. 清理缓存
+### 6. 清理缓存
 
 ```typescript
 // 清理过期缓存
@@ -202,7 +309,7 @@ import { CacheSource } from "../qin";
 ioc.cache.clearBySource(CacheSource.Remote, true);
 ```
 
-#### 7. 获取统计信息
+### 7. 获取统计信息
 
 ```typescript
 // 获取缓存统计
@@ -210,47 +317,11 @@ const stats = ioc.cache.getStats();
 console.log("总缓存数:", stats.total);
 console.log("本地资源:", stats.local);
 console.log("远程资源:", stats.remote);
-console.log("缓存命中:", stats.hits);
-console.log("缓存未命中:", stats.misses);
-console.log("命中率:", (stats.hits / (stats.hits + stats.misses) * 100).toFixed(2) + "%");
+console.log("永久缓存:", stats.permanent);
+console.log("临时缓存:", stats.temporary);
 ```
 
-### 资源释放
-
-#### 1. 释放单个资源
-
-```typescript
-// 通过加载器释放
-ioc.loader.release("img-hero", "shared");
-
-// 或直接操作缓存
-ioc.cache.delete("local:shared@img-hero", true);
-```
-
-#### 2. 卸载资源包
-
-```typescript
-// 卸载资源包（自动清理缓存）
-ioc.loader.unloadBundle("shared", true);
-```
-
-### 预加载
-
-```typescript
-// 预加载资源列表
-const paths = [
-  "img-hero",
-  "img-enemy",
-  "pfb-dialog",
-  "aud-bgm",
-];
-
-await ioc.loader.preload(paths, "shared", (finished, total, item) => {
-  console.log(`加载进度: ${finished}/${total}`);
-});
-```
-
-## 配置选项
+## ⚙️ 配置选项
 
 ### AssetLoader 配置
 
@@ -271,71 +342,61 @@ import { ioc } from "../qin";
 
 // 开启日志
 ioc.cache.logEnabled = true;
+
+// 注意：CacheContainer 会自动注册定时清理任务
+// 默认每秒检查一次过期缓存（PRESET.TIME.LAZY_CLEANUP_S）
+// 无需手动配置，依赖容器初始化时自动启动
 ```
 
-## 最佳实践
+## 💡 最佳实践
 
-### 1. 资源生命周期管理
+### 1. 选择合适的加载模式
 
 ```typescript
-class GameScene {
-  private __loadedAssets: string[] = [];
+// ✅ 推荐：重要资源使用顺序加载（确保加载顺序）
+await ioc.loader.loadSequence([
+  [SpriteFrame, { path: "l:resources@img-logo" } ],
+  [JsonAsset, { path: "l:resources@cfg-game" } ],
+  [SpriteFrame, { path: "l:resources@img-loading" } ],
+]);
 
-  async onLoad() {
-    // 加载场景资源
-    const hero = await ioc.loader.loadSpriteFrame("img-hero");
-    this.__loadedAssets.push("img-hero");
-
-    // 增加引用计数
-    ioc.cache.addRef("local:shared@img-hero");
-  }
-
-  onDestroy() {
-    // 释放场景资源
-    this.__loadedAssets.forEach(path => {
-      ioc.cache.decRef(`local:shared@${path}`, true);
-    });
-  }
-}
+// ✅ 推荐：普通资源使用并行加载（提高速度）
+await ioc.loader.loadParallel(
+  [
+    [SpriteFrame, { path: "l:resources@img-logo" } ],
+    [JsonAsset, { path: "l:resources@cfg-game" } ],
+    [SpriteFrame, { path: "l:resources@img-loading" } ],
+  ],
+  4,
+); // 限制并发数
 ```
 
-### 2. 按需加载
+### 2. 合理设置并发数
 
 ```typescript
-// 游戏启动时只加载必要资源
-async onGameStart() {
-  await ioc.loader.loadSpriteFrame("img-loading");
-  
-  // 进入场景后再加载场景资源
-  this.enterScene();
-}
+// ✅ 推荐：图片资源限制并发数 3-5（避免内存压力）
+await ioc.loader.loadParallel(imageItems, 4);
 
-async enterScene() {
-  await ioc.loader.preload([
-    "img-hero",
-    "img-enemy",
-    "pfb-dialog",
-  ]);
-}
+// ✅ 推荐：小资源可以更高并发 10-20
+await ioc.loader.loadParallel(configItems, 10);
+
+// ⚠️ 不推荐：所有资源都无限制并发（可能导致性能问题）
+await ioc.loader.loadParallel(allItems, Infinity);
 ```
 
-### 3. 远程资源管理
-
-```typescript
-// 远程资源通常设置较短的缓存时间
-const remoteAsset = await ioc.loader.load(SpriteFrame, {
-  path: "https://cdn.example.com/hero.png",
-  cacheExpires: 60000, // 1分钟
-});
-```
-
-### 4. 缓存策略
+### 3. 合理设置缓存时间
 
 ```typescript
 // 永久资源（不过期）
 const logo = await ioc.loader.load(SpriteFrame, {
   path: "img-logo",
   cacheExpires: 0, // 永不过期
+});
+
+// 常用资源（较长时间）
+const hero = await ioc.loader.load(SpriteFrame, {
+  path: "img-hero",
+  cacheExpires: 300000, // 5分钟
 });
 
 // 临时资源（短期缓存）
@@ -345,174 +406,80 @@ const ad = await ioc.loader.load(SpriteFrame, {
 });
 ```
 
-### 5. 定期清理
-
-```typescript
-// 在适当的时机清理缓存
-class ResourceManager {
-  startCleanupTimer() {
-    ioc.timer.schedule({
-      name: "cache-cleanup",
-      interval: 60, // 每60秒
-      repeat: -1,   // 无限重复
-      handle: () => {
-        const count = ioc.cache.cleanup();
-        if (count > 0) {
-          console.log(`自动清理了 ${count} 个过期缓存`);
-        }
-      },
-    });
-  }
-}
-```
-
-## 迁移指南
-
-### 从旧 API 迁移到新 API
-
-#### 旧方式：
-
-```typescript
-// 旧方式 - 直接使用 ResContainer
-const sprite = await ioc.res.loadSpriteFrame("img-hero", "shared");
-
-// 旧方式 - 直接使用 RemoteContainer
-const remote = await ioc.remote.loadSpriteFrame("https://cdn.com/hero.png");
-```
-
-#### 新方式：
-
-```typescript
-// 新方式 - 使用统一的 AssetLoader
-const sprite = await ioc.loader.loadSpriteFrame("img-hero", "shared");
-
-// 远程资源也使用相同接口（自动判断）
-const remote = await ioc.loader.loadSpriteFrame("https://cdn.com/hero.png");
-```
-
-### 兼容性说明
-
-- 旧的 `ResContainer` 和 `RemoteContainer` 仍然可用
-- 新的 `AssetLoader` 是推荐的统一接口
-- 所有资源都会通过 `CacheContainer` 统一管理
-
-## 性能优化建议
-
-### 1. 合理设置缓存时间
-
-```typescript
-// 根据资源使用频率设置缓存时间
-- 高频资源：永不过期（0）
-- 中频资源：较长时间（5-10分钟）
-- 低频资源：较短时间（1-2分钟）
-```
-
-### 2. 预加载关键资源
-
-```typescript
-// 在等待界面预加载下一个场景的资源
-async preloadNextScene() {
-  await ioc.loader.preload([
-    "img-scene-bg",
-    "img-scene-character",
-    "pfb-scene-ui",
-  ], "shared");
-}
-```
-
-### 3. 及时释放不用的资源
+### 4. 及时释放资源
 
 ```typescript
 // 切换场景时释放旧场景资源
 onSceneExit() {
+  // 方式1: 按来源清理
   ioc.cache.clearBySource(CacheSource.Local, true);
+
+  // 方式2: 使用引用计数
+  this.__loadedAssets.forEach(path => {
+    ioc.cache.decRef(`local:shared@${path}`, true);
+  });
+
+  // 方式3: 清理过期缓存
+  ioc.cache.cleanup();
 }
 ```
 
-### 4. 监控缓存状态
+### 6. 监控缓存状态
 
 ```typescript
 // 定期检查缓存状态
-setInterval(() => {
-  const stats = ioc.cache.getStats();
-  if (stats.total > 100) {
-    console.warn("缓存数量过多，建议清理");
-    ioc.cache.cleanup();
-  }
-}, 30000);
+ioc.timer.shared.loop(
+  60,
+  () => {
+    const stats = ioc.cache.getStats();
+
+    console.log("=== 缓存状态 ===");
+    console.log(`总数: ${stats.total}`);
+    console.log(`本地: ${stats.local} | 远程: ${stats.remote}`);
+    // 缓存数量过多时警告
+    if (stats.total > 100) {
+      console.warn("⚠️ 缓存数量过多，触发清理");
+      ioc.cache.cleanup();
+    }
+  },
+  this,
+);
 ```
 
-## 注意事项
+## 📊 性能对比
 
-1. **资源键值规则**：
-   - 本地资源：`local:bundle@path`
-   - 远程资源：`remote:url`
+### 并发数建议
 
-2. **引用计数**：
-   - 使用 `addRef` 和 `decRef` 管理资源生命周期
-   - `decRef` 到 0 时可自动释放
+| 资源类型 | 推荐并发数 | 原因             |
+| -------- | ---------- | ---------------- |
+| 大图片   | 3-5        | 避免内存压力     |
+| 小图片   | 5-10       | 平衡速度和内存   |
+| 配置文件 | 10-20      | 文件小，可高并发 |
+| 音频文件 | 3-5        | 文件较大         |
+| 预制体   | 5-8        | 中等资源         |
 
-3. **缓存清理**：
-   - 系统会自动定时清理过期缓存
-   - 也可以手动调用 `cleanup()` 清理
+## ⚠️ 注意事项
 
-4. **日志开关**：
-   - 开发阶段建议开启日志：`ioc.loader.logEnabled = true`
-   - 生产环境建议关闭日志以提升性能
+### 1. 资源键值规则
 
-## 常见问题
+- 本地资源：`l:bundle@path`
+- 远程资源：`r:url`
 
-### Q1: 如何禁用缓存？
+### 2. 引用计数
 
-```typescript
-const asset = await ioc.loader.load(SpriteFrame, {
-  path: "img-hero",
-  useCache: false,
-});
-```
+- 使用 `addRef` 和 `decRef` 管理资源生命周期
+- `decRef` 到 0 时可自动释放
 
-### Q2: 如何强制重新加载资源？
+### 3. 自动清理机制
 
-```typescript
-const asset = await ioc.loader.load(SpriteFrame, {
-  path: "img-hero",
-  forceReload: true,
-});
-```
+- `CacheContainer` 在初始化时会自动注册清理任务
+- 默认每秒检查一次过期缓存（可在 `PRESET.TIME.LAZY_CLEANUP_S` 修改）
+- 也可以随时手动调用 `ioc.cache.cleanup()` 清理
+- 容器销毁时会自动注销清理任务
 
-### Q3: 如何查看缓存命中率？
+### 4. 日志开关
 
-```typescript
-const stats = ioc.cache.getStats();
-const hitRate = (stats.hits / (stats.hits + stats.misses) * 100).toFixed(2);
-console.log(`缓存命中率: ${hitRate}%`);
-```
-
-### Q4: 远程资源加载失败怎么办？
-
-```typescript
-try {
-  const asset = await ioc.loader.loadSpriteFrame("https://cdn.com/hero.png");
-  if (!asset) {
-    console.error("加载失败，使用默认资源");
-    // 使用本地默认资源
-    const fallback = await ioc.loader.loadSpriteFrame("img-default");
-  }
-} catch (error) {
-  console.error("加载异常:", error);
-}
-```
-
-## 总结
-
-新的资源管理系统提供了：
-
-✅ 统一的加载接口  
-✅ 智能缓存管理  
-✅ 自动来源识别  
-✅ 引用计数支持  
-✅ 过期时间控制  
-✅ 详细的统计信息  
-✅ 灵活的清理策略  
-
-通过使用 `AssetLoader` 和 `CacheContainer`，你可以更方便地管理游戏资源，提升游戏性能和用户体验。
+- 开发阶段建议开启日志：
+  - `ioc.loader.logEnabled = true`
+  - `ioc.cache.logEnabled = true`
+- 生产环境建议关闭日志以提升性能

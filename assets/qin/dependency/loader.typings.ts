@@ -1,23 +1,23 @@
 import {
-  sp, __private, AnimationClip, Asset, AssetManager, AudioClip, BitmapFont, BufferAsset, Font,
-  ImageAsset, JsonAsset, ParticleAsset, Prefab, Rect, SpriteAtlas, SpriteFrame, Texture2D,
-  TextAsset, TiledMapAsset, TTFFont, VideoClip
+  sp, AnimationClip, Asset, AssetManager, AudioClip, BitmapFont, BufferAsset, Font, ImageAsset,
+  JsonAsset, ParticleAsset, Prefab, Rect, SpriteAtlas, SpriteFrame, Texture2D, TextAsset,
+  TiledMapAsset, TTFFont, VideoClip
 } from "cc";
 
-import { Constructor } from "../typings";
+import { Constructor, IMemoryImageSource } from "../typings";
 import { IDependency } from "./dependency.typings";
 
 /**
  * 预加载资源项(仅本地资源)
- * - [资源路径, 资源类型]
+ * - [资源类型, 资源路径]
  *
  * 资源路径形式
  * 1. 本地 l:[bundle@]<path>
  * 2. 远程 r:<url>
  *
  * @example
- * ["img-hero", SpriteFrame]  // 使用默认 bundle (shared)
- * ["resources@img-hero", SpriteFrame]
+ * [SpriteFrame, "l:img-hero"]  // 使用默认 bundle (shared)
+ * [SpriteFrame, "l:shared@img-hero"]
  */
 export type PreloadItem = [Constructor<Asset>, string];
 
@@ -277,24 +277,30 @@ export interface IRemoteContainer {
    * @param img 原始图像
    * @returns
    */
-  createImageAsset(img: __private._cocos_asset_assets_image_asset__ImageSource): ImageAsset;
+  createImageAsset(img: IMemoryImageSource): ImageAsset;
+
   /** 获取图集名称 */
   getAtlasName(atlas: string): string;
+
   /** 解析矩形信息 TexturePacker */
   parseRect(rect: string): Rect;
+
   /**
    * 添加参数
    * @param key 键
    * @param val 值
    */
   appendParam(key: string, val: string): void;
+
   /**
    * 设置参数
    * @param params 参数
    */
   setParams(params: Record<string, string>): void;
+
   /** 清空参数 */
   clearParams(): void;
+
   /**
    * 组织网址
    * @param raw 资源地址
@@ -302,6 +308,7 @@ export interface IRemoteContainer {
    * @returns
    */
   makeUrl(raw: string, timestamp: boolean): string;
+
   /** 原始网址 */
   nativeUrlOf(url: string): string;
   /**
@@ -310,77 +317,90 @@ export interface IRemoteContainer {
    * @returns
    */
   loadAudio(url: string): Promise<AudioClip | null>;
+
   /**
    * 加载二进制文件
    * @param url 资源路径
    * @returns
    */
   loadBinary(url: string): Promise<BufferAsset | null>;
+
   /**
    * 加载 astc 图像
    * @param url 资源路径
    * @returns
    */
   loadASTC(url: string): Promise<SpriteFrame | null>;
+
   /**
    * 加载 ttf 字体
    * @param url 资源路径
    * @returns
    */
   loadTTFFont(url: string): Promise<TTFFont | null>;
+
   /**
    * 加载位图字体
    * @param url 资源路径
    */
   loadBitmapFont(url: string): Promise<BitmapFont | null>;
+
   /**
    * 加载图片
    * @param url 资源路径
    * @returns
    */
   loadImage(url: string): Promise<ImageAsset | null>;
+
   /**
    * 加载 JSON
    * @param url 资源路径
    * @returns
    */
   loadJson(url: string): Promise<JsonAsset | null>;
+
   /**
    * 加载骨骼动画
    * @param url 资源路径
    * @returns
    */
   loadSpine(url: string): Promise<sp.SkeletonData | null>;
+
   /**
    * 加载图集
    * @param url 资源路径
    * @returns
    */
   loadSpriteAtlas(url: string): Promise<SpriteAtlas | null>;
+
   /**
    * 加载精灵
    * @param url 资源路径
    * @returns
    */
   loadSpriteFrame(url: string): Promise<SpriteFrame | null>;
+
   /**
    * 加载纹理
    * @param url 资源路径
    * @returns
    */
   loadTexture(url: string): Promise<Texture2D | null>;
+
   /**
    * 加载文本
    * @param url 资源路径
    * @returns
    */
   loadText(url: string): Promise<TextAsset | null>;
+
   /**
    * 加载视频
    * @param url 资源路径
    * @returns
    */
   loadVideo(url: string): Promise<VideoClip | null>;
+
   /**
    * 加载远程资源
    * @param type 资源类型
@@ -396,8 +416,10 @@ export interface IRemoteContainer {
 export interface IAssetLoader extends IDependency {
   /** 本地资源容器 */
   readonly local: ILocalContainer;
+
   /** 远程资源容器 */
   readonly remote: IRemoteContainer;
+
   /**
    * 日志开关
    */
@@ -571,21 +593,21 @@ export interface IAssetLoader extends IDependency {
    * ```typescript
    * // 使用默认 bundle (shared)
    * await ioc.loader.preload([
-   *   ["l:img-hero", SpriteFrame],
-   *   ["l:aud-bgm", AudioClip],
+   *   [SpriteFrame, "l:img-hero"],
+   *   [AudioClip, "l:aud-bgm"],
    * ]);
    *
    * // 指定不同的 bundle
    * await ioc.loader.preload([
-   *   ["l:resources@img-logo", SpriteFrame],
-   *   ["l:img-hero", SpriteFrame],
-   *   ["l:shared@aud-bgm", AudioClip],
+   *   [SpriteFrame, "l:resources@img-logo"],
+   *   [SpriteFrame, "l:img-hero"],
+   *   [AudioClip, "l:shared@aud-bgm"],
    * ]);
    * ```
    */
   preload(
     items: PreloadItem[],
-    onProgress?: (finished: number, total: number, path: string, loaded: boolean) => void
+    onProgress?: (finished: number, total: number, path: string, loaded: boolean) => void,
   ): Promise<void>;
 
   /**
@@ -595,7 +617,7 @@ export interface IAssetLoader extends IDependency {
    */
   loadMany(
     items: LoadItem[],
-    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void
+    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void,
   ): Promise<void>;
 
   /**
@@ -606,7 +628,7 @@ export interface IAssetLoader extends IDependency {
    */
   loadSequence(
     tasks: LoadItem[],
-    onProgress?: (finished: number, total: number, path: string, success: boolean) => void
+    onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
   ): () => void;
 
   /**
@@ -619,7 +641,7 @@ export interface IAssetLoader extends IDependency {
   loadParallel(
     items: LoadItem[],
     onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
-    concurrency?: number
+    concurrency?: number,
   ): () => void;
 }
 
