@@ -1,15 +1,22 @@
 import { AudioClip, AudioSource, Node } from "cc";
 
-import { digit, regexp } from "../ability";
+import { digit } from "../ability";
 import { Triggers } from "../foundation";
 import ioc, { Injectable } from "../ioc";
-import { IAudioPlayer } from "./audio.typings";
+import { IAudioContainer, IAudioEntry, IAudioPlayer } from "./audio.typings";
 import { Dependency } from "./dependency";
 
-abstract class AudioContainer extends Node {
+/**
+ * 音频条目容器
+ */
+abstract class AudioContainer extends Node implements IAudioContainer {
+  /** 音频播放条目 */
   protected _container: Map<number, AudioEntry> = new Map();
 
+  /** 音量缩放系数 */
   private __vs: number = 1.0;
+
+  /** 音量缩放系数 */
   public get vs(): number {
     return this.__vs;
   }
@@ -31,11 +38,13 @@ abstract class AudioContainer extends Node {
     });
   }
 
-  protected abstract _play(
-    clip: AudioClip,
-    volume?: number,
-    loop?: boolean,
-  ): number;
+  /**
+   * 播放音频
+   * @param clip 音频资源切片
+   * @param volume 音量
+   * @param loop 是否循环
+   */
+  protected abstract _play(clip: AudioClip, volume?: number, loop?: boolean): number;
 
   get(id: number) {
     return this._container.get(id);
@@ -72,6 +81,9 @@ abstract class AudioContainer extends Node {
   }
 }
 
+/**
+ * 音效条目容器
+ */
 class SoundContainer extends AudioContainer {
   protected _play(clip: AudioClip, volume?: number, loop?: boolean): number {
     // 播放音效时，始终获取一个新的音频实例
@@ -88,7 +100,11 @@ class SoundContainer extends AudioContainer {
   }
 }
 
+/**
+ * 音乐条目容器
+ */
 class MusicContainer extends AudioContainer {
+  /** 上一条播放的音频条目 ID */
   private __last: number;
 
   protected _play(clip: AudioClip, volume?: number): number {
@@ -119,13 +135,23 @@ class MusicContainer extends AudioContainer {
   }
 }
 
-class AudioEntry extends Node {
+/**
+ * 音频条目
+ */
+class AudioEntry extends Node implements IAudioEntry {
+  /** 音源组件 */
   private __source: AudioSource;
+  /** 暂停时间点 */
   private __pauseAt: number = 0;
+  /** 音频条目ID */
   private __aid: number = 0;
+  /** 已循环次数 */
   private __loopCount: number = 0;
+  /** 当前音量 */
   private __volume: number = 1.0;
+  /** 资源地址 */
   private __url: string;
+  /** 触发器#播放完成 */
   public readonly onFinished: Triggers = new Triggers();
 
   constructor() {
@@ -133,30 +159,13 @@ class AudioEntry extends Node {
     this.__source = this.addComponent(AudioSource);
   }
 
+  /** 资源地址 */
   get url() {
     return this.__url;
   }
 
   set url(value: string) {
     this.__url = value;
-  }
-
-  init() {
-    this.__pauseAt = 0;
-    this.__loopCount = 0;
-    this.__volume = 1.0;
-    this.__source.schedule(this._onUpdate.bind(this));
-  }
-
-  zoom(vs: number) {
-    this.__volume *= vs;
-    this.__source.volume = this.__volume;
-  }
-
-  equals(clip: AudioClip) {
-    return (
-      this.__source && this.__source.isValid && this.__source.clip === clip
-    );
   }
 
   get aid() {
@@ -175,12 +184,23 @@ class AudioEntry extends Node {
     return this.__source.duration;
   }
 
-  play(
-    clip: AudioClip,
-    volume: number,
-    targetVolume: number,
-    loop: boolean = false,
-  ) {
+  init() {
+    this.__pauseAt = 0;
+    this.__loopCount = 0;
+    this.__volume = 1.0;
+    this.__source.schedule(this._onUpdate.bind(this));
+  }
+
+  zoom(vs: number) {
+    this.__volume *= vs;
+    this.__source.volume = this.__volume;
+  }
+
+  equals(clip: AudioClip) {
+    return this.__source && this.__source.isValid && this.__source.clip === clip;
+  }
+
+  play(clip: AudioClip, volume: number, targetVolume: number, loop: boolean = false) {
     this.__volume = volume;
     this.__source.clip = clip;
     this.__source.volume = targetVolume;
@@ -213,11 +233,10 @@ class AudioEntry extends Node {
     ioc.nodePool.recycle(this);
   }
 
+  /** 更新时间线 */
   protected _onUpdate() {
     if (this.__source.playing) {
-      if (
-        digit.equals(this.__source.currentTime, this.__source.duration, 0.02)
-      ) {
+      if (digit.equals(this.__source.currentTime, this.__source.duration, 0.02)) {
         this.__loopCount++;
         this.onFinished.runWith(this.__loopCount);
         if (!this.__source.loop) {
@@ -233,8 +252,8 @@ class AudioEntry extends Node {
  */
 @Injectable({ name: "AudioPlayer" })
 export class AudioPlayer extends Dependency implements IAudioPlayer {
-  public sound: SoundContainer;
-  public music: MusicContainer;
+  sound: SoundContainer;
+  music: MusicContainer;
 
   start() {
     ioc.nodePool.registerByNodeConstructor("audio-entry", AudioEntry);
