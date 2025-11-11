@@ -1,11 +1,12 @@
 import { sys } from "cc";
+
 import {
   dict,
-  IDictionary,
   json,
   lzstring,
   platform,
   zipson,
+  IDictionary,
 } from "../ability";
 import { Triggers } from "../foundation";
 import ioc, { Injectable } from "../ioc";
