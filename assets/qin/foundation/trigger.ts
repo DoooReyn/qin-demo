@@ -86,12 +86,7 @@ export class Trigger extends ObjectEntry implements ITrigger {
   /** 回调入参 */
   private __args: any[] = [];
 
-  protected _onStart(
-    handle: (...args: any[]) => unknown,
-    context: any,
-    once: boolean = false,
-    args: any[]
-  ) {
+  protected _onStart(handle: (...args: any[]) => unknown, context: any, once: boolean = false, args: any[]) {
     super._onStart();
     this.__handle = handle;
     this.__ctx = context;
@@ -154,11 +149,7 @@ export class Trigger extends ObjectEntry implements ITrigger {
    */
   public runWith(...args: any[]) {
     if (this.isValid) {
-      const [, err] = might.sync(
-        this.__handle!,
-        this.__ctx,
-        args.concat(this.__args)
-      );
+      const [, err] = might.sync(this.__handle!, this.__ctx, args.concat(this.__args));
       if (err) {
         ioc.logcat.qin.e("触发器: 运行时错误", err);
       }
@@ -190,12 +181,7 @@ export class Triggers implements ITriggers {
    * @param once 是否一次性
    * @param args 回调入参
    */
-  public add(
-    fn: Function,
-    context: any = misc.ctx,
-    once: boolean = false,
-    ...args: any[]
-  ) {
+  public add(fn: Function, context: any = misc.ctx, once: boolean = false, ...args: any[]) {
     const trigger = ioc.objPool.acquire(Trigger, fn, context, once, args);
     if (trigger !== null) {
       this.__container.push(trigger);

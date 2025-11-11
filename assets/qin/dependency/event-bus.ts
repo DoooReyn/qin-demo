@@ -1,3 +1,4 @@
+import { list } from "../ability";
 import { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
 import { IEventBus, IEventChannel, IEventListener } from "./event-bus.typings";
@@ -30,7 +31,17 @@ export class EventChannel implements IEventChannel {
    */
   publish(event: string, ...data: any[]): void {
     if (this.__listeners.has(event)) {
-      this.__listeners.get(event)!.forEach((listener) => listener.handle.apply(listener.context, ...data));
+      const listeners = this.__listeners.get(event)!;
+      list.each(
+        listeners,
+        (v, i) => {
+          v.handle.apply(v.context, ...data);
+          if (v.once) {
+            listeners.splice(i, 1);
+          }
+        },
+        true
+      );
     }
   }
 

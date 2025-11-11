@@ -54,6 +54,8 @@ export interface IEventListener {
   readonly event: string;
   /** 事件上下文 */
   readonly context?: any;
+  /** 是否只执行一次 */
+  readonly once?: boolean;
   /** 事件处理函数 */
   handle(data?: any): void;
 }

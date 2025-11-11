@@ -11,4 +11,5 @@ ioc.eventBus.app.subscribes({
   handle() {
     ioc.logcat.qin.i("Qin's application is launched.");
   },
+  once: true
 });
