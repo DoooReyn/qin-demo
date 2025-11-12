@@ -34,3 +34,5 @@ export * from "./store.typings";
 export * from "./store";
 export * from "./table.typings";
 export * from "./table";
+export * from "./i18n.typings";
+export * from "./i18n";

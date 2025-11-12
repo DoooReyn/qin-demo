@@ -1,2 +1,2 @@
 export * from "./common.typings";
-export * from "./qin.typings";
+export * from "./application";

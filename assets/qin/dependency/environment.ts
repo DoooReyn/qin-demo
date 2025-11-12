@@ -1,6 +1,7 @@
+import { sys } from "cc";
 import { dict, literal } from "../ability";
 import { Injectable } from "../ioc";
-import { IQinOptions } from "../typings";
+import { IApplicationOptions } from "../typings";
 import { Dependency } from "./dependency";
 import { IEnvironment } from "./environment.typings";
 
@@ -10,16 +11,17 @@ import { IEnvironment } from "./environment.typings";
  */
 @Injectable({ name: "Environment" })
 export class Environment extends Dependency implements IEnvironment {
-  args: IQinOptions = {
+  args: IApplicationOptions = {
     app: "qin",
     version: "0.0.1",
     env: "dev",
+    language: sys.Language.CHINESE,
   };
 
-  use(args: IQinOptions) {
-    dict.merge(this.args, args) as IQinOptions;
+  use(args: IApplicationOptions) {
+    dict.merge(this.args, args) as IApplicationOptions;
     if (this.isDev) {
-      dict.merge(this.args, literal.extractUrlParams() as IQinOptions);
+      dict.merge(this.args, literal.extractUrlParams() as IApplicationOptions);
     }
   }
 

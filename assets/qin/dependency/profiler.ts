@@ -23,7 +23,7 @@ export class Profiler extends Dependency implements IProfiler {
     return new Error().stack!.split("\n").slice(depth).join("\n");
   }
 
-  public start() {
+  onAttach() {
     this.__initDebugPanel();
     this.__monitorError();
     this.__monitorTextures();
@@ -32,6 +32,8 @@ export class Profiler extends Dependency implements IProfiler {
     if (platform.browser && ioc.environment.isRelease) {
       misc.ban();
     }
+
+    return super.onAttach();
   }
 
   /** 是否输出详细信息 */
@@ -123,7 +125,7 @@ export class Profiler extends Dependency implements IProfiler {
         that.__reportError(that.__cleanError(e.error.name, reason, stack));
         return true;
       },
-      true
+      true,
     );
     addEventListener("unhandledrejection", function (e: PromiseRejectionEvent) {
       let stacks: string[] = [];

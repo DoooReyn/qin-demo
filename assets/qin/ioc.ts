@@ -19,6 +19,7 @@ import {
   IStoreContainer,
   ITableQueries,
   ITimer,
+  Ii18n,
 } from "./dependency";
 
 /**
@@ -194,6 +195,11 @@ export class IoC {
   /** 表格查询工具 */
   get tableQueies() {
     return this.resolve<ITableQueries>("TableQueries");
+  }
+
+  /** 国际化工具 */
+  get i18n() {
+    return this.resolve<Ii18n>("I18n");
   }
 }
 

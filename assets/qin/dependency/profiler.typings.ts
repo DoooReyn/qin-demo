@@ -9,9 +9,6 @@ export interface IProfiler extends IDependency {
   /** 是否输出详细信息 */
   verbose: boolean;
 
-  /** 初始化 */
-  start(): void;
-
   /**
    * 获取错误堆栈
    * @param depth 堆栈深度

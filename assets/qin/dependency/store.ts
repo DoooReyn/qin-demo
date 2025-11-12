@@ -1,13 +1,6 @@
 import { sys } from "cc";
 
-import {
-  dict,
-  json,
-  lzstring,
-  platform,
-  zipson,
-  IDictionary,
-} from "../ability";
+import { dict, json, lzstring, platform, zipson, IDictionary } from "../ability";
 import { Triggers } from "../foundation";
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
@@ -131,7 +124,7 @@ export class Store extends Dependency implements IStoreContainer {
     }
   }
 
-  public itemOf<T extends object>(alias: string): StoreItem<T> {
-    return this.__container.get(alias)! as StoreItem<T>;
+  public itemOf<T extends object>(alias: string): StoreItem<T> | undefined {
+    return this.__container.get(alias) as StoreItem<T> | undefined;
   }
 }

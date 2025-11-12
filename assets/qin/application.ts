@@ -1,9 +1,9 @@
 import { EDITOR } from "cc/env";
 
-import { IDependency } from "./dependency";
+import { IDependency, Language } from "./dependency";
 import ioc, { IoC } from "./ioc";
 import { PRESET } from "./preset";
-import { IQinOptions } from "./typings";
+import { IApplicationOptions } from "./typings";
 
 /**
  * Qin
@@ -31,7 +31,7 @@ export class Application {
   }
 
   /** 初始化框架 */
-  async initialize(options: IQinOptions) {
+  async initialize(options: IApplicationOptions) {
     if (EDITOR) return Promise.resolve();
 
     if (this.__initializing) {
@@ -64,8 +64,8 @@ export class Application {
       // 启动音频播放器
       ioc.audio.start();
 
-      // 启动性能监控
-      ioc.profiler.start();
+      // 初始化国际化工具
+      ioc.i18n.initialize({ language: options.language as Language });
 
       // 通知应用启动完成
       ioc.eventBus.app.publish(PRESET.EVENT.APP_AFTER_LAUNCHED);
@@ -102,7 +102,6 @@ export class Application {
     return IoC.Shared;
   }
 }
-
 
 /** 全局 Application 实例 */
 export const app = new Application();

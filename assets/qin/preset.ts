@@ -26,6 +26,10 @@ export const PRESET = {
     CAMERA_UI: "camera-ui",
     AUDIO_PLAYER: "audio-player",
   },
+  /** 存储键 */
+  STORE: {
+    LANG: "lang",
+  },
   /** 常用预制体 */
   PREFAB: {
     /** 全局等待模板 */

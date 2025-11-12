@@ -57,5 +57,5 @@ export interface IStoreContainer extends IDependency {
    * 获取存储项
    * @param alias 别名
    */
-  itemOf<T extends IDictionary>(alias: string): IStoreItem<T>;
+  itemOf<T extends IDictionary>(alias: string): IStoreItem<T> | undefined;
 }
