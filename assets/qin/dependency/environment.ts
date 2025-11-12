@@ -24,7 +24,7 @@ export class Environment extends Dependency implements IEnvironment {
   }
 
   isMode(mode: string) {
-    return this.args.mode == mode;
+    return this.args.env == mode;
   }
 
   get isDev() {

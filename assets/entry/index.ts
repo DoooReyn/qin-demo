@@ -1,15 +1,21 @@
-import qin, { ioc, PRESET } from "../qin";
+import { DEV } from "cc/env";
 
-qin.initialize({
+import * as qin from "../qin";
+
+qin.app.initialize({
   env: "dev",
   app: "qin-demo",
   version: "0.0.1",
 });
 
-ioc.eventBus.app.subscribes({
-  event: PRESET.EVENT.APP_AFTER_LAUNCHED,
+qin.ioc.eventBus.app.subscribes({
+  event: qin.PRESET.EVENT.APP_AFTER_LAUNCHED,
   handle() {
-    ioc.logcat.qin.i("Qin's application is launched.");
+    qin.ioc.logcat.qin.i("Qin's application is launched.");
   },
   once: true,
 });
+
+if (DEV) {
+  (<any>window)["qin"] = qin;
+}

@@ -1,7 +1,24 @@
 import {
-  IAssetLoader, IAstc, IAudioPlayer, ICacheContainer, IDependency, IDependencyMeta, IEnvironment,
-  IEventBus, IIncremental, ILauncher, ILogcat, ILooper, INodePoC, IObPoC, IPriorityInput, IProfiler,
-  ISensitives, IStoreContainer, ITimer
+  IAssetLoader,
+  IAstc,
+  IAudioPlayer,
+  ICacheContainer,
+  IDependency,
+  IDependencyMeta,
+  IEnvironment,
+  IEventBus,
+  IIncremental,
+  ILauncher,
+  ILogcat,
+  ILooper,
+  INodePoC,
+  IObPoC,
+  IPriorityInput,
+  IProfiler,
+  ISensitives,
+  IStoreContainer,
+  ITableQueries,
+  ITimer,
 } from "./dependency";
 
 /**
@@ -172,6 +189,11 @@ export class IoC {
   /** 存储容器 */
   get store() {
     return this.resolve<IStoreContainer>("Store");
+  }
+
+  /** 表格查询工具 */
+  get tableQueies() {
+    return this.resolve<ITableQueries>("TableQueries");
   }
 }
 

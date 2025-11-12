@@ -9,7 +9,7 @@ import { IQinOptions } from "./typings";
  * Qin
  * @description Qin 是一个通用的轻量级 2D 游戏框架
  */
-export class Qin {
+export class Application {
   /** 框架描述 */
   readonly description: string =
     "\n--------------------------------------------------" +
@@ -102,3 +102,7 @@ export class Qin {
     return IoC.Shared;
   }
 }
+
+
+/** 全局 Application 实例 */
+export const app = new Application();

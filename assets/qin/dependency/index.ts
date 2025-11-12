@@ -32,3 +32,5 @@ export * from "./profiler.typings";
 export * from "./profiler";
 export * from "./store.typings";
 export * from "./store";
+export * from "./table.typings";
+export * from "./table";

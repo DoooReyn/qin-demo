@@ -1,4 +1,5 @@
 import { IAbility } from "./ability";
+import { json } from "./json";
 
 /** 字典类型 */
 export interface IDictionary {
@@ -44,11 +45,7 @@ export interface IDict extends IAbility {
   /** 从字典中提取指定键值对 */
   pick<K extends IKey[]>(d: IDictionary, keys: K): Pick<IDictionary, K[number]>;
   /** 从字典中排除指定键值对 */
-  omit<K extends IKey[]>(
-    d: IDictionary,
-    keys: K,
-    override?: boolean
-  ): Omit<IDictionary, K[number]>;
+  omit<K extends IKey[]>(d: IDictionary, keys: K, override?: boolean): Omit<IDictionary, K[number]>;
   /** 浅拷贝 */
   shallowCopy(d: IDictionary): IDictionary;
   /** 有损拷贝（只适用于纯数据对象） */
@@ -120,36 +117,35 @@ export const dict: IDict = {
   create(d?: IDictionary) {
     return d ? { ...d } : Object.create(null);
   },
-  pick<K extends IKey[]>(
-    d: IDictionary,
-    keys: K
-  ): Pick<IDictionary, K[number]> {
-    return keys.reduce((acc, key) => {
-      acc[key] = d[key];
-      return acc;
-    }, {} as Pick<IDictionary, K[number]>);
+  pick<K extends IKey[]>(d: IDictionary, keys: K): Pick<IDictionary, K[number]> {
+    return keys.reduce(
+      (acc, key) => {
+        acc[key] = d[key];
+        return acc;
+      },
+      {} as Pick<IDictionary, K[number]>,
+    );
   },
-  omit<K extends IKey[]>(
-    d: IDictionary,
-    keys: K,
-    override: boolean = false
-  ): Omit<IDictionary, K[number]> {
+  omit<K extends IKey[]>(d: IDictionary, keys: K, override: boolean = false): Omit<IDictionary, K[number]> {
     if (override) {
       keys.forEach((key) => d.hasOwnProperty(key) && delete d[key]);
       return d as Omit<IDictionary, K[number]>;
     }
-    return dict.keys(d).reduce((acc, key) => {
-      if (keys.indexOf(key) === -1) {
-        acc[key] = d[key];
-      }
-      return acc;
-    }, {} as Omit<IDictionary, K[number]>);
+    return dict.keys(d).reduce(
+      (acc, key) => {
+        if (keys.indexOf(key) === -1) {
+          acc[key] = d[key];
+        }
+        return acc;
+      },
+      {} as Omit<IDictionary, K[number]>,
+    );
   },
   shallowCopy(d: IDictionary) {
     return { ...d };
   },
   lossyCopy(d: IDictionary) {
-    return JSON.parse(JSON.stringify(d));
+    return json.decode(json.encode(d));
   },
   deepCopy(d: IDictionary) {
     if (typeof d !== "object" || d == null || d == undefined) {
