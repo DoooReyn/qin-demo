@@ -4,9 +4,7 @@ import { might, misc, mock, time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
-import {
-  INodePoC, IObjectEntry, IObjectEntryOutline, IObjectPool, IObPoC, IPoolNode
-} from "./pool.typings";
+import { INodePoC, IObjectEntry, IObjectEntryOutline, IObjectPool, IObPoC, IPoolNode } from "./pool.typings";
 
 /**
  * 对象池条目
@@ -179,12 +177,13 @@ export class ObjectPool<T extends IObjectEntry> implements IObjectPool<T> {
   /**
    * 回收条目
    * @param instance 条目实例
+   * @description 超出容量限制时放弃回收
    */
   public recycle(instance: T): void {
     if (instance && instance.recycle()) {
-      misc.nextTick(() => {
-        this._items.push(instance);
-      });
+      if (instance.capacity <= 0 || this._items.length >= instance.capacity) {
+        misc.nextTick(() => this._items.push(instance));
+      }
     }
   }
 
@@ -251,11 +250,18 @@ export class ObjectPoolContainer extends Dependency implements IObPoC {
     return this.__container.delete(name);
   }
 
-  poolOf(cls: Constructor<IObjectEntry>) {
+  has(cls: Constructor<IObjectEntry>) {
     const name = ObEntryOutlineOf(cls)?.name;
-    if (name == undefined) return undefined;
-    if (!this.__container.has(name)) return undefined;
-    return this.__container.get(name);
+    if (name == undefined) return false;
+    return this.__container.has(name);
+  }
+
+  poolOf(cls: Constructor<IObjectEntry>) {
+    if (this.has(cls)) {
+      const name = ObEntryOutlineOf(cls)!.name;
+      return this.__container.get(name);
+    }
+    return undefined;
   }
 
   acquire<T extends IObjectEntry>(cls: Constructor<T>, ...args: any[]): T | null {
@@ -330,7 +336,7 @@ export class NodePool {
    */
   public constructor(
     public readonly template: Prefab | IPoolNode,
-    public readonly expires: number = NodePool.EXPIRES
+    public readonly expires: number = NodePool.EXPIRES,
   ) {}
 
   /**

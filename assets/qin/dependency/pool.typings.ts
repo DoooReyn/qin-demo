@@ -98,6 +98,12 @@ export interface IObPoC extends IDependency {
    */
   unregister(cls: Constructor<IObjectEntry>): void;
   /**
+   * 检查对象池是否存在
+   * @param cls 对象池条目构造
+   * @returns
+   */
+  has(cls: Constructor<IObjectEntry>): boolean;
+  /**
    * 获取对象池
    * @param cls 对象池条目构造
    * @returns
@@ -146,7 +152,7 @@ export interface INodePoC extends IDependency {
    * @@param expires 过期时间（毫秒）
    */
   registerByNodeConstructor(key: string, node: Constructor<IPoolNode>, expires?: number): void;
-    /**
+  /**
    * 注册节点池
    * @param key 节点池名称
    * @param template 模板

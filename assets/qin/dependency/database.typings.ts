@@ -79,28 +79,15 @@ export interface IModel<T extends Dto> {
  */
 export interface IDatabase extends IDependency {
   /**
-   * 注入数据模型
-   * @param cls 数据模型构造
-   */
-  register(cls: Constructor<IModel<Dto>>): void;
-
-  /**
-   * 注销数据模型
-   * @param cls 数据模型构造
-   */
-  unregister(cls: { new (): IModel<Dto> }): void;
-
-  /**
-   * 获取数据模型（唯一实例）
+   * 创建数据模型
    * @param cls 数据模型构造
    * @returns 数据模型实例
    */
   acquire<D extends Dto>(cls: Constructor<IModel<D>> | string): IModel<D> | null;
 
   /**
-   * 创建数据模型
-   * @param cls 数据模型构造
-   * @returns
+   * 回收数据模型
+   * @param inst 数据模型实例
    */
-  create<D extends Dto>(cls: Constructor<IModel<D>> | string): IModel<D> | null;
+  recycle(inst: IModel<Dto>): void;
 }

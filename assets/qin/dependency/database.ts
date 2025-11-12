@@ -2,11 +2,12 @@ import { list } from "../ability";
 import { DeepProxy } from "../foundation";
 import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
-import { Dto, IDatabase, OnPropertyChanged, Subscription } from "./database.typings";
+import { Dto, IDatabase, IModel, OnPropertyChanged, Subscription } from "./database.typings";
 import { Dependency } from "./dependency";
+import { ObEntryOutlineOf, ObjectEntry } from "./pool";
 
 /** 数据模型 */
-export class Model<D extends Dto> {
+export class Model<D extends Dto> extends ObjectEntry implements IModel<D> {
   /** 原始数据 */
   protected _dto: D | null = null;
 
@@ -19,8 +20,12 @@ export class Model<D extends Dto> {
   /** （粗粒度）属性订阅者 */
   private __laxSubscriptions: Subscription[] = [];
 
-  /** 初始化 */
-  public initialize() {}
+  protected _onEnded(): void {
+    this._dto = null;
+    this._proxy = null;
+    this.unsubscribeAll();
+    super._onEnded();
+  }
 
   /**
    * 通知订阅者
@@ -132,111 +137,37 @@ export class Model<D extends Dto> {
 }
 
 /**
- * 数据模型装饰器
- * @param name 数据模型名称
- * @returns
+ * 内存数据库
+ * - 这里获取和回收只是加了一层验证，用户大可直接用对象池获取和回收
  */
-export function Modeling(name: string) {
-  return function (cls: any) {
-    cls.prototype[Database.Key] = name;
-    ioc.db.register(cls);
-    return cls;
-  };
-}
-
-/**
- * 获取数据模型名称
- * @param cls 数据模型构造
- * @returns
- */
-export function GetModelName(cls: typeof Model<Dto>): string {
-  return cls.prototype[Database.Key];
-}
-
-/**
- * 内存数据库工具
- **/
 @Injectable({ name: "Database" })
 export class Database extends Dependency implements IDatabase {
-  /** 数据库标识 */
-  public static readonly Key: symbol = Symbol.for("Database");
+  public acquire<D extends Dto>(cls: Constructor<Model<D>>): Model<D> | null {
+    const outline = ObEntryOutlineOf(cls);
 
-  /** 数据模型构造容器 */
-  private __container: Map<string, Constructor<Model<Dto>>> = new Map();
-
-  /** 数据模型实例容器 */
-  private __instance: Map<string, Model<Dto>> = new Map();
-
-  public register(cls: Constructor<Model<Dto>>): void {
-    const name = GetModelName(cls);
-    if (!name) {
-      throw new Error("数据库: 无效的数据模型构造，请使用 @Modelize 装饰器");
-    }
-    this.__container.set(name, cls);
-  }
-
-  public unregister(cls: Constructor<Model<Dto>>) {
-    const name = GetModelName(cls);
-
-    if (!name) {
-      throw new Error("数据库: 无效的数据模型构造，请使用 @Modelize 装饰器");
-    }
-
-    if (!this.__container.has(name)) {
-      throw new Error(`数据库: 模型未注册 ${name}`);
-    }
-
-    return this.__container.delete(name);
-  }
-
-  public acquire<D extends Dto>(cls: Constructor<Model<D>> | string): Model<D> | null {
-    let name: string;
-
-    if (typeof cls !== "string") {
-      name = GetModelName(cls);
-    } else {
-      name = cls;
-    }
-
-    if (!name) {
+    if (!outline || !outline.name) {
       throw new Error("数据库: 模型无效或未注册");
     }
 
-    if (!this.__container.has(name)) {
-      throw new Error(`数据库: 模型未注册 ${name}`);
+    if (!ioc.objPool.has(cls)) {
+      throw new Error(`数据库: 模型未注册 ${outline.name}`);
     }
 
-    let inst = this.__instance.get(name);
-    if (!inst) {
-      cls = this.__container.get(name)! as Constructor<Model<D>>;
-      inst = new cls();
-      inst.initialize();
-      this.__instance.set(name, inst);
-    }
-
-    return inst as Model<D>;
+    return ioc.objPool.acquire(cls);
   }
 
-  public create<D extends Dto>(cls: Constructor<Model<D>> | string) {
-    let name: string;
+  public recycle(inst: Model<Dto>) {
+    const cls = inst.constructor as Constructor<Model<Dto>>;
+    const outline = ObEntryOutlineOf(cls);
 
-    if (typeof cls !== "string") {
-      name = GetModelName(cls);
-    } else {
-      name = cls;
-    }
-
-    if (!name) {
+    if (!outline || !outline.name) {
       throw new Error("数据库: 模型无效或未注册");
     }
 
-    if (!this.__container.has(name)) {
-      throw new Error(`数据库: 模型未注册 ${name}`);
+    if (!ioc.objPool.has(cls)) {
+      throw new Error(`数据库: 模型未注册 ${outline.name}`);
     }
 
-    cls = this.__container.get(name)! as Constructor<Model<D>>;
-    const inst = new cls();
-    inst.initialize();
-    return inst;
+    ioc.objPool.recycle(inst);
   }
 }
