@@ -4,7 +4,9 @@ import { might, misc, mock, time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
-import { INodePoC, IObjectEntry, IObjectEntryOutline, IObjectPool, IObPoC, IPoolNode } from "./pool.typings";
+import {
+  INodePoC, IObjectEntry, IObjectEntryOutline, IObjectPool, IObPoC, IPoolNode
+} from "./pool.typings";
 
 /**
  * 对象池条目
@@ -293,11 +295,11 @@ export class ObjectPoolContainer extends Dependency implements IObPoC {
 /**
  * 对象池条目装饰器
  * @param name 对象池条目
- * @param capacity 容量
- * @param expires 过期时间（毫秒）
+ * @param capacity 容量，默认 32
+ * @param expires 过期时间（毫秒），默认 2 分钟
  * @returns
  */
-export function ObEntryOutline(name: string, capacity: number = 0, expires: number = 0) {
+export function ObEntryOutline(name: string, capacity: number = 32, expires: number = 120_000) {
   return function (target: any) {
     target.prototype[ObjectPoolContainer.Key] = {
       name,
