@@ -136,7 +136,7 @@ export class Model<D extends Dto> {
  * @param name 数据模型名称
  * @returns
  */
-export function Modelize(name: string) {
+export function Modeling(name: string) {
   return function (cls: any) {
     cls.prototype[Database.Key] = name;
     ioc.db.register(cls);
