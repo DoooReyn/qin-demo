@@ -36,3 +36,5 @@ export * from "./table.typings";
 export * from "./table";
 export * from "./i18n.typings";
 export * from "./i18n";
+export * from "./database.typings";
+export * from "./database";

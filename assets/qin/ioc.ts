@@ -3,6 +3,7 @@ import {
   IAstc,
   IAudioPlayer,
   ICacheContainer,
+  IDatabase,
   IDependency,
   IDependencyMeta,
   IEnvironment,
@@ -200,6 +201,11 @@ export class IoC {
   /** 国际化工具 */
   get i18n() {
     return this.resolve<Ii18n>("I18n");
+  }
+
+  /** 内存数据库 */
+  get db() {
+    return this.resolve<IDatabase>("Database");
   }
 }
 
