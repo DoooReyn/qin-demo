@@ -17,5 +17,5 @@ qin.ioc.eventBus.app.subscribes({
 });
 
 if (DEV) {
-  (<any>window)["qin"] = qin;
+  qin.gg.set("qin", qin, 1);
 }
