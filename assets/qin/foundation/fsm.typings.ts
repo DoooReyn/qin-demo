@@ -41,6 +41,20 @@ export interface FSMCallbacks<TState extends FSMKey, TEvent extends FSMKey, TCon
 }
 
 /**
+ * 每个状态的本地回调定义
+ */
+export interface FSMStateLocalCallbacks<
+  TState extends FSMKey,
+  TEvent extends FSMKey,
+  TContext = any
+> {
+  /** 某状态即将退出时触发（在全局 onBeforeTransition 允许通过后、实际状态切换前执行） */
+  onExit?: (from: TState, to: TState, by: TEvent, context?: TContext) => void | Promise<void>;
+  /** 某状态刚进入时触发（状态已切换后执行） */
+  onEnter?: (to: TState, from: TState, by: TEvent, context?: TContext) => void | Promise<void>;
+}
+
+/**
  * FSMConfig 接口定义了有限状态机的配置。
  * 它继承了 FSMCallbacks 接口，并添加了 initial 和 transitions 属性。
  */
@@ -56,6 +70,10 @@ export interface FSMConfig<TState extends FSMKey, TEvent extends FSMKey, TContex
    * 它是一个只读对象，其中每个状态都映射到一个只读的、部分的、记录类型。
    */
   transitions: TransitionTable<TState, TEvent>;
+  /**
+   * 每个状态的本地回调（onEnter/onExit），可选。
+   */
+  stateCallbacks?: Readonly<Partial<Record<TState, FSMStateLocalCallbacks<TState, TEvent, TContext>>>>;
 }
 
 /**

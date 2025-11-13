@@ -1,5 +1,5 @@
 import { dict, time } from "../ability";
-import { FSMCallbacks, FSMConfig, FSMKey, IFSM, TransitionTable } from "./fsm.typings";
+import { FSMCallbacks, FSMConfig, FSMKey, IFSM, TransitionTable, FSMStateLocalCallbacks } from "./fsm.typings";
 
 /**
  * 有限状态机
@@ -13,6 +13,8 @@ export class FiniteStateMachine<
   private readonly __transitions: TransitionTable<TState, TEvent>;
   /** 回调函数 */
   private readonly __callbacks: FSMCallbacks<TState, TEvent, TContext>;
+  /** 本地状态回调表 */
+  private readonly __stateCallbacks?: Readonly<Partial<Record<TState, FSMStateLocalCallbacks<TState, TEvent, TContext>>>>;
   /** 当前状态 */
   private __state: TState;
   public get state(): TState {
@@ -25,12 +27,17 @@ export class FiniteStateMachine<
   }
 
   constructor(config: FSMConfig<TState, TEvent, TContext>) {
-    // Freeze transitions to ensure immutability
+    // 对 transitions 深冻结，运行期不可更改
     this.__transitions = dict.deepFreeze({ ...config.transitions }) as TransitionTable<TState, TEvent>;
     this.__callbacks = {
       onBeforeTransition: config.onBeforeTransition,
       onAfterTransition: config.onAfterTransition,
     };
+    if (config.stateCallbacks) {
+      this.__stateCallbacks = dict.deepFreeze({ ...(config.stateCallbacks as any) }) as Readonly<
+        Partial<Record<TState, FSMStateLocalCallbacks<TState, TEvent, TContext>>>
+      >;
+    }
     this.__state = config.initial;
     this.__enteredAt = time.now;
   }
@@ -56,17 +63,29 @@ export class FiniteStateMachine<
     const from = this.state;
     const to = next as TState;
 
-    // before callback, can veto with false
+    // 全局 onBeforeTransition
     if (this.__callbacks.onBeforeTransition) {
       const res = await this.__callbacks.onBeforeTransition(from, to, event, context);
       if (res === false) return false;
     }
 
-    // state change
+    // 本地 fromState.onExit
+    const exitCb = this.__stateCallbacks?.[from]?.onExit;
+    if (exitCb) {
+      await exitCb(from, to, event, context);
+    }
+
+    // 状态切换与时间戳更新
     this.__state = to;
     this.__enteredAt = time.now;
 
-    // after callback
+    // 本地 toState.onEnter
+    const enterCb = this.__stateCallbacks?.[to]?.onEnter;
+    if (enterCb) {
+      await enterCb(to, from, event, context);
+    }
+
+    // 全局 onAfterTransition
     if (this.__callbacks.onAfterTransition) {
       await this.__callbacks.onAfterTransition(from, to, event, context);
     }
