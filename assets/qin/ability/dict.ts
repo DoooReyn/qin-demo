@@ -56,6 +56,8 @@ export interface IDict extends IAbility {
   merge(dst: IDictionary, src: IDictionary): IDictionary;
   /** 覆盖字典（仅覆盖目标字典中不存在的键） */
   override(dst: IDictionary, src: IDictionary): IDictionary;
+  /** 深冻结字典（防止修改） */
+  deepFreeze<T extends IDictionary>(d: T): Readonly<T>;
 }
 
 /** 字典能力项 */
@@ -64,6 +66,20 @@ export const dict: IDict = {
   description: "字典",
   freeze(d: IDictionary) {
     return Object.freeze(d);
+  },
+  deepFreeze<T extends IDictionary>(obj: T): T {
+    Object.freeze(obj);
+    Object.getOwnPropertyNames(obj).forEach((prop) => {
+      const value: any = (obj as any)[prop];
+      if (
+        value &&
+        (typeof value === "object" || typeof value === "function") &&
+        !Object.isFrozen(value)
+      ) {
+        dict.deepFreeze(value);
+      }
+    });
+    return obj;
   },
   keys(d: IDictionary) {
     return Object.keys(d);
