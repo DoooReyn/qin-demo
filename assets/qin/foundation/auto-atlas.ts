@@ -6,7 +6,7 @@ import { list } from "../ability";
 /**
  * 动态纹理
  */
-class AutoTexture extends Texture2D {
+export class AutoTexture extends Texture2D {
   /**
    * 初始化
    * @param width 宽度
