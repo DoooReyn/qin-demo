@@ -7,3 +7,6 @@ export * from "./noise";
 export * from "./selector";
 export * from "./trigger";
 export * from "./refer";
+export * from "./fsm";
+export * from "./fsm.typings";
+export * from "./fsm.decorator";
