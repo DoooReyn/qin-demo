@@ -17,10 +17,12 @@ export interface IProfiler extends IDependency {
   getErrorStack(depth: number): string;
 
   /**
-   * 模拟耗时操作
-   * @param t 耗时，默认为10ms
+   * 跟踪钩子方法的执行，如果有错误则进行捕获上报
+   * @param hook 钩子
+   * @param thisArg 钩子方法的 this 指向
+   * @returns
    */
-  simulateTimeConsumingOperation(t?: number): void;
+  errorTrace(hook: Function, thisArg: any): void;
 
   /**
    * 设置错误上报通讯员
@@ -31,23 +33,24 @@ export interface IProfiler extends IDependency {
 
   /** 设置错误去重窗口（毫秒） */
   setErrorDedupWindow(ms: number): void;
+
   /** 获取错误去重窗口（毫秒） */
   getErrorDedupWindow(): number;
 
   /** 设置错误上报限频（窗口毫秒与最大条数，可部分设置） */
   setErrorRateLimit(options: { windowMs?: number; max?: number }): void;
+
   /** 获取错误上报限频配置 */
   getErrorRateLimit(): { windowMs: number; max: number };
+
   /** 重置当前限频窗口计数（立即生效） */
   resetErrorRateWindow(): void;
 
   /**
-   * 跟踪钩子方法的执行，如果有错误则进行捕获上报
-   * @param hook 钩子
-   * @param thisArg 钩子方法的 this 指向
-   * @returns
+   * 模拟耗时操作
+   * @param t 耗时，默认为10ms
    */
-  errorTrace(hook: Function, thisArg: any): void;
+  simulateTimeConsumingOperation(t?: number): void;
 
   /** 当前纹理数量 */
   get textureCount(): number;
