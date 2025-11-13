@@ -101,4 +101,6 @@ export interface ILogcat extends IDependency {
   get qin(): ILogger;
   /** 资源日志记录器 */
   get res(): ILogger;
+  /** 缓动日志记录器 */
+  get tweener(): ILogger;
 }

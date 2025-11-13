@@ -136,6 +136,10 @@ export class Logcat extends Dependency implements ILogcat {
     return this.acquire("res");
   }
 
+  get tweener() {
+    return this.acquire("tweener");
+  }
+
   clear(): void {
     this.__container.clear();
   }
