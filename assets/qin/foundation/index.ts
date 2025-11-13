@@ -10,3 +10,5 @@ export * from "./refer";
 export * from "./fsm";
 export * from "./fsm.typings";
 export * from "./fsm.decorator";
+export * from "./max-rects-packer";
+export * from "./auto-atlas";
