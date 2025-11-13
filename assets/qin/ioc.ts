@@ -21,6 +21,7 @@ import {
   ITableQueries,
   ITimer,
   Ii18n,
+  ITweener,
 } from "./dependency";
 
 /**
@@ -206,6 +207,11 @@ export class IoC {
   /** 内存数据库 */
   get db() {
     return this.resolve<IDatabase>("Database");
+  }
+
+  /** 缓动动画（Tweener） */
+  get tweener() {
+    return this.resolve<ITweener>("Tweener");
   }
 }
 
