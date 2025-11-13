@@ -1,6 +1,6 @@
 import { game, screen, EventTouch, Game, Input } from "cc";
 
-import { digit, time } from "../ability";
+import { digit, mock, time } from "../ability";
 import ioc from "../ioc";
 import { PRESET } from "../preset";
 import { Atom } from "./atom";
@@ -8,6 +8,7 @@ import { Atom } from "./atom";
 /**
  * 应用入口
  */
+@mock.decorator.ccclass("MainAtom")
 export class MainAtom extends Atom {
   /** 时间记录点#回调前台 */
   private __timeEnterFG: number = 0;
