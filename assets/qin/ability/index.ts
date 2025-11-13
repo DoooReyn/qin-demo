@@ -20,6 +20,7 @@ export * from "./platform";
 export * from "./random";
 export * from "./regexp";
 export * from "./shot";
+export * from "./spine";
 export * from "./time";
 export * from "./zipson";
 export * from "./zlib";

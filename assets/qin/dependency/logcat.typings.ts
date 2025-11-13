@@ -97,8 +97,8 @@ export interface ILogcat extends IDependency {
    * 关闭所有日志记录器
    */
   off(): void;
-  /** 获取默认日志记录器 */
+  /** 默认日志记录器 */
   get qin(): ILogger;
-  /** 获取资源日志记录器 */
+  /** 资源日志记录器 */
   get res(): ILogger;
 }
