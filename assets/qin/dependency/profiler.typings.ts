@@ -29,6 +29,18 @@ export interface IProfiler extends IDependency {
    */
   setErrorReporter(reporter: (error: string) => void): void;
 
+  /** 设置错误去重窗口（毫秒） */
+  setErrorDedupWindow(ms: number): void;
+  /** 获取错误去重窗口（毫秒） */
+  getErrorDedupWindow(): number;
+
+  /** 设置错误上报限频（窗口毫秒与最大条数，可部分设置） */
+  setErrorRateLimit(options: { windowMs?: number; max?: number }): void;
+  /** 获取错误上报限频配置 */
+  getErrorRateLimit(): { windowMs: number; max: number };
+  /** 重置当前限频窗口计数（立即生效） */
+  resetErrorRateWindow(): void;
+
   /**
    * 跟踪钩子方法的执行，如果有错误则进行捕获上报
    * @param hook 钩子
