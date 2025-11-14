@@ -1,33 +1,23 @@
-/**
- * 红点管理系统实现
- */
-
 import { Injectable, ioc } from "../ioc";
 import { Dependency } from "./dependency";
-import {
-  IRedDotManager,
-  IRedDotConfig,
-  IRedDotRule,
-  IRedDotData,
-  IRedDotChangeEvent,
-  RedDotStyle,
-  IRedDotPool,
-} from "./reddot.typings";
+import { IRedDotManager, IRedDotConfig, IRedDotData, IRedDotChangeEvent, IRedDotPool } from "./reddot.typings";
 
 /**
  * 红点池实现
  */
 class RedDotPool implements IRedDotPool {
-  private pool: IRedDotData[] = [];
-  private maxSize: number = 150;
+  /** 红点对象容器 */
+  private __container: IRedDotData[] = [];
+  /** 红点对象池最大容量 */
+  private __maxSize: number = 100;
 
   /**
    * 获取红点对象
    * @returns 红点对象
    */
   acquire(): IRedDotData {
-    if (this.pool.length > 0) {
-      const reddot = this.pool.pop()!;
+    if (this.__container.length > 0) {
+      const reddot = this.__container.pop()!;
       reddot.data = undefined;
       reddot.visible = false;
       reddot.updateTime = 0;
@@ -45,8 +35,8 @@ class RedDotPool implements IRedDotPool {
    * @param reddot 红点对象
    */
   release(reddot: IRedDotData): void {
-    if (this.pool.length < this.maxSize) {
-      this.pool.push(reddot);
+    if (this.__container.length < this.__maxSize) {
+      this.__container.push(reddot);
     }
   }
 }
@@ -62,34 +52,28 @@ class RedDotPool implements IRedDotPool {
 })
 export class RedDotManager extends Dependency implements IRedDotManager {
   /** 红点配置映射 */
-  private configs: Map<string, IRedDotConfig> = new Map();
+  private __configs: Map<string, IRedDotConfig> = new Map();
   /** 红点数据映射 */
-  private reddots: Map<string, IRedDotData> = new Map();
+  private __reddots: Map<string, IRedDotData> = new Map();
   /** 状态监听器映射 */
-  private listeners: Map<string, Set<(event: IRedDotChangeEvent) => void>> = new Map();
+  private __listeners: Map<string, Set<(event: IRedDotChangeEvent) => void>> = new Map();
   /** 红点对象池 */
-  private pool: IRedDotPool = new RedDotPool();
+  private __pool: IRedDotPool = new RedDotPool();
   /** 批量更新队列 */
-  private batchQueue: { id: string; data: any }[] = [];
+  private __batchQueue: { id: string; data: any }[] = [];
   /** 是否正在批量更新 */
-  private isBatching: boolean = false;
-
-  /**
-   * 依赖附加时的初始化
-   */
-  async onAttach(): Promise<void> {
-    ioc.logcat?.red.wf("红点管理系统已初始化");
-  }
+  private __isBatching: boolean = false;
 
   /**
    * 依赖分离时的清理
    */
   async onDetach(): Promise<void> {
-    this.configs.clear();
-    this.reddots.clear();
-    this.listeners.clear();
-    this.batchQueue.length = 0;
+    this.__configs.clear();
+    this.__reddots.clear();
+    this.__listeners.clear();
+    this.__batchQueue.length = 0;
     ioc.logcat?.red.wf("红点管理系统已清理");
+    return super.onDetach();
   }
 
   /**
@@ -97,27 +81,27 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param config 红点配置
    */
   register(config: IRedDotConfig): void {
-    if (this.configs.has(config.id)) {
+    if (this.__configs.has(config.id)) {
       ioc.logcat?.red.ef("红点 {0} 已存在，无法重复注册", config.id);
       return;
     }
 
-    this.configs.set(config.id, config);
+    this.__configs.set(config.id, config);
 
     // 初始化红点数据
-    const reddot = this.pool.acquire();
+    const reddot = this.__pool.acquire();
     reddot.updateTime = Date.now();
 
     // 如果支持持久化，尝试恢复本地数据
     if (config.persistent) {
-      this.loadFromStorage(config.id, reddot);
+      this.__loadFromStorage(config.id, reddot);
     }
 
-    this.reddots.set(config.id, reddot);
+    this.__reddots.set(config.id, reddot);
 
     // 处理父子关系
     if (config.parent) {
-      const parentConfig = this.configs.get(config.parent);
+      const parentConfig = this.__configs.get(config.parent);
       if (parentConfig) {
         if (!parentConfig.children) {
           parentConfig.children = [];
@@ -137,13 +121,13 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param data 红点数据
    */
   updateData(id: string, data: any): void {
-    const config = this.configs.get(id);
+    const config = this.__configs.get(id);
     if (!config) {
       ioc.logcat?.red.ef("红点 {0} 未注册，无法更新数据", id);
       return;
     }
 
-    const reddot = this.reddots.get(id);
+    const reddot = this.__reddots.get(id);
     if (!reddot) {
       ioc.logcat?.red.ef("红点 {0} 数据不存在", id);
       return;
@@ -160,14 +144,14 @@ export class RedDotManager extends Dependency implements IRedDotManager {
       reddot.visible = newVisible;
 
       // 触发状态变化事件
-      this.emitChangeEvent(id, newVisible, data);
+      this.__emitChangeEvent(id, newVisible, data);
 
       // 更新父红点状态
-      this.updateParentState(id);
+      this.__updateParentState(id);
 
       // 持久化处理
       if (config.persistent) {
-        this.saveToStorage(id, reddot);
+        this.__saveToStorage(id, reddot);
       }
     }
   }
@@ -178,7 +162,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @returns 是否显示红点
    */
   getState(id: string): boolean {
-    const reddot = this.reddots.get(id);
+    const reddot = this.__reddots.get(id);
     return reddot ? reddot.visible : false;
   }
 
@@ -188,7 +172,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @returns 红点状态数据
    */
   getData(id: string): IRedDotData | null {
-    const reddot = this.reddots.get(id);
+    const reddot = this.__reddots.get(id);
     return reddot ? { ...reddot } : null;
   }
 
@@ -199,22 +183,31 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @returns 取消监听的函数
    */
   subscribe(id: string, callback: (event: IRedDotChangeEvent) => void): () => void {
-    if (!this.listeners.has(id)) {
-      this.listeners.set(id, new Set());
+    if (!this.__listeners.has(id)) {
+      this.__listeners.set(id, new Set());
     }
 
-    this.listeners.get(id)!.add(callback);
+    this.__listeners.get(id)!.add(callback);
 
     // 返回取消监听的函数
     return () => {
-      const listeners = this.listeners.get(id);
-      if (listeners) {
-        listeners.delete(callback);
-        if (listeners.size === 0) {
-          this.listeners.delete(id);
-        }
-      }
+      this.unsubscribe(id, callback);
     };
+  }
+
+  /**
+   * 取消监听红点状态变化
+   * @param id 红点ID
+   * @param callback 状态变化回调
+   */
+  unsubscribe(id: string, callback: (event: IRedDotChangeEvent) => void): void {
+    const listeners = this.__listeners.get(id);
+    if (listeners) {
+      listeners.delete(callback);
+      if (listeners.size === 0) {
+        this.__listeners.delete(id);
+      }
+    }
   }
 
   /**
@@ -222,16 +215,62 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param updates 批量更新数据
    */
   batchUpdate(updates: { id: string; data: any }[]): void {
-    this.isBatching = true;
-    this.batchQueue.push(...updates);
+    const changedEvents: IRedDotChangeEvent[] = [];
+    const parentIdsToUpdate = new Set<string>();
+
+    this.__isBatching = true;
 
     try {
       updates.forEach((update) => {
-        this.updateData(update.id, update.data);
+        const config = this.__configs.get(update.id);
+        if (!config) {
+          ioc.logcat?.red.ef("红点 {0} 未注册，无法更新数据", update.id);
+          return;
+        }
+
+        const reddot = this.__reddots.get(update.id);
+        if (!reddot) {
+          ioc.logcat?.red.ef("红点 {0} 数据不存在", update.id);
+          return;
+        }
+
+        // 更新数据
+        reddot.data = update.data;
+        reddot.updateTime = Date.now();
+
+        // 评估新状态
+        const newVisible = config.rule.evaluate(update.data);
+
+        if (reddot.visible !== newVisible) {
+          reddot.visible = newVisible;
+
+          // 收集状态变化事件，稍后批量触发
+          changedEvents.push({ id: update.id, visible: newVisible, data: update.data });
+
+          // 收集需要更新的父红点ID
+          if (config.parent) {
+            parentIdsToUpdate.add(config.parent);
+          }
+
+          // 持久化处理
+          if (config.persistent) {
+            this.__saveToStorage(update.id, reddot);
+          }
+        }
+      });
+
+      // 批量更新父红点状态
+      parentIdsToUpdate.forEach((parentId) => {
+        this.__updateParentState(parentId);
+      });
+
+      // 批量触发状态变化事件
+      changedEvents.forEach((event) => {
+        this.__notifyListeners(event);
+        this.__notifyEventBus(event);
       });
     } finally {
-      this.isBatching = false;
-      this.batchQueue.length = 0;
+      this.__isBatching = false;
     }
   }
 
@@ -240,13 +279,13 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param id 红点ID
    */
   clear(id: string): void {
-    const config = this.configs.get(id);
+    const config = this.__configs.get(id);
     if (!config) {
       ioc.logcat?.red.ef("红点 {0} 未注册，无法清除", id);
       return;
     }
 
-    const reddot = this.reddots.get(id);
+    const reddot = this.__reddots.get(id);
     if (!reddot) {
       return;
     }
@@ -256,14 +295,14 @@ export class RedDotManager extends Dependency implements IRedDotManager {
     reddot.updateTime = Date.now();
 
     // 触发状态变化事件
-    this.emitChangeEvent(id, false, undefined);
+    this.__emitChangeEvent(id, false, undefined);
 
     // 更新父红点状态
-    this.updateParentState(id);
+    this.__updateParentState(id);
 
     // 持久化处理
     if (config.persistent) {
-      this.saveToStorage(id, reddot);
+      this.__saveToStorage(id, reddot);
     }
   }
 
@@ -272,7 +311,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param id 红点ID
    */
   onClick(id: string): void {
-    const config = this.configs.get(id);
+    const config = this.__configs.get(id);
     if (!config) {
       ioc.logcat?.red.ef("红点 {0} 未注册", id);
       return;
@@ -290,7 +329,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    */
   getAllStates(): Map<string, IRedDotData> {
     const result = new Map<string, IRedDotData>();
-    this.reddots.forEach((reddot, id) => {
+    this.__reddots.forEach((reddot, id) => {
       result.set(id, { ...reddot });
     });
     return result;
@@ -302,7 +341,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @returns 是否存在
    */
   has(id: string): boolean {
-    return this.configs.has(id);
+    return this.__configs.has(id);
   }
 
   /**
@@ -310,7 +349,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param id 红点ID
    */
   unregister(id: string): void {
-    const config = this.configs.get(id);
+    const config = this.__configs.get(id);
     if (!config) {
       return;
     }
@@ -318,7 +357,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
     // 清理子红点的父引用
     if (config.children) {
       config.children.forEach((childId) => {
-        const childConfig = this.configs.get(childId);
+        const childConfig = this.__configs.get(childId);
         if (childConfig) {
           childConfig.parent = undefined;
         }
@@ -327,7 +366,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
 
     // 清理父红点的子引用
     if (config.parent) {
-      const parentConfig = this.configs.get(config.parent);
+      const parentConfig = this.__configs.get(config.parent);
       if (parentConfig && parentConfig.children) {
         const index = parentConfig.children.indexOf(id);
         if (index !== -1) {
@@ -337,17 +376,17 @@ export class RedDotManager extends Dependency implements IRedDotManager {
     }
 
     // 释放红点对象
-    const reddot = this.reddots.get(id);
+    const reddot = this.__reddots.get(id);
     if (reddot) {
-      this.pool.release(reddot);
-      this.reddots.delete(id);
+      this.__pool.release(reddot);
+      this.__reddots.delete(id);
     }
 
     // 清理监听器
-    this.listeners.delete(id);
+    this.__listeners.delete(id);
 
     // 删除配置
-    this.configs.delete(id);
+    this.__configs.delete(id);
 
     ioc.logcat?.red.wf("红点 {0} 注销成功", id);
   }
@@ -358,36 +397,52 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param visible 是否可见
    * @param data 红点数据
    */
-  private emitChangeEvent(id: string, visible: boolean, data?: any): void {
+  private __emitChangeEvent(id: string, visible: boolean, data?: any): void {
     const event: IRedDotChangeEvent = { id, visible, data };
 
-    // 通知当前红点的监听器
-    const listeners = this.listeners.get(id);
+    // 如果不是批量更新模式，立即触发事件
+    if (!this.__isBatching) {
+      this.__notifyListeners(event);
+      this.__notifyEventBus(event);
+    }
+  }
+
+  /**
+   * 通知监听器
+   * @param event 状态变化事件
+   */
+  private __notifyListeners(event: IRedDotChangeEvent): void {
+    const listeners = this.__listeners.get(event.id);
     if (listeners) {
       listeners.forEach((callback) => {
         try {
           callback(event);
         } catch (error) {
-          ioc.logcat?.red.ef("红点 {0} 状态变化回调执行失败: {1}", id, error);
+          ioc.logcat?.red.ef("红点 {0} 状态变化回调执行失败: {1}", event.id, error);
         }
       });
     }
+  }
 
-    // 通过事件总线通知其他模块
-    ioc.eventBus.red.publish("reddot:change:" + id, event);
+  /**
+   * 通知事件总线
+   * @param event 状态变化事件
+   */
+  private __notifyEventBus(event: IRedDotChangeEvent): void {
+    ioc.eventBus.red.publish("reddot:change:" + event.id, event);
   }
 
   /**
    * 更新父红点状态
    * @param childId 子红点ID
    */
-  private updateParentState(childId: string): void {
-    const config = this.configs.get(childId);
+  private __updateParentState(childId: string): void {
+    const config = this.__configs.get(childId);
     if (!config || !config.parent) {
       return;
     }
 
-    const parentConfig = this.configs.get(config.parent);
+    const parentConfig = this.__configs.get(config.parent);
     if (!parentConfig || !parentConfig.children) {
       return;
     }
@@ -395,23 +450,23 @@ export class RedDotManager extends Dependency implements IRedDotManager {
     // 计算父红点状态（任一子红点可见则父红点可见）
     let parentVisible = false;
     for (const childId of parentConfig.children) {
-      const childReddot = this.reddots.get(childId);
+      const childReddot = this.__reddots.get(childId);
       if (childReddot && childReddot.visible) {
         parentVisible = true;
         break;
       }
     }
 
-    const parentReddot = this.reddots.get(config.parent);
+    const parentReddot = this.__reddots.get(config.parent);
     if (parentReddot && parentReddot.visible !== parentVisible) {
       parentReddot.visible = parentVisible;
       parentReddot.updateTime = Date.now();
 
       // 触发父红点状态变化事件
-      this.emitChangeEvent(config.parent, parentVisible, parentReddot.data);
+      this.__emitChangeEvent(config.parent, parentVisible, parentReddot.data);
 
       // 递归更新祖父红点
-      this.updateParentState(config.parent);
+      this.__updateParentState(config.parent);
     }
   }
 
@@ -420,7 +475,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param id 红点ID
    * @param reddot 红点数据对象
    */
-  private loadFromStorage(id: string, reddot: IRedDotData): void {
+  private __loadFromStorage(id: string, reddot: IRedDotData): void {
     if (ioc.store) {
       try {
         const key = `reddot:${id}`;
@@ -441,7 +496,7 @@ export class RedDotManager extends Dependency implements IRedDotManager {
    * @param id 红点ID
    * @param reddot 红点数据
    */
-  private saveToStorage(id: string, reddot: IRedDotData): void {
+  private __saveToStorage(id: string, reddot: IRedDotData): void {
     if (ioc.store) {
       try {
         const storeItem = ioc.store.itemOf(`reddot:${id}`);

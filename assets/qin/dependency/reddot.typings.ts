@@ -112,6 +112,13 @@ export interface IRedDotManager extends IDependency {
   subscribe(id: string, callback: (event: IRedDotChangeEvent) => void): () => void;
 
   /**
+   * 取消监听红点状态变化
+   * @param id 红点ID
+   * @param callback 状态变化回调
+   */
+  unsubscribe(id: string, callback: (event: IRedDotChangeEvent) => void): void;
+
+  /**
    * 批量更新红点数据
    * @param updates 批量更新数据
    */

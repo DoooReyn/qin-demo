@@ -123,6 +123,9 @@ class Logger implements ILogger {
   }
 }
 
+/**
+ * 日志系统实现
+ */
 @Injectable({ name: "Logcat" })
 export class Logcat extends Dependency implements ILogcat {
   /** 日志容器 */
@@ -138,6 +141,10 @@ export class Logcat extends Dependency implements ILogcat {
 
   get tweener() {
     return this.acquire("tweener");
+  }
+
+  get red() {
+    return this.acquire("red");
   }
 
   clear(): void {
