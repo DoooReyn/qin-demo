@@ -20,6 +20,8 @@ export interface IEventBus extends IDependency {
   get gui(): IEventChannel;
   /** 应用事件频道 */
   get app(): IEventChannel;
+  /** 红点事件频道 */
+  get red(): IEventChannel;
 }
 
 /**

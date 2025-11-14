@@ -22,6 +22,7 @@ import {
   ITimer,
   Ii18n,
   ITweener,
+  IRedDotManager,
 } from "./dependency";
 
 /**
@@ -212,6 +213,11 @@ export class IoC {
   /** 缓动动画（Tweener） */
   get tweener() {
     return this.resolve<ITweener>("Tweener");
+  }
+
+  /** 红点管理系统 */
+  get red() {
+    return this.resolve<IRedDotManager>("RedDot");
   }
 }
 

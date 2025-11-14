@@ -40,3 +40,6 @@ export * from "./database.typings";
 export * from "./database";
 export * from "./tweener.typings";
 export * from "./tweener";
+export * from "./reddot.typings";
+export * from "./reddot.rule";
+export * from "./reddot";

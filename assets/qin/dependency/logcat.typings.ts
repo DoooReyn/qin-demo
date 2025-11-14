@@ -99,6 +99,8 @@ export interface ILogcat extends IDependency {
   off(): void;
   /** 默认日志记录器 */
   get qin(): ILogger;
+  /** 红点日志记录器 */
+  get red(): ILogger;
   /** 资源日志记录器 */
   get res(): ILogger;
   /** 缓动日志记录器 */
