@@ -120,7 +120,9 @@ export class MainAtom extends Atom {
    * @param touch
    */
   protected _doScreenTapped(touch: EventTouch): void {
-    ioc.logcat.qin.d("应用: 屏幕点击", touch);
-    ioc.eventBus.app.publish(PRESET.EVENT.APP_SCREEN_TAPPED, touch);
+    if (this.node.uiTransform.hitTest(touch.getLocation())) {
+      ioc.logcat.qin.d("应用: 屏幕点击", touch);
+      ioc.eventBus.app.publish(PRESET.EVENT.APP_SCREEN_TAPPED, touch);
+    }
   }
 }
