@@ -12,6 +12,23 @@ export interface IRichGlyphMetrics {
 }
 
 /**
+ * 富文本图集等级
+ * @description 控制 AutoAtlas 的纹理尺寸
+ */
+export enum RichTextAtlasLevel {
+  /** 微型：128x128 */
+  Micro = 128,
+  /** 小型：256x256 */
+  Small = 256,
+  /** 中型：512x512（默认） */
+  Medium = 512,
+  /** 大型：1024x1024 */
+  Large = 1024,
+  /** 超大型：2048x2048 */
+  XLarge = 2048,
+}
+
+/**
  * 单个图集的占用信息
  */
 export interface IRichAtlasUsageItem {
@@ -47,10 +64,18 @@ export interface IRichAtlasUsageSummary {
 export interface IRichTextAtlas extends IDependency {
   /** 初始化 */
   initialize(): void;
+
+  /**
+   * 为指定图集标识配置等级（纹理尺寸）
+   * - 同一个 atlasKey 多次配置时，以最后一次为准
+   */
+  configureAtlas(atlasKey: string, level: RichTextAtlasLevel): void;
+
   /**
    * 获取 glyph 的尺寸（如果已在图集中缓存）
    * @param atlasKey 图集标识
    * @param glyphKey glyph 样式标识（包含字体、字号、颜色、描边等）
+   * @returns glyph 的尺寸，如果未缓存则返回 null
    */
   measureGlyphMetrics(atlasKey: string, glyphKey: string): IRichGlyphMetrics | null;
 

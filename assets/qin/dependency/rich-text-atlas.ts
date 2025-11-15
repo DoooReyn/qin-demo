@@ -5,7 +5,7 @@ import ioc, { Injectable } from "../ioc";
 import { AutoAtlas } from "../foundation/auto-atlas";
 import { Dependency } from "./dependency";
 import { IRichTextStyle } from "../atom/rich-text-atom";
-import { IRichTextAtlas } from "./rich-text-atlas.typings";
+import { IRichTextAtlas, RichTextAtlasLevel } from "./rich-text-atlas.typings";
 
 /**
  * 富文本模板
@@ -51,6 +51,9 @@ class RichTextTemplte extends Node {
     return image;
   }
 
+  /**
+   * 释放资源
+   */
   dismiss() {
     // @ts-ignore
     this.__renderer?.destroyTtfSpriteFrame();
@@ -62,6 +65,7 @@ class RichTextTemplte extends Node {
  * 富文本图集条目
  */
 interface IRichGlyphEntry {
+  /** 引用的 SpriteFrame */
   frame: SpriteFrame;
   /** 最近一次被访问的时间戳，用于简单 LRU */
   lastUsed: number;
@@ -71,6 +75,7 @@ interface IRichGlyphEntry {
  * 富文本图集信息
  */
 interface IRichAtlasInfo {
+  /** 自动图集 */
   atlas: AutoAtlas;
   /** glyphKey -> SpriteFrame */
   glyphs: Map<string, IRichGlyphEntry>;
@@ -91,12 +96,25 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
   /** atlasKey -> 图集信息 */
   private __atlases: Map<string, IRichAtlasInfo> = new Map();
 
+  /** atlasKey -> 图集等级（控制 AutoAtlas 尺寸） */
+  private __atlasLevels: Map<string, RichTextAtlasLevel> = new Map();
+
   /** 用于生成 glyph 的临时节点 */
   private __template: RichTextTemplte;
 
   initialize() {
+    this.configureAtlas("richtext-default", RichTextAtlasLevel.XLarge);
     this.__template = new RichTextTemplte();
     ioc.launcher.root.insertChild(this.__template, 2);
+  }
+
+  public configureAtlas(atlasKey: string, level: RichTextAtlasLevel): void {
+    if (this.__atlasLevels.has(atlasKey)) {
+      const oldLevel = RichTextAtlasLevel[this.__atlasLevels.get(atlasKey)];
+      ioc.logcat.qin.w(`富文本图集：${atlasKey} 已配置为 ${oldLevel}，请注意合理分配图集标识和等级`);
+      return;
+    }
+    this.__atlasLevels.set(atlasKey, level);
   }
 
   onDetach(): Promise<void> {
@@ -113,9 +131,11 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
   private __getOrCreateAtlas(atlasKey: string): IRichAtlasInfo {
     let info = this.__atlases.get(atlasKey);
     if (!info) {
+      const level = this.__atlasLevels.get(atlasKey) ?? RichTextAtlasLevel.Medium;
+      const size = level as number;
       const atlas = new AutoAtlas(atlasKey, {
-        width: 1024,
-        height: 1024,
+        width: size,
+        height: size,
         smart: true,
         border: 1,
         padding: 2,
@@ -130,12 +150,6 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     return info;
   }
 
-  /**
-   * 获取 glyph 的尺寸
-   * @param atlasKey 图集标识
-   * @param glyphKey glyph 样式标识（包含字体、字号、颜色、描边等）
-   * @returns
-   */
   public measureGlyphMetrics(atlasKey: string, glyphKey: string) {
     const info = this.__getOrCreateAtlas(atlasKey);
 
@@ -150,17 +164,11 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     return null;
   }
 
-  /**
-   * 增加图集引用计数
-   */
   public addRef(atlasKey: string): void {
     const info = this.__getOrCreateAtlas(atlasKey);
     info.refCount++;
   }
 
-  /**
-   * 减少图集引用计数
-   */
   public decRef(atlasKey: string): void {
     const info = this.__atlases.get(atlasKey);
     if (!info) {
@@ -173,13 +181,6 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     }
   }
 
-  /**
-   * 获取或创建 glyph
-   * @param atlasKey 图集标识
-   * @param glyphKey glyph 样式标识（包含字体、字号、颜色、描边等）
-   * @param ch 字符
-   * @param style 样式
-   */
   public acquireGlyph(atlasKey: string, glyphKey: string, ch: string, style: IRichTextStyle): SpriteFrame | null {
     const info = this.__getOrCreateAtlas(atlasKey);
 
@@ -208,19 +209,10 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     return frame;
   }
 
-  /**
-   * 创建 glyph 图片
-   * @param ch 字符
-   * @param glyphKey glyph 样式标识（包含字体、字号、颜色、描边等）
-   * @param style 样式
-   */
   public createGlyphImage(ch: string, glyphKey: string, style: IRichTextStyle): ImageAsset {
     return this.__template.apply(ch, glyphKey, style);
   }
 
-  /**
-   * 清理引用计数为 0 的图集
-   */
   public clearUnused(): void {
     const now = Date.now();
     const toDelete: string[] = [];
@@ -246,16 +238,10 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     toDelete.forEach((key) => this.__atlases.delete(key));
   }
 
-  /**
-   * 收紧所有图集（预留接口，当前直接调用 clearUnused）
-   */
   public shrinkAll(): void {
     this.clearUnused();
   }
 
-  /**
-   * 查询当前所有图集的占用情况，包括图集数量和总内存占用
-   */
   public getUsage() {
     const atlases: {
       atlasKey: string;
@@ -269,9 +255,10 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     let totalMemoryBytes = 0;
 
     this.__atlases.forEach((info, key) => {
-      // AutoAtlas 当前固定使用构造时传入的尺寸，这里直接按 1024x1024 估算
-      const width = 1024;
-      const height = 1024;
+      const level = this.__atlasLevels.get(key) ?? RichTextAtlasLevel.Medium;
+      const size = level as number;
+      const width = size;
+      const height = size;
       const memoryBytes = width * height * 4; // RGBA8888 4 字节/像素
       const glyphCount = info.glyphs.size;
 

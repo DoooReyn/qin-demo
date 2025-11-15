@@ -153,18 +153,20 @@
     "__prefab": {
       "__id__": 6
     },
-    "text": "[size=30][color=#ffd200][stroke=#5a3300,2]新人专属惊喜礼包[/stroke][/color][/size]\\n\n\\n\n[color=#ffffff]\n一次性获得：[color=#00ffea]钻石 x 980[/color]，[color=#ff9b00]高级召唤券 x 10[/color]\\n\n额外赠送：[color=#ff4d4d]限定头像框[/color]、[color=#ff9b00]称号「初露锋芒」[/color]\\n\n[/color]\n\\n\n[shadow=#000000,2,2,2][color=#ffd200]价格：[/color][/shadow][color=#ffffff]￥30.00[/color]\\n\n\\n\n[link=buy_pack][u][color=#00ff00]立即购买[/color][/u][/link]   [link=pack_detail][u][color=#cccccc]查看礼包内容详情[/color][/u][/link]",
+    "text": "[size=30][color=#ffd200][stroke=#5a3300,2]新人专属惊喜礼包[/stroke][/color][/size]\\n\n\\n\n[size=18][color=#ffffff]\n一次性获得：[color=#00ffea]钻石 x 980[/color]，[color=#ff9b00]高级召唤券 x 10[/color][/size]\\n\n额外赠送：[color=#ff4d4d]限定头像框[/color]、[color=#ff9b00]称号「初露锋芒」[/color]\\n\n[/color]\n\\n\n[shadow=#000000,2,2,2][color=#ffd200]价格：[/color][/shadow][color=#ffffff]￥30.00[/color]\\n\n\\n\n[link=buy_pack][u][color=#00ff00]立即购买[/color][/u][/link] [link=pack_detail][u][color=#cccccc]查看礼包内容详情[/color][/u][/link]",
     "maxWidth": 512,
     "lineHeight": 40,
-    "atlasKey": "richtext-default",
+    "atlasKey": "main-rich-text",
     "ttfFont": {
       "__uuid__": "83c9124d-6f28-4004-ad20-08a25d2fa15b",
       "__expectedType__": "cc.TTFFont"
     },
-    "fontFamily": "幼圆",
+    "fontFamily": "",
     "letterSpacing": 2,
     "horizontalAlign": 2,
     "verticalAlign": 2,
+    "atlasLevel": 512,
+    "typewriterTime": 50,
     "_id": ""
   },
   {

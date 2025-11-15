@@ -1,9 +1,10 @@
-import { Color, Enum, EventTouch, Node, Sprite, SpriteFrame, TTFFont, UITransform, Vec2, _decorator } from "cc";
+import { Color, Enum, EventTouch, Node, Sprite, Tween, TTFFont, UITransform, Vec2, _decorator, tween } from "cc";
 
 import { grapheme, mock } from "../ability";
 import { Atom } from "./atom";
 import { Triggers } from "../foundation";
 import ioc from "../ioc";
+import { RichTextAtlasLevel } from "../dependency";
 
 const { property } = _decorator;
 
@@ -23,6 +24,17 @@ enum VerticalAlign {
   TOP,
   MIDDLE,
   BOTTOM,
+}
+
+/**
+ * 图集等级
+ */
+enum AtlasLevel {
+  Micro = RichTextAtlasLevel.Micro,
+  Small = RichTextAtlasLevel.Small,
+  Medium = RichTextAtlasLevel.Medium,
+  Large = RichTextAtlasLevel.Large,
+  XLarge = RichTextAtlasLevel.XLarge,
 }
 
 /**
@@ -65,38 +77,51 @@ interface ILaidOutGlyph extends IRichGlyph {
  */
 @mock.decorator.ccclass("RichTextAtom")
 export class RichTextAtom extends Atom {
-  @property({ multiline: true })
+  @property({ multiline: true, tooltip: "文本内容" })
   public text: string = "";
 
-  @property
+  @property({ tooltip: "最大宽度" })
   public maxWidth: number = 0;
 
-  @property
+  @property({ tooltip: "行高" })
   public lineHeight: number = 30;
 
-  @property
+  @property({ tooltip: "自动图集标识（请合理区分不同用途文本，避免所有文本使用同一个标识）" })
   public atlasKey: string = "richtext-default";
 
-  @property(TTFFont)
+  @property({ type: TTFFont, tooltip: "字体" })
   public ttfFont: TTFFont | null = null;
 
-  @property
+  @property({ tooltip: "字体名称" })
   public fontFamily: string = "sans-serif";
 
-  @property
+  @property({ tooltip: "字间距" })
   public letterSpacing: number = 0;
 
-  @property({ type: Enum(HorizontalAlign) })
+  @property({ type: Enum(HorizontalAlign), tooltip: "水平对齐方式" })
   public horizontalAlign: HorizontalAlign = HorizontalAlign.LEFT;
 
-  @property({ type: Enum(VerticalAlign) })
+  @property({ type: Enum(VerticalAlign), tooltip: "垂直对齐方式" })
   public verticalAlign: VerticalAlign = VerticalAlign.TOP;
 
+  @property({ type: Enum(AtlasLevel), tooltip: "图集等级（控制单个图集纹理尺寸）" })
+  public atlasLevel: AtlasLevel = AtlasLevel.Medium;
+
+  @property({ tooltip: "打字机效果单字出字时间，单位毫秒" })
+  public typewriterTime: number = 0;
+
+  /** 节点列表 */
   private __glyphNodes: Node[] = [];
 
+  /** 链接点击事件 */
   public readonly onLinkClick: Triggers = new Triggers();
 
+  /** 打字机动画进度 */
+  private __typewriterProgress: { progress: number } = { progress: 0 };
+
   protected _doStart(): void {
+    // 根据组件配置为当前图集标识设置等级
+    ioc.richTextAtlas.configureAtlas(this.atlasKey, this.atlasLevel as unknown as RichTextAtlasLevel);
     ioc.richTextAtlas.addRef(this.atlasKey);
     super._doStart();
     this.__updateView();
@@ -131,11 +156,10 @@ export class RichTextAtom extends Atom {
     this.__updateView();
   }
 
-  /**
-   * 刷新显示
-   */
+  /** 刷新显示 */
   private __updateView(): void {
     this.__clearNodes();
+
     if (!this.node || !this.node.isValid) {
       return;
     }
@@ -144,17 +168,18 @@ export class RichTextAtom extends Atom {
       return;
     }
 
+    // 计算布局
     const glyphs = this.__parseText(this.text);
     const laidOut = this.__layoutGlyphs(glyphs);
 
     for (const g of laidOut) {
       const glyphKey = g.glyphKey;
-      const frame: SpriteFrame | null = ioc.richTextAtlas.acquireGlyph(this.atlasKey, glyphKey, g.ch, g.style);
-      if (!frame) {
+      const frame = ioc.richTextAtlas.acquireGlyph(this.atlasKey, glyphKey, g.ch, g.style);
+      if (!frame || !frame.isValid) {
         continue;
       }
 
-      const n = new Node("glyph");
+      const n = new Node("rich-text-glyph");
       const ui = n.addComponent(UITransform);
       const sp = n.addComponent(Sprite);
       sp.spriteFrame = frame;
@@ -165,8 +190,41 @@ export class RichTextAtom extends Atom {
       (n as Node & { __richStyle?: IRichTextStyle }).__richStyle = g.style;
       this.__glyphNodes.push(n);
     }
+
+    // 执行打字机动画
+    Tween.stopAllByTarget(this.__typewriterProgress);
+    this.__typewriterProgress.progress = 0;
+    if (this.typewriterTime > 0) {
+      const self = this;
+      const total = this.__glyphNodes.length;
+      const time = (total * this.typewriterTime) / 1000;
+      let last = 0;
+      this.__glyphNodes.forEach((n) => {
+        n.active = false;
+      });
+      tween(this.__typewriterProgress)
+        .set({ progress: 0 })
+        .to(
+          time,
+          { progress: 1 },
+          {
+            onUpdate(t, r) {
+              const range = (total * r) | 0;
+              for (let i = last; i < range; i++) {
+                const item = self.__glyphNodes[i];
+                if (item && item.isValid) {
+                  item.active = true;
+                }
+              }
+              last = range;
+            },
+          }
+        )
+        .start();
+    }
   }
 
+  /** 清理节点 */
   private __clearNodes(): void {
     for (const n of this.__glyphNodes) {
       if (n && n.isValid) {
@@ -176,6 +234,10 @@ export class RichTextAtom extends Atom {
     this.__glyphNodes.length = 0;
   }
 
+  /**
+   * 触摸结束
+   * @param event 触摸事件
+   */
   private __onTouchEnded(event: EventTouch): void {
     if (!this.__glyphNodes.length) {
       return;
@@ -363,6 +425,7 @@ export class RichTextAtom extends Atom {
     return result;
   }
 
+  /** 获取字体名称 */
   private __getFontFamily(): string {
     if (this.ttfFont) {
       const fam = this.ttfFont._fontFamily;
@@ -373,6 +436,11 @@ export class RichTextAtom extends Atom {
     return this.fontFamily || "sans-serif";
   }
 
+  /**
+   * 解析颜色
+   * @param str 颜色字符串
+   * @returns 颜色
+   */
   private __parseColor(str: string): Color | null {
     const s = str.trim();
     if (!s) {
@@ -391,6 +459,11 @@ export class RichTextAtom extends Atom {
     return null;
   }
 
+  /**
+   * 布局 glyph
+   * @param glyphs glyph 列表
+   * @returns 布局后的 glyph 列表
+   */
   private __layoutGlyphs(glyphs: IRichGlyph[]): ILaidOutGlyph[] {
     const laidOut: ILaidOutGlyph[] = [];
     if (!glyphs.length) {
@@ -519,6 +592,12 @@ export class RichTextAtom extends Atom {
     return laidOut;
   }
 
+  /**
+   * 生成 glyph key
+   * @param ch 字符
+   * @param s 样式
+   * @returns glyph key
+   */
   private __makeGlyphKey(ch: string, s: IRichTextStyle): string {
     const colorHex = this.__colorToHex(s.color);
     const strokeHex = s.strokeColor ? this.__colorToHex(s.strokeColor) : "none";
@@ -539,6 +618,11 @@ export class RichTextAtom extends Atom {
     ].join("|");
   }
 
+  /**
+   * 将颜色转换为十六进制字符串
+   * @param c 颜色
+   * @returns 十六进制字符串
+   */
   private __colorToHex(c: Color): string {
     const r = c.r.toString(16).padStart(2, "0");
     const g = c.g.toString(16).padStart(2, "0");
