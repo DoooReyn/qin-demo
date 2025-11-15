@@ -197,7 +197,81 @@ protected _doStart(): void {
 
 ---
 
-## 4. 图集等级与性能建议
+## 4. 富文本标签语法说明
+
+标签语法在 `RichTextAtom.__parseText` 中实现，采用类似 BBCode 的方括号形式：
+
+- 起始标签：`[tag=参数]` 或 `[tag]`
+- 结束标签：`[/tag]`
+- 标签可嵌套，内部文本继承外层样式
+
+### 4.1 支持的标签一览
+
+当前实现支持以下标签：
+
+- **颜色：`[color=#rrggbb]...[/color]`**
+
+  - 示例：`[color=#FF0000]红色文本[/color]`
+  - 仅支持 6 位或 8 位十六进制（可带透明度），例如：`#RRGGBB` 或 `#RRGGBBAA`
+
+- **字号：`[size=数字]...[/size]`**
+
+  - 示例：`[size=32]大号文本[/size]`
+  - 数字为像素大小，必须为 `> 0` 的整数
+
+- **斜体：`[i]...[/i]` 或 `[italic]...[/italic]`**
+
+  - 示例：`[i]斜体文本[/i]`
+  - 为当前文本启用斜体
+
+- **下划线：`[u]...[/u]` 或 `[underline]...[/underline]`**
+
+  - 示例：`[u]带下划线的文本[/u]`
+  - 实现层面会尽量将连续带下划线的字符合并为一个 glyph，减少绘制开销
+
+- **描边：`[stroke=#rrggbb,width]...[/stroke]` 或 `[outline=#rrggbb,width]...[/outline]`**
+
+  - 示例：`[stroke=#000000,2]带黑色描边的文本[/stroke]`
+  - 参数：
+    - 第 1 个参数为描边颜色（十六进制）
+    - 第 2 个参数为描边宽度（可选，浮点数，默认为 1）
+
+- **阴影：`[shadow=#rrggbb,offx,offy,blur]...[/shadow]`**
+
+  - 示例：`[shadow=#000000,2,-2,2]带阴影的文本[/shadow]`
+  - 参数：
+    - 第 1 个：阴影颜色（十六进制）
+    - 第 2 个：x 方向偏移（像素，可正可负）
+    - 第 3 个：y 方向偏移（像素，可正可负）
+    - 第 4 个：模糊值（可选，默认 0）
+
+- **链接：`[link=标识]...[/link]`**
+  - 示例：`[link=shop]前往商店[/link]`
+  - 参数：
+    - `标识` 为任意字符串，会在点击时通过 `onLinkClick` 事件返回
+  - 点击该区域时：
+    - 内部通过 `UITransform.hitTest` 进行命中检测
+    - 若命中，则触发 `onLinkClick`，传出 `linkId`
+
+### 4.2 转义与换行
+
+- **转义换行**：
+
+  - 文本中的 `\n` 会被解析为换行符 `"\n"`
+  - 文本中的 `\r` 会被解析为换行符 `"\r"`
+  - 示例：`第一行\\n第二行` 会渲染为两行文本
+
+- **真实换行符**：
+  - 文本中直接包含的 `\n` / `\r` 也会被识别为换行
+
+### 4.3 未知标签处理
+
+- 当解析到未知标签名时（不在上述列表中），该标签会被**忽略**，不会报错
+- 样式栈只对已知标签进行 push/pop
+
+---
+
+## 5. 图集等级与性能建议
 
 ### 4.1 为何需要图集等级
 
@@ -223,7 +297,7 @@ protected _doStart(): void {
   - 特殊需求：超多文字、大字号特效文本
   - 建议谨慎使用，并配合独立 `atlasKey`
 
-### 4.3 关于 atlasKey 的分配
+### 5.3 关于 atlasKey 的分配
 
 **强烈建议**：不要将所有富文本都绑定到同一个 `atlasKey` 上。
 
@@ -245,7 +319,7 @@ protected _doStart(): void {
 
 ---
 
-## 5. 使用示例
+## 6. 使用示例
 
 ### 5.1 在场景中使用 RichTextAtom
 
@@ -287,7 +361,7 @@ richText.setTypewriterProgress(0);
 
 ---
 
-## 6. 常见问题与建议
+## 7. 常见问题与建议
 
 - **Q：为什么默认图集等级是 Medium ？**
   - A：`512x512` 在显存占用与容纳字数之间较为均衡，适合作为通用默认值。
@@ -302,3 +376,98 @@ richText.setTypewriterProgress(0);
 
 - 优先在 `RichTextAtom` 中扩展解析与布局逻辑
 - 保持 `RichTextAtlas` 的职责仅聚焦于：**glyph 缓存 + 图集管理 + 使用统计**
+
+---
+
+## 8. 方案设计思路与流程图
+
+本方案的核心目标是：
+
+- 在 Cocos Creator 下实现**低 DrawCall 的富文本渲染**
+- 支持多种样式、链接交互与打字机效果
+- 通过 **RichTextAtlas + AutoAtlas** 统一管理字符缓存与图集
+
+### 8.1 设计思路概要
+
+1. **样式与语义解析前移**
+
+   - 文本首先交由 `RichTextAtom.__parseText` 解析为 grapheme + 样式的列表
+   - 通过标签栈（styleStack）实现样式的嵌套与作用域
+   - 把视觉样式抽象为 `IRichTextStyle`，与具体渲染解耦
+
+2. **布局独立于渲染节点**
+
+   - 在 `__layoutGlyphs` 阶段，仅基于 glyph 尺寸和组件配置计算排版结果
+   - 输出的是带有坐标和 glyphKey 的 `ILaidOutGlyph` 列表
+   - 此阶段就完成换行、对齐、垂直布局等所有排版逻辑
+
+3. **glyph 复用与图集管理集中化**
+
+   - 通过 `__makeGlyphKey` 把字符和样式编码为字符串
+   - 由 `RichTextAtlas` 负责：
+     - 检查是否已有缓存的 glyph 贴图
+     - 若无，则通过模板节点渲染出字符贴图并打进 AutoAtlas
+   - 使用 `atlasKey` + `atlasLevel` 控制图集颗粒度和纹理尺寸
+
+4. **节点仅做“视图挂载”**
+
+   - `RichTextAtom` 根据布局结果创建一批 `Node + Sprite + UITransform`
+   - 每个节点仅负责位置与点击检测，不再重复计算样式或布局
+   - 打字机效果只通过 `active` 开关控制可见性，不影响图集内容
+
+5. **与 IoC 集成的生命周期管理**
+   - `RichTextAtlas` 作为 IoC 依赖，由应用统一 mount/unmount
+   - 组件通过 `ioc.richTextAtlas.addRef/decRef` 管理引用计数
+   - `getUsage()` 提供全局观察和调优入口
+
+### 8.2 文本到渲染的流程图（文本版）
+
+1. 外部设置 `RichTextAtom.setString`
+2. 调用 `__updateView()`
+3. 执行 `__parseText(text)`：
+   - 按 grapheme 切分
+   - 处理转义换行
+   - 解析标签并维护样式栈
+   - 生成 `IRichGlyph[]`
+4. 执行 `__layoutGlyphs(glyphs)`：
+   - 逐字计算 glyph 宽高（通过 `RichTextAtlas.acquireGlyph`）
+   - 根据 `maxWidth`、`lineHeight` 等进行换行
+   - 计算每一行的宽高、对齐偏移与整体包围盒
+   - 输出 `ILaidOutGlyph[]`（包含位置 + glyphKey）
+5. 创建节点并绑定贴图：
+   - 对每个 `ILaidOutGlyph`：
+     - 通过 `RichTextAtlas.acquireGlyph` 获取/创建 SpriteFrame
+     - 创建 `Node`，挂 `UITransform` 和 `Sprite`
+     - 设置位置与大小，记录样式用于点击检测
+6. 执行打字机动画（如果开启）：
+   - 使用 `Tween` 驱动内部进度
+   - 按进度批量 `active = true` 显示节点
+7. 运行时点击检测：
+   - 触摸结束事件中，遍历 glyph 节点
+   - 通过 `UITransform.hitTest` 判断是否命中
+   - 若命中带 `linkId` 的 glyph，则触发 `onLinkClick`
+
+### 8.3 mermaid 流程图
+
+> 下图为方案的简化流程图，可在支持 mermaid 的查看器中渲染：
+
+```mermaid
+flowchart TD
+  A[设置 RichTextAtom.text] --> B[__updateView]
+  B --> C[__parseText]
+  C -->|IRichGlyph[]| D[__layoutGlyphs]
+  D -->|ILaidOutGlyph[]| E[创建 glyph 节点]
+  E --> F[启动打字机 Tween (可选)]
+  E --> G[渲染到屏幕]
+
+  subgraph RichTextAtlas & AutoAtlas
+    H[acquireGlyph] --> I{Glyph 已缓存?}
+    I -- 是 --> J[返回已有 SpriteFrame]
+    I -- 否 --> K[模板节点绘制字符]
+    K --> L[打入 AutoAtlas]
+    L --> J
+  end
+
+  D --> H
+  E --> H
+```
