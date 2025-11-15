@@ -408,7 +408,8 @@
           this.items.forEach((item) => {
             if (item.getter) {
               const value = item.getter();
-              item.valueElement.textContent = value ?? "";
+              const displayValue = value ? value.toString().replace(/\n/g, "<br>") : "";
+              item.valueElement.innerHTML = displayValue;
             }
           });
         }

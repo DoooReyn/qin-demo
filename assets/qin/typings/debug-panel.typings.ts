@@ -27,7 +27,7 @@ declare global {
      * Add a new debug item to the panel with a getter function
      * @param key - Unique identifier for the debug item
      * @param title - Display title for the debug item
-     * @param getter - Function that returns the current value for the debug item
+     * @param getter - Function that returns the current value for the debug item. Return value can contain "\n" which will be converted to HTML line breaks
      * @returns The created HTML element
      */
     addItem(key: string, title: string, getter: () => string | number | undefined | null): HTMLElement;

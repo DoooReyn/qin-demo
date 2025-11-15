@@ -194,10 +194,14 @@ export class Profiler extends Dependency implements IProfiler {
         "纹理缓冲",
         () => `${(director.root!.device.memoryStatus.bufferSize / 1024 / 1024).toFixed(2)}M`
       );
-      debugPanel.addItem("dynamicAtlas", "动态图集", () => (dam.enabled ? "On" : "Off"));
-      debugPanel.addItem("dynamicAtlas#atlasCount", "动态图集当前图集数量", () => `${dam.atlasCount}`);
-      debugPanel.addItem("dynamicAtlas#maxAtlasCount", "动态图集最大图集数量", () => `${dam.maxAtlasCount}`);
-      debugPanel.addItem("dynamicAtlas#maxFrameSize", "动态图集限制纹理尺寸", () => `${dam.maxFrameSize}`);
+      debugPanel.addItem("dynamicAtlas", "动态图集", () => {
+        return [
+          `开关: ${dam.enabled ? "On" : "Off"}`,
+          `当前图集数量: ${dam.atlasCount}`,
+          `最大图集数量: ${dam.maxAtlasCount}`,
+          `最大纹理尺寸: ${dam.maxFrameSize}x${dam.maxFrameSize}`,
+        ].join("\n");
+      });
     }
   }
 
@@ -222,6 +226,14 @@ export class Profiler extends Dependency implements IProfiler {
   private __sync() {
     if (!ioc.environment.isDev) return;
     debugPanel.update();
+  }
+
+  /** 帧开始事件 */
+  protected _onFrameBegin() {}
+
+  /** 帧结束事件 */
+  protected _onFrameEnd() {
+    this.__sync();
   }
 
   onAttach() {
@@ -306,23 +318,10 @@ export class Profiler extends Dependency implements IProfiler {
     };
   }
 
-  /** 帧开始事件 */
-  protected _onFrameBegin() {}
-
-  /** 帧结束事件 */
-  protected _onFrameEnd() {
-    this.__sync();
-  }
-
-  /** 当前纹理数量 */
   public get textureCount() {
     return this.__texturesMap.size;
   }
 
-  /**
-   * 打印纹理日志
-   * @param hashOrTexture 纹理哈希值或者纹理对象
-   */
   public dumpTextureLog(hashOrTexture: number | Texture2D) {
     let hash: number;
     if (hashOrTexture instanceof Texture2D) {
@@ -336,8 +335,25 @@ export class Profiler extends Dependency implements IProfiler {
     }
   }
 
-  /** 重载网页 */
   public reload() {
     platform.browser && window.location.reload();
+  }
+
+  public addDebugItem(
+    key: string,
+    title: string,
+    getter: () => string | number | undefined | null
+  ): HTMLElement | null {
+    if (!ioc.environment.isDev || !platform.desktopBrowser) {
+      return null;
+    }
+    return debugPanel.addItem(key, title, getter);
+  }
+
+  public removeDebugItem(key: string): void {
+    if (!ioc.environment.isDev || !platform.desktopBrowser) {
+      return;
+    }
+    debugPanel.removeItem(key);
   }
 }

@@ -117,7 +117,16 @@ export class RichTextAtlas extends Dependency implements IRichTextAtlas {
     this.__atlasLevels.set(atlasKey, level);
   }
 
+  onAttach(): Promise<void> {
+    ioc.profiler?.addDebugItem("rich-text-atlas", "富文本图集", () => {
+      const usage = this.getUsage();
+      return [`数量: ${usage.atlasCount}`, `占用内存: ${usage.totalMemoryBytes / 1024 / 1024} MB`].join("\n");
+    });
+    return super.onAttach();
+  }
+
   onDetach(): Promise<void> {
+    ioc.profiler?.removeDebugItem("rich-text-atlas");
     this.__template.destroy();
     this.__template = null;
     this.shrinkAll();

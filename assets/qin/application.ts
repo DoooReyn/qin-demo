@@ -46,6 +46,7 @@ export class Application {
     this.__initializing = true;
 
     // 挂载依赖项
+    ioc.logcat.qin.i("依赖项挂载开始");
     ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_BEFORE_MOUNTED);
     await ioc.mount();
     ioc.logcat.qin.i("依赖项挂载完成");

@@ -63,4 +63,19 @@ export interface IProfiler extends IDependency {
 
   /** 重载网页 */
   reload(): void;
+
+  /**
+   * 添加调试项到面板
+   * @param key 调试项唯一标识
+   * @param title 显示标题
+   * @param getter 值获取函数，返回值可以包含"\n"换行符，会自动转换为HTML换行
+   * @returns 创建的 HTML 元素
+   */
+  addDebugItem(key: string, title: string, getter: () => string | number | undefined | null): HTMLElement | null;
+
+  /**
+   * 从面板移除调试项
+   * @param key 调试项唯一标识
+   */
+  removeDebugItem(key: string): void;
 }
