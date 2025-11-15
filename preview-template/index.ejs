@@ -385,12 +385,12 @@
           }
         }
 
-        addItem(key, title, value = "") {
+        addItem(key, title, getter) {
           const itemElement = document.createElement("div");
           itemElement.className = "debug-item";
           itemElement.innerHTML = `
                     <div class="debug-item-title">${title}</div>
-                    <div class="debug-item-value">${value}</div>
+                    <div class="debug-item-value">${getter ? getter() : ""}</div>
                 `;
 
           this.content.appendChild(itemElement);
@@ -398,16 +398,19 @@
             element: itemElement,
             title: title,
             valueElement: itemElement.querySelector(".debug-item-value"),
+            getter: getter,
           });
 
           return itemElement;
         }
 
-        updateItem(key, value) {
-          const item = this.items.get(key);
-          if (item) {
-            item.valueElement.textContent = value;
-          }
+        update() {
+          this.items.forEach((item) => {
+            if (item.getter) {
+              const value = item.getter();
+              item.valueElement.textContent = value ?? "";
+            }
+          });
         }
 
         removeItem(key) {
@@ -433,7 +436,7 @@
 
         // Add some example items for demonstration
         // You can remove these lines in production
-        debugPanel.addItem("timestamp", "Current Time", new Date().toLocaleTimeString());
+        debugPanel.addItem("timestamp", "Current Time", () => new Date().toLocaleTimeString());
 
         // Show the panel by default (you can remove this line if you want it hidden initially)
         debugPanel.show();
@@ -443,7 +446,7 @@
 
         // Example of updating values periodically
         setInterval(() => {
-          debugPanel.updateItem("timestamp", new Date().toLocaleTimeString());
+          debugPanel.update();
         }, 1000);
       });
     </script>

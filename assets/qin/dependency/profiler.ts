@@ -179,17 +179,25 @@ export class Profiler extends Dependency implements IProfiler {
     if (ioc.environment.isDev && platform.desktopBrowser) {
       profiler.hideStats();
       const dam = DynamicAtlasManager.instance;
-      debugPanel.addItem("device", "设备信息", "");
-      debugPanel.addItem("triangles", "三角面数", "0");
-      debugPanel.addItem("fps", "实时帧率", "0");
-      debugPanel.addItem("drawcalls", "绘制调用", "0");
-      debugPanel.addItem("textures", "纹理数量", "0");
-      debugPanel.addItem("texSize", "纹理内存", "0M");
-      debugPanel.addItem("bufSize", "纹理缓冲", "0M");
-      debugPanel.addItem("dynamicAtlas", "动态图集", dam.enabled ? "On" : "Off");
-      debugPanel.addItem("dynamicAtlas#atlasCount", "动态图集当前图集数量", dam.atlasCount.toString());
-      debugPanel.addItem("dynamicAtlas#maxAtlasCount", "动态图集最大图集数量", dam.maxAtlasCount.toString());
-      debugPanel.addItem("dynamicAtlas#maxFrameSize", "动态图集限制纹理尺寸", dam.maxFrameSize.toString());
+      debugPanel.addItem("device", "设备信息", () => director.root!.device.renderer);
+      debugPanel.addItem("triangles", "三角面数", () => `${director.root!.device.numTris}`);
+      debugPanel.addItem("fps", "实时帧率", () => `${director.root!.fps || (1.0 / game.deltaTime) | 0}`);
+      debugPanel.addItem("drawcalls", "绘制调用", () => `${director.root!.device.numDrawCalls}`);
+      debugPanel.addItem("textures", "纹理数量", () => `${this.textureCount}`);
+      debugPanel.addItem(
+        "texSize",
+        "纹理内存",
+        () => `${(director.root!.device.memoryStatus.textureSize / 1024 / 1024).toFixed(2)}M`
+      );
+      debugPanel.addItem(
+        "bufSize",
+        "纹理缓冲",
+        () => `${(director.root!.device.memoryStatus.bufferSize / 1024 / 1024).toFixed(2)}M`
+      );
+      debugPanel.addItem("dynamicAtlas", "动态图集", () => (dam.enabled ? "On" : "Off"));
+      debugPanel.addItem("dynamicAtlas#atlasCount", "动态图集当前图集数量", () => `${dam.atlasCount}`);
+      debugPanel.addItem("dynamicAtlas#maxAtlasCount", "动态图集最大图集数量", () => `${dam.maxAtlasCount}`);
+      debugPanel.addItem("dynamicAtlas#maxFrameSize", "动态图集限制纹理尺寸", () => `${dam.maxFrameSize}`);
     }
   }
 
@@ -213,25 +221,7 @@ export class Profiler extends Dependency implements IProfiler {
   /** 同步调试信息 */
   private __sync() {
     if (!ioc.environment.isDev) return;
-    const dam = DynamicAtlasManager.instance;
-    const dc = director.root!.device.numDrawCalls;
-    const fps = director.root!.fps || (1.0 / game.deltaTime) | 0;
-    const tex = director.root!.device.memoryStatus.textureSize / 1024 / 1024;
-    const buffer = director.root!.device.memoryStatus.bufferSize / 1024 / 1024;
-    const renderer = director.root!.device.renderer;
-    const triangles = director.root!.device.numTris;
-    const textures = this.textureCount;
-    debugPanel.updateItem("device", renderer);
-    debugPanel.updateItem("triangles", `${triangles}`);
-    debugPanel.updateItem("fps", `${fps}`);
-    debugPanel.updateItem("drawcalls", `${dc}`);
-    debugPanel.updateItem("textures", `${textures}`);
-    debugPanel.updateItem("texSize", `${tex.toFixed(2)}M`);
-    debugPanel.updateItem("bufSize", `${buffer.toFixed(2)}M`);
-    debugPanel.updateItem("dynamicAtlas", dam.enabled ? "On" : "Off");
-    debugPanel.updateItem("dynamicAtlas#atlasCount", `${dam.atlasCount}`);
-    debugPanel.updateItem("dynamicAtlas#maxAtlasCount", `${dam.maxAtlasCount}`);
-    debugPanel.updateItem("dynamicAtlas#maxFrameSize", `${dam.maxFrameSize}`);
+    debugPanel.update();
   }
 
   onAttach() {
