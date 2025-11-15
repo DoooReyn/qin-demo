@@ -1,6 +1,6 @@
 import { instantiate, Prefab } from "cc";
 
-import { might, misc, mock, time } from "../ability";
+import { might, mock, time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
@@ -182,7 +182,7 @@ export class ObjectPool<T extends IObjectEntry> implements IObjectPool<T> {
   public recycle(instance: T): void {
     if (instance && instance.recycle()) {
       if (instance.capacity <= 0 || this._items.length >= instance.capacity) {
-        misc.nextTick(() => this._items.push(instance));
+        setTimeout(() => this._items.push(instance), 100);
       }
     }
   }
@@ -280,7 +280,7 @@ export class ObjectPoolContainer extends Dependency implements IObPoC {
     }
   }
 
-  lazyCleanup() {
+  clearUnused() {
     this.__container.forEach((v) => v.detect());
   }
 
@@ -500,7 +500,7 @@ export class NodePoolContainer extends Dependency implements INodePoC {
     return 0;
   }
 
-  lazyCleanup() {
+  clearUnused() {
     this.__container.forEach((pool) => pool.lazyCleanup());
   }
 

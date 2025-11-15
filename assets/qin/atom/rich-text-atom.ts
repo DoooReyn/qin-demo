@@ -7,12 +7,18 @@ import ioc from "../ioc";
 
 const { property } = _decorator;
 
+/**
+ * 水平对齐方式
+ */
 enum HorizontalAlign {
   LEFT,
   CENTER,
   RIGHT,
 }
 
+/**
+ * 垂直对齐方式
+ */
 enum VerticalAlign {
   TOP,
   MIDDLE,

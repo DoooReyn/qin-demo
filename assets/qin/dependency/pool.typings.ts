@@ -122,9 +122,9 @@ export interface IObPoC extends IDependency {
    */
   recycle<T extends IObjectEntry>(instance: T): void;
   /**
-   * 懒清理
+   * 清理未使用对象
    */
-  lazyCleanup(): void;
+  clearUnused(): void;
   /**
    * 清空所有对象池
    */
@@ -201,10 +201,9 @@ export interface INodePoC extends IDependency {
    */
   sizeOf(key: string): number;
   /**
-   * 懒清理
-   * @description 每隔一段时间删除一个对象，防止内存溢出
+   * 清理未使用节点
    */
-  lazyCleanup(): void;
+  clearUnused(): void;
   /**
    * 清空所有节点池
    */

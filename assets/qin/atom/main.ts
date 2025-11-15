@@ -30,16 +30,17 @@ export class MainAtom extends Atom {
     super._doInit();
   }
 
-  /** 懒清理 */
-  protected _lazyCleanup(): void {
-    ioc.nodePool.lazyCleanup();
-    ioc.objPool.lazyCleanup();
+  /** 清理未使用资源 */
+  protected _doClearUnused(): void {
+    ioc.nodePool.clearUnused();
+    ioc.objPool.clearUnused();
+    ioc.richTextAtlas.clearUnused();
   }
 
   protected _doActivate() {
     ioc.logcat.qin.d("应用: 使能");
     ioc.priorityInput.highest.on(Input.EventType.TOUCH_END, this._doScreenTapped, this);
-    const timer = ioc.timer.shared.loop(PRESET.TIME.LAZY_CLEANUP_S, this._lazyCleanup, this);
+    const timer = ioc.timer.shared.loop(PRESET.TIME.LAZY_CLEANUP_S, this._doClearUnused, this);
     this.__timerForCleanup = timer.cid;
     super._doActivate();
   }

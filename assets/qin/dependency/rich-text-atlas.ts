@@ -10,11 +10,9 @@ import { IRichTextAtlas } from "./rich-text-atlas.typings";
 /**
  * 富文本模板
  */
-export class RichTextTemplte extends Node {
+class RichTextTemplte extends Node {
   /** 文本组件 */
   private __renderer: Label;
-
-  private __created: boolean = false;
 
   constructor() {
     super("rich-text-template");
@@ -49,8 +47,6 @@ export class RichTextTemplte extends Node {
 
     const image = (renderer.ttfSpriteFrame!.texture as Texture2D).image;
     image._uuid = glyphKey;
-
-    this.__created = true;
 
     return image;
   }
