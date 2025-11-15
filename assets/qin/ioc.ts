@@ -23,6 +23,7 @@ import {
   Ii18n,
   ITweener,
   IRedDotManager,
+  IRichTextAtlas,
 } from "./dependency";
 
 /**
@@ -80,10 +81,26 @@ export class IoC {
   /**
    * 初始化所有依赖项
    */
-  async initialize() {
-    for (let [_, dep] of this.__container) {
+  async mount() {
+    const deps = Array.from(this.__container.values());
+    // 优先级数值越小，初始化越早
+    deps.sort((a, b) => (a.meta.priority ?? 0) - (b.meta.priority ?? 0) || a.meta.name.localeCompare(b.meta.name));
+    for (const dep of deps) {
       await dep.onAttach();
     }
+  }
+
+  /**
+   * 卸载所有依赖
+   */
+  async unmount() {
+    const deps = Array.from(this.__container.values());
+    // 优先级数值越小，初始化越早，因此销毁时应越晚注销：按优先级降序
+    deps.sort((a, b) => (b.meta.priority ?? 0) - (a.meta.priority ?? 0) || b.meta.name.localeCompare(a.meta.name));
+    for (const dep of deps) {
+      await dep.onDetach();
+    }
+    this.__container.clear();
   }
 
   /**
@@ -96,18 +113,6 @@ export class IoC {
       return this.__container.get(dep) as D;
     }
     return this.__container.get(dep.meta.name) as D;
-  }
-
-  /**
-   * 注销所有依赖
-   */
-  async destroy() {
-    // 反向注销依赖，确保先注册的后注销
-    const dependencies = Array.from(this.__container.entries()).reverse();
-    for (let [_, dep] of dependencies) {
-      dep.onDetach();
-    }
-    this.__container.clear();
   }
 
   /** 应用循环系统 */
@@ -218,6 +223,11 @@ export class IoC {
   /** 红点管理系统 */
   get red() {
     return this.resolve<IRedDotManager>("RedDot");
+  }
+
+  /** 富文本图集管理 */
+  get richTextAtlas() {
+    return this.resolve<IRichTextAtlas>("RichTextAtlas");
   }
 }
 

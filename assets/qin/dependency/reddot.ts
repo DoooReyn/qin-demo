@@ -49,6 +49,7 @@ class RedDotPool implements IRedDotPool {
   version: "1.0.0",
   description: "红点管理系统",
   author: "Qin",
+  priority: 160,
 })
 export class RedDotManager extends Dependency implements IRedDotManager {
   /** 红点配置映射 */

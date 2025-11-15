@@ -104,7 +104,7 @@ export interface IAudioPlayer extends IDependency {
   music: IAudioContainer;
 
   /** 初始化 */
-  start(): void;
+  initialize(): void;
 
   /**
    * 暂停所有音频播放

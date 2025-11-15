@@ -8,7 +8,7 @@ import { literal } from "../ability";
 /**
  * 国际化工具
  */
-@Injectable({ name: "I18n" })
+@Injectable({ name: "I18n", priority: 190 })
 export class I18n extends Dependency implements Ii18n {
   /** 当前语言 */
   private __current: Language = sys.Language.CHINESE;

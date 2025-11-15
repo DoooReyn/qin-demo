@@ -105,7 +105,7 @@ class CCPriorityInput extends EventTarget implements ICCPriorityInput {
 /**
  * 优先级输入监听器
  */
-@Injectable({ name: "PriorityInput" })
+@Injectable({ name: "PriorityInput", priority: 140 })
 export class PriorityInput extends Dependency implements IPriorityInput {
   /** 最高优先级全局输入监听器 */
   private _highest: CCPriorityInput | undefined;

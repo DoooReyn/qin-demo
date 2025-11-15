@@ -60,10 +60,10 @@ export const PRESET = {
     APP_AFTER_LAUNCHED: "app:after-launched",
     /** 应用参数已应用 */
     APP_ARGS_APPLIED: "app:args-applied",
-    /** 依赖即将初始化 */
-    APP_DEP_BEFORE_INITIALIZED: "app:dep-before-initialized",
-    /** 依赖已初始化 */
-    APP_DEP_AFTER_INITIALIZED: "app:dep-after-initialized",
+    /** 依赖即将挂载 */
+    APP_DEP_BEFORE_MOUNTED: "app:dep-before-mounted",
+    /** 依赖已挂载 */
+    APP_DEP_AFTER_MOUNTED: "app:dep-after-mounted",
     /** 应用进入前台 */
     APP_ENTER_FOREGROUND: "app:enter-foreground",
     /** 应用进入后台 */

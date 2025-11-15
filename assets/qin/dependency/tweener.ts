@@ -18,7 +18,7 @@ import {
 /**
  * Tweener 依赖实现
  */
-@Injectable({ name: "Tweener" })
+@Injectable({ name: "Tweener", priority: 200 })
 export class Tweener extends Dependency implements ITweener {
   /** 已注册的缓动库容器：lib -> entry */
   private __container: Map<string, ITweenEntry> = new Map();

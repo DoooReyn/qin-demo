@@ -45,14 +45,14 @@ export class Application {
     // 标记为正在初始化
     this.__initializing = true;
 
-    // 初始化依赖项
-    ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_BEFORE_INITIALIZED);
-    await ioc.initialize();
-    ioc.logcat.qin.i("依赖项初始化完成");
-    ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_AFTER_INITIALIZED);
+    // 挂载依赖项
+    ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_BEFORE_MOUNTED);
+    await ioc.mount();
+    ioc.logcat.qin.i("依赖项挂载完成");
+    ioc.eventBus.app.publish(PRESET.EVENT.APP_DEP_AFTER_MOUNTED);
 
     // 启动应用
-    ioc.launcher.start(function () {
+    ioc.launcher.initialize(function () {
       // 通知应用启动开始
       ioc.eventBus.app.publish(PRESET.EVENT.APP_BEFORE_LAUNCHED);
 
@@ -62,10 +62,13 @@ export class Application {
       ioc.eventBus.app.publish(PRESET.EVENT.APP_ARGS_APPLIED);
 
       // 启动音频播放器
-      ioc.audio.start();
+      ioc.audio.initialize();
 
       // 初始化国际化工具
-      ioc.i18n.initialize({ language: options.language as Language });
+      ioc.i18n.initialize({ language: options.language });
+
+      // 初始化富文本图集
+      ioc.richTextAtlas.initialize();
 
       // 通知应用启动完成
       ioc.eventBus.app.publish(PRESET.EVENT.APP_AFTER_LAUNCHED);
@@ -85,7 +88,7 @@ export class Application {
    */
   async destroy() {
     // 注销依赖
-    await ioc.destroy();
+    await ioc.unmount();
   }
 
   /**

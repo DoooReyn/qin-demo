@@ -6,7 +6,7 @@ import { Tables, ITable, ITableRecord, IQuery, ITableQueries } from "./table.typ
 /**
  * 表格查询工具
  */
-@Injectable({ name: "TableQueries" })
+@Injectable({ name: "TableQueries", priority: 180 })
 export class TableQueries extends Dependency implements ITableQueries {
   /** 配置表原始数据 */
   private __tables: Tables = Object.create(null);

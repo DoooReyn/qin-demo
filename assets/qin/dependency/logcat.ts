@@ -126,7 +126,7 @@ class Logger implements ILogger {
 /**
  * 日志系统实现
  */
-@Injectable({ name: "Logcat" })
+@Injectable({ name: "Logcat", priority: 10 })
 export class Logcat extends Dependency implements ILogcat {
   /** 日志容器 */
   private __container: Map<string, Logger> = new Map();

@@ -9,7 +9,7 @@ import { IEnvironment } from "./environment.typings";
  * 环境参数解析器
  * @description 提供环境参数解析能力
  */
-@Injectable({ name: "Environment" })
+@Injectable({ name: "Environment", priority: 0 })
 export class Environment extends Dependency implements IEnvironment {
   args: IApplicationOptions = {
     app: "qin",

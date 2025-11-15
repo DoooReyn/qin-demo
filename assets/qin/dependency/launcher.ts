@@ -9,7 +9,7 @@ import { ILauncher } from "./launcher.typings";
 /**
  * 启动器
  */
-@Injectable({ name: "Launcher" })
+@Injectable({ name: "Launcher", priority: 210 })
 export class Launcher extends Dependency implements ILauncher {
   scene: Scene;
   stage: Canvas;
@@ -23,7 +23,7 @@ export class Launcher extends Dependency implements ILauncher {
     return super.onAttach();
   }
 
-  start(onLaunched: () => void) {
+  initialize(onLaunched: () => void) {
     this.__onLaunched = onLaunched;
     game.once(Game.EVENT_CLOSE, this.onEnded, this);
     director.once(Director.EVENT_AFTER_SCENE_LAUNCH, this.onReady, this);
@@ -43,7 +43,7 @@ export class Launcher extends Dependency implements ILauncher {
   }
 
   onEnded() {
-    ioc.destroy();
+    ioc.unmount();
     ioc.logcat.qin.i("应用退出");
   }
 }

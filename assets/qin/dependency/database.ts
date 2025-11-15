@@ -140,7 +140,7 @@ export class Model<D extends Dto> extends ObjectEntry implements IModel<D> {
  * 内存数据库
  * - 这里获取和回收只是加了一层验证，用户大可直接用对象池获取和回收
  */
-@Injectable({ name: "Database" })
+@Injectable({ name: "Database", priority: 60 })
 export class Database extends Dependency implements IDatabase {
   public acquire<D extends Dto>(cls: Constructor<Model<D>>): Model<D> | null {
     const outline = ObEntryOutlineOf(cls);

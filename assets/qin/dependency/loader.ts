@@ -1,7 +1,29 @@
 import {
-  assetManager, js, path, sp, sys, __private, AnimationClip, Asset, AssetManager, AudioClip,
-  BitmapFont, BufferAsset, Font, ImageAsset, JsonAsset, ParticleAsset, Prefab, Rect, SpriteAtlas,
-  SpriteFrame, Texture2D, TextAsset, TiledMapAsset, TTFFont, VideoClip
+  assetManager,
+  js,
+  path,
+  sp,
+  sys,
+  __private,
+  AnimationClip,
+  Asset,
+  AssetManager,
+  AudioClip,
+  BitmapFont,
+  BufferAsset,
+  Font,
+  ImageAsset,
+  JsonAsset,
+  ParticleAsset,
+  Prefab,
+  Rect,
+  SpriteAtlas,
+  SpriteFrame,
+  Texture2D,
+  TextAsset,
+  TiledMapAsset,
+  TTFFont,
+  VideoClip,
 } from "cc";
 
 import { list } from "../ability";
@@ -11,7 +33,13 @@ import { Constructor } from "../typings";
 import { CacheSource } from "./cache.typings";
 import { Dependency } from "./dependency";
 import {
-  IAssetLoader, ILoadOptions, ILoadTask, ILocalContainer, IRemoteContainer, LoadItem, PreloadItem
+  IAssetLoader,
+  ILoadOptions,
+  ILoadTask,
+  ILocalContainer,
+  IRemoteContainer,
+  LoadItem,
+  PreloadItem,
 } from "./loader.typings";
 
 /**
@@ -711,7 +739,7 @@ class RemoteContainer implements IRemoteContainer {
  * 资源加载器
  * @description 统一管理本地和远程资源的加载，自动处理缓存
  */
-@Injectable({ name: "AssetLoader" })
+@Injectable({ name: "AssetLoader", priority: 100 })
 export class AssetLoader extends Dependency implements IAssetLoader {
   readonly local: LocalContainer = new LocalContainer();
   readonly remote: RemoteContainer = new RemoteContainer();

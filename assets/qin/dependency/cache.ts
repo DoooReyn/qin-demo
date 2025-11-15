@@ -3,19 +3,13 @@ import { Asset } from "cc";
 import { time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
-import {
-  CacheSource,
-  ICacheContainer,
-  ICacheEntry,
-  ICacheOptions,
-  ICacheStats,
-} from "./cache.typings";
+import { CacheSource, ICacheContainer, ICacheEntry, ICacheOptions, ICacheStats } from "./cache.typings";
 
 /**
  * 缓存容器
  * @description 统一管理本地和远程资源的缓存
  */
-@Injectable({ name: "CacheContainer" })
+@Injectable({ name: "CacheContainer", priority: 50 })
 export class CacheContainer extends Dependency implements ICacheContainer {
   /** 缓存容器 */
   private __container: Map<string, ICacheEntry> = new Map();
@@ -56,12 +50,7 @@ export class CacheContainer extends Dependency implements ICacheContainer {
     this.__container.set(key, entry);
 
     if (this.logEnabled) {
-      ioc.logcat.res.df(
-        "缓存: 添加资源 {0} 来源:{1} 过期:{2}ms",
-        key,
-        source,
-        expires,
-      );
+      ioc.logcat.res.df("缓存: 添加资源 {0} 来源:{1} 过期:{2}ms", key, source, expires);
     }
   }
 

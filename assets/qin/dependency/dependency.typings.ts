@@ -4,7 +4,12 @@
 export interface IDependencyMeta {
   /** 名称 */
   readonly name: string;
-  
+  /**
+   * 优先级（数值越小优先级越低，初始化越早，销毁越晚）
+   * 未设置时默认为 0
+   */
+  readonly priority?: number;
+
   [key: string]: any;
 }
 

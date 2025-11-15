@@ -4,9 +4,7 @@ import { might, misc, mock, time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
-import {
-  INodePoC, IObjectEntry, IObjectEntryOutline, IObjectPool, IObPoC, IPoolNode
-} from "./pool.typings";
+import { INodePoC, IObjectEntry, IObjectEntryOutline, IObjectPool, IObPoC, IPoolNode } from "./pool.typings";
 
 /**
  * 对象池条目
@@ -214,7 +212,7 @@ export class ObjectPool<T extends IObjectEntry> implements IObjectPool<T> {
  * 对象池容器
  * - 统一管理（使用和回收）所有对象池
  */
-@Injectable({ name: "ObPoC" })
+@Injectable({ name: "ObPoC", priority: 110 })
 export class ObjectPoolContainer extends Dependency implements IObPoC {
   /** 标识 */
   public static Key: symbol = Symbol.for("ObPoC");
@@ -338,7 +336,7 @@ export class NodePool {
    */
   public constructor(
     public readonly template: Prefab | IPoolNode,
-    public readonly expires: number = NodePool.EXPIRES,
+    public readonly expires: number = NodePool.EXPIRES
   ) {}
 
   /**
@@ -405,7 +403,7 @@ export class NodePool {
 /**
  * 节点池容器
  */
-@Injectable({ name: "NodePoC" })
+@Injectable({ name: "NodePoC", priority: 120 })
 export class NodePoolContainer extends Dependency implements INodePoC {
   /** 节点池容器 */
   private __container: Map<string, NodePool> = new Map();

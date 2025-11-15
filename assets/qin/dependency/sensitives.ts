@@ -18,7 +18,7 @@ interface IOptions {
 /**
  * 敏感词过滤器
  */
-@Injectable({ name: "Sensitives" })
+@Injectable({ name: "Sensitives", priority: 170 })
 export class Sensitives extends Dependency implements ISensitives {
   private __map: IWordMap = {};
   private __noiseWordMap = Sensitives.GenerateNoiseWordMap(defaultNoiseWords);
@@ -45,9 +45,7 @@ export class Sensitives extends Dependency implements ISensitives {
    * @description: 构建特殊字符的哈希表
    * @return {*}
    */
-  private static GenerateNoiseWordMap(
-    noiseWords: string
-  ): Record<number, boolean> {
+  private static GenerateNoiseWordMap(noiseWords: string): Record<number, boolean> {
     const noiseWordMap: Record<number, boolean> = {};
     for (let i = 0, j = noiseWords.length; i < j; i++) {
       noiseWordMap[noiseWords.charCodeAt(i)] = true;
@@ -160,9 +158,7 @@ export class Sensitives extends Dependency implements ISensitives {
           point = this.__map;
           break;
         } else if (Sensitives.IsWordEnd(point)) {
-          const matchedWord = this.__filterNoiseChar(
-            content.substring(left, right + 1)
-          );
+          const matchedWord = this.__filterNoiseChar(content.substring(left, right + 1));
           result.add(matchedWord);
         }
       }
@@ -236,8 +232,7 @@ export class Sensitives extends Dependency implements ISensitives {
           isMatched = true;
         } else if (!point || right === len - 1) {
           if (!isMatched) {
-            filteredContent +=
-              toReplaceCharLength > 0 ? filterChar : content.charAt(left);
+            filteredContent += toReplaceCharLength > 0 ? filterChar : content.charAt(left);
             toReplaceCharLength = Math.max(toReplaceCharLength - 1, 0);
           }
           point = this.__map;

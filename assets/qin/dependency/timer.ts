@@ -311,7 +311,7 @@ export class Tick implements ITick {
  * 定时器容器
  * @description 提供了时器的安装、卸载和更新功能
  */
-@Injectable({ name: "Timer" })
+@Injectable({ name: "Timer", priority: 30 })
 export class Timer extends Dependency implements ITimer {
   /** 定时器容器 */
   private readonly __container: Map<string, Tick> = new Map();

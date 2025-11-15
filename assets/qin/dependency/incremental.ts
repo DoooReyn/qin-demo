@@ -5,7 +5,7 @@ import { IIncremental } from "./incremental.typings";
 /**
  * 递增ID生成器
  */
-@Injectable({ name: "Incremental" })
+@Injectable({ name: "Incremental", priority: 40 })
 export class Incremental extends Dependency implements IIncremental {
   onDetach() {
     this.__container.clear();

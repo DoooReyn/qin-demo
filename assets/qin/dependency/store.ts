@@ -16,10 +16,7 @@ export class StoreItem<T extends IDictionary> implements IStoreItem<T> {
   public data: T;
   public readonly onDataChanged: Triggers;
 
-  constructor(
-    public readonly alias: string,
-    public readonly template: T,
-  ) {
+  constructor(public readonly alias: string, public readonly template: T) {
     this.onDataChanged = new Triggers();
     this.load();
   }
@@ -93,7 +90,7 @@ export class StoreItem<T extends IDictionary> implements IStoreItem<T> {
 /**
  * 本地存储容器
  */
-@Injectable({ name: "Store" })
+@Injectable({ name: "Store", priority: 70 })
 export class Store extends Dependency implements IStoreContainer {
   /** 存储项目容器 */
   private readonly __container: Map<string, StoreItem<IDictionary>> = new Map();

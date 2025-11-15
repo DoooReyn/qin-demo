@@ -17,8 +17,8 @@ export interface ILauncher extends IDependency {
   cameraUi: Camera;
   /** 应用入口 */
   main: MainAtom;
-  /** 启动 */
-  start(onLaunched: () => void): void;
+  /** 初始化 */
+  initialize(onLaunched: () => void): void;
   /** 场景加载完毕 */
   onReady(scene: Scene): void;
   /** 应用退出 */

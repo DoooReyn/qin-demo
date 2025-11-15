@@ -250,12 +250,12 @@ class AudioEntry extends Node implements IAudioEntry {
 /**
  * 音频播放器
  */
-@Injectable({ name: "AudioPlayer" })
+@Injectable({ name: "AudioPlayer", priority: 90 })
 export class AudioPlayer extends Dependency implements IAudioPlayer {
   sound: SoundContainer;
   music: MusicContainer;
 
-  start() {
+  initialize() {
     ioc.nodePool.registerByNodeConstructor("audio-entry", AudioEntry);
     this.sound = new SoundContainer();
     this.music = new MusicContainer();

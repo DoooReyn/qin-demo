@@ -91,6 +91,7 @@ export class AutoAtlas {
     this.__packer = new MaxRectsPacker(options.width, options.height, options.padding, {
       smart: options.smart,
       border: options.border,
+      allowRotation: false,
     });
     this.__options = { ...options } as IAutoAtlasOptions;
   }
@@ -155,6 +156,6 @@ export class AutoAtlas {
    */
   public destroy() {
     this.__region.clear();
-    list.clear(this.__pages, (page) => page.destroy());
+    list.clear(this.__pages, (page: AutoTexture) => page.destroy());
   }
 }

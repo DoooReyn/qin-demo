@@ -8,7 +8,7 @@ import { IProfiler } from "./profiler.typings";
 /**
  * 性能监视器
  */
-@Injectable({ name: "Profiler" })
+@Injectable({ name: "Profiler", priority: 150 })
 export class Profiler extends Dependency implements IProfiler {
   /** 是否输出详细信息 */
   private __verbose: boolean = false;
@@ -77,7 +77,7 @@ export class Profiler extends Dependency implements IProfiler {
     const typeLine = lines.find((l) => l.startsWith("类型: ")) ?? "";
     const reasonLine = lines.find((l) => l.startsWith("原因: ")) ?? "";
     const stackIdx = lines.findIndex((l) => l.startsWith("堆栈: "));
-    const topFrame = stackIdx >= 0 ? (lines[stackIdx + 1] ?? "") : "";
+    const topFrame = stackIdx >= 0 ? lines[stackIdx + 1] ?? "" : "";
     return `${typeLine}|${reasonLine}|${topFrame}`;
   }
 
@@ -117,7 +117,7 @@ export class Profiler extends Dependency implements IProfiler {
         that.__reportError(that.__cleanError(e.error.name, reason, stack));
         return true;
       },
-      true,
+      true
     );
     addEventListener("unhandledrejection", function (e: PromiseRejectionEvent) {
       let stacks: string[] = [];
@@ -260,7 +260,7 @@ export class Profiler extends Dependency implements IProfiler {
 
   public simulateTimeConsumingOperation(t: number = 10) {
     const startTime = time.now;
-    while (time.now - startTime < t) { }
+    while (time.now - startTime < t) {}
   }
 
   public setErrorReporter(reporter: (error: string) => void) {
@@ -278,12 +278,12 @@ export class Profiler extends Dependency implements IProfiler {
 
   public setErrorRateLimit(options: { windowMs?: number; max?: number }): void {
     const { windowMs, max } = options ?? {};
-    if (Number.isFinite(windowMs) && (windowMs) >= 0) {
+    if (Number.isFinite(windowMs) && windowMs >= 0) {
       this.__rateLimitWindowMs = windowMs;
       // 重置窗口以便新配置立即生效
       this.resetErrorRateWindow();
     }
-    if (Number.isFinite(max) && (max) >= 0) {
+    if (Number.isFinite(max) && max >= 0) {
       this.__rateLimitMax = max;
       // 若当前计数超过新阈值，保持不变，等待窗口重置
     }
@@ -317,7 +317,7 @@ export class Profiler extends Dependency implements IProfiler {
   }
 
   /** 帧开始事件 */
-  protected _onFrameBegin() { }
+  protected _onFrameBegin() {}
 
   /** 帧结束事件 */
   protected _onFrameEnd() {
