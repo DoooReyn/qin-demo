@@ -2,9 +2,72 @@ import { Node, Prefab, instantiate, UITransform, screen, Widget, Graphics } from
 
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
-import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
+import { IUIManager, IUIRootLayers, IUIView, IUIViewInstance, UIConfig } from "./ui.typings";
 import { PRESET } from "../preset";
 import { colors } from "../ability";
+
+/**
+ * 通用视图缓存：支持 DestroyImmediately / LRU / Persistent
+ */
+class UIViewCache {
+  private readonly __map = new Map<string, IUIViewInstance>();
+  private __lru: string[] = [];
+
+  constructor(private readonly __capacity: number) {}
+
+  /** 将实例放入缓存，或根据策略直接销毁 */
+  put(inst: IUIViewInstance): void {
+    const { config } = inst;
+
+    if (config.cachePolicy === "DestroyImmediately") {
+      inst.controller.onViewDisposed?.();
+      inst.node.destroy();
+      return;
+    }
+
+    const key = config.key;
+    this.__map.set(key, inst);
+
+    // 更新 LRU 顺序：移除旧位置，再推入队尾
+    this.__lru = this.__lru.filter((k) => k !== key);
+    this.__lru.push(key);
+
+    if (config.cachePolicy === "LRU") {
+      while (this.__lru.length > this.__capacity) {
+        const evictKey = this.__lru.shift();
+        if (!evictKey) break;
+        const evicted = this.__map.get(evictKey);
+        if (evicted) {
+          evicted.controller.onViewDisposed?.();
+          evicted.node.destroy();
+          this.__map.delete(evictKey);
+        }
+      }
+    }
+    // Persistent: 不做淘汰，由 clear 统一清理
+  }
+
+  /** 从缓存中取出实例（若存在），同时从缓存移除 */
+  take(config: UIConfig): IUIViewInstance | null {
+    const key = config.key;
+    const inst = this.__map.get(key) ?? null;
+    if (!inst) return null;
+
+    this.__map.delete(key);
+    this.__lru = this.__lru.filter((k) => k !== key);
+    return inst;
+  }
+
+  /** 清空缓存（用于 onDetach 等场景） */
+  clear(): void {
+    this.__map.forEach((inst) => {
+      inst.controller.onViewDisposed?.();
+      inst.node.destroy();
+    });
+    this.__map.clear();
+    this.__lru = [];
+  }
+}
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -22,12 +85,10 @@ export class UIManager extends Dependency implements IUIManager {
   private __popupStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
 
   /** Page 缓存（按 key，一次仅缓存一个实例） */
-  private __pageCache: Map<string, { config: UIConfig; node: Node; controller: IUIView }> = new Map();
-  private __pageCacheLRU: string[] = [];
+  private __pageCache = new UIViewCache(PRESET.UI.PAGE_CACHE_CAPACITY);
 
   /** Popup 缓存（按 key，一次仅缓存一个实例） */
-  private __popupCache: Map<string, { config: UIConfig; node: Node; controller: IUIView }> = new Map();
-  private __popupCacheLRU: string[] = [];
+  private __popupCache = new UIViewCache(PRESET.UI.POPUP_CACHE_CAPACITY);
 
   get layers(): IUIRootLayers | null {
     return this.__layers;
@@ -178,87 +239,22 @@ export class UIManager extends Dependency implements IUIManager {
 
   /** 将 Page 实例放入缓存（根据 cachePolicy 决定是否缓存与淘汰） */
   private __cachePageInstance(inst: { config: UIConfig; node: Node; controller: IUIView }): void {
-    const { config } = inst;
-    if (config.cachePolicy === "DestroyImmediately") {
-      inst.controller.onViewDisposed?.();
-      inst.node.destroy();
-      return;
-    }
-
-    const key = config.key;
-    this.__pageCache.set(key, inst);
-
-    // 更新 LRU：先移除旧位置，再推入队尾
-    this.__pageCacheLRU = this.__pageCacheLRU.filter((k) => k !== key);
-    this.__pageCacheLRU.push(key);
-
-    // 仅 LRU 需要淘汰；Persistent 不淘汰
-    if (config.cachePolicy === "LRU") {
-      const capacity = PRESET.UI.PAGE_CACHE_CAPACITY;
-      while (this.__pageCacheLRU.length > capacity) {
-        const evictKey = this.__pageCacheLRU.shift();
-        if (!evictKey) break;
-        const evicted = this.__pageCache.get(evictKey);
-        if (evicted) {
-          evicted.controller.onViewDisposed?.();
-          evicted.node.destroy();
-          this.__pageCache.delete(evictKey);
-        }
-      }
-    }
+    this.__pageCache.put(inst);
   }
 
   /** 从 Page 缓存中取出实例（若存在） */
   private __takePageFromCache(config: UIConfig): { config: UIConfig; node: Node; controller: IUIView } | null {
-    const key = config.key;
-    const inst = this.__pageCache.get(key) ?? null;
-    if (!inst) return null;
-
-    this.__pageCache.delete(key);
-    this.__pageCacheLRU = this.__pageCacheLRU.filter((k) => k !== key);
-    return inst;
+    return this.__pageCache.take(config);
   }
 
   /** 将 Popup 实例放入缓存（根据 cachePolicy 决定是否缓存与淘汰） */
   private __cachePopupInstance(inst: { config: UIConfig; node: Node; controller: IUIView }): void {
-    const { config } = inst;
-    if (config.cachePolicy === "DestroyImmediately") {
-      inst.controller.onViewDisposed?.();
-      inst.node.destroy();
-      return;
-    }
-
-    const key = config.key;
-    this.__popupCache.set(key, inst);
-
-    // 更新 LRU：先移除旧位置，再推入队尾
-    this.__popupCacheLRU = this.__popupCacheLRU.filter((k) => k !== key);
-    this.__popupCacheLRU.push(key);
-
-    if (config.cachePolicy === "LRU") {
-      const capacity = PRESET.UI.POPUP_CACHE_CAPACITY;
-      while (this.__popupCacheLRU.length > capacity) {
-        const evictKey = this.__popupCacheLRU.shift();
-        if (!evictKey) break;
-        const evicted = this.__popupCache.get(evictKey);
-        if (evicted) {
-          evicted.controller.onViewDisposed?.();
-          evicted.node.destroy();
-          this.__popupCache.delete(evictKey);
-        }
-      }
-    }
+    this.__popupCache.put(inst);
   }
 
   /** 从 Popup 缓存中取出实例（若存在） */
   private __takePopupFromCache(config: UIConfig): { config: UIConfig; node: Node; controller: IUIView } | null {
-    const key = config.key;
-    const inst = this.__popupCache.get(key) ?? null;
-    if (!inst) return null;
-
-    this.__popupCache.delete(key);
-    this.__popupCacheLRU = this.__popupCacheLRU.filter((k) => k !== key);
-    return inst;
+    return this.__popupCache.take(config);
   }
 
   /**
