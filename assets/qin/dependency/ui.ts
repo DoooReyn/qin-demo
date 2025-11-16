@@ -1,8 +1,10 @@
-import { Node, Prefab, instantiate } from "cc";
+import { Node, Prefab, instantiate, UITransform, screen, Widget, Graphics } from "cc";
 
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
 import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
+import { PRESET } from "../preset";
+import { colors } from "../ability";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -106,7 +108,19 @@ export class UIManager extends Dependency implements IUIManager {
     let child = parent.getChildByName(name);
     if (!child) {
       child = new Node(name);
+      const trans = child.acquire(UITransform);
+      trans.setContentSize(screen.windowSize);
+      const widget = child.acquire(Widget);
+      widget.left = 0;
+      widget.right = 0;
+      widget.top = 0;
+      widget.bottom = 0;
+      widget.isAlignLeft = true;
+      widget.isAlignRight = true;
+      widget.isAlignTop = true;
+      widget.isAlignBottom = true;
       parent.addChild(child);
+      widget.updateAlignment();
     }
     return child;
   }
@@ -138,20 +152,40 @@ export class UIManager extends Dependency implements IUIManager {
    */
   private __updatePopupMask(): void {
     if (!this.__layers) return;
-    const { popupMask: mask, popupLayer } = this.__layers;
-    const top = this.__popupStack[this.__popupStack.length - 1];
+    const { popupMask: mask } = this.__layers;
 
-    if (!top || !top.config.modal) {
+    // 栈为空：直接隐藏遮罩
+    if (this.__popupStack.length === 0) {
       mask.active = false;
       return;
     }
 
+    const top = this.__popupStack[this.__popupStack.length - 1];
+
     mask.active = true;
+
+    // 模态：半透明黑色遮罩；非模态：遮罩全透明，仅用于截断点击
+    const blackboard = mask.acquire(Graphics);
+    if (top.config.modal) {
+      blackboard.enabled = true;
+      blackboard.clear();
+      blackboard.fillColor = colors.from(PRESET.COLOR.BLACK_25);
+      blackboard.fillRect(
+        -(screen.windowSize.width >> 1) - 5,
+        -(screen.windowSize.height >> 1) - 5,
+        screen.windowSize.width + 10,
+        screen.windowSize.height + 10
+      );
+      console.log("blackboard.fillColor", blackboard.fillColor);
+    } else {
+      blackboard.clear();
+      blackboard.enabled = false;
+    }
+
     // 确保遮罩位于当前栈顶弹窗正下方
     const topNode = top.node;
     const topIndex = topNode.getSiblingIndex();
-    // 将遮罩插入到栈顶弹窗正下方（索引比弹窗小 1）
-    const targetIndex = Math.max(0, topIndex);
+    const targetIndex = Math.max(0, topIndex - 1);
     mask.setSiblingIndex(targetIndex);
   }
 
@@ -183,7 +217,10 @@ export class UIManager extends Dependency implements IUIManager {
   private async __onPopupMaskClicked() {
     const top = this.__popupStack[this.__popupStack.length - 1];
     if (!top) return;
-    if (top.config.closeOnMaskClick) {
+
+    // 非模态弹窗：允许点击遮罩关闭自身
+    // 模态弹窗：点击遮罩只截断点击，不关闭
+    if (!top.config.modal && top.config.closeOnMaskClick) {
       await this.closeTopPopup();
     }
   }

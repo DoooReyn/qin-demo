@@ -31,8 +31,8 @@ qin.ioc.eventBus.app.subscribes(
         prefabPath: "l:resources@ui/pfb-popup-userinfo",
         controller: UiPopupUserinfoController,
         cachePolicy: "LRU",
-        modal: true,
-        closeOnMaskClick: true,
+        modal: false,
+        closeOnMaskClick: false,
       });
     },
     once: true,

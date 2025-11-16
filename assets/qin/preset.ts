@@ -278,5 +278,9 @@ export const PRESET = {
     CHARCOAL_BLACK: "#36454F",
     /** 墨黑色 */
     INK_BLACK: "#343434",
+    /** 黑色，半透明 */
+    BLACK_50: "#00000080",
+    /** 黑色，四分之一透明 */
+    BLACK_25: "#00000040",
   },
 } as const;

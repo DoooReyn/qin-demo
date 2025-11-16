@@ -1,10 +1,11 @@
 import { Color, Enum, EventTouch, Node, Sprite, Tween, TTFFont, UITransform, Vec2, _decorator, tween } from "cc";
 
-import { grapheme, mock } from "../ability";
+import { colors, grapheme, mock } from "../ability";
 import { Atom } from "./atom";
 import { Triggers } from "../foundation";
 import ioc from "../ioc";
 import { RichTextAtlasLevel } from "../dependency";
+import { PRESET } from "../preset";
 
 const { property } = _decorator;
 
@@ -447,16 +448,9 @@ export class RichTextAtom extends Atom {
       return null;
     }
     if (s[0] === "#") {
-      const hex = s.substring(1);
-      if (hex.length === 6 || hex.length === 8) {
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-        const a = hex.length === 8 ? parseInt(hex.substring(6, 8), 16) : 255;
-        return new Color(r, g, b, a);
-      }
+      return colors.from(s);
     }
-    return null;
+    return colors.from(PRESET.COLOR.WHITE);
   }
 
   /**
