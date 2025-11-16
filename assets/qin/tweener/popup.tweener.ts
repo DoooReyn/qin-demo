@@ -15,10 +15,11 @@ export const PopupInTw: ITweenEntry = {
     const time = args.duration;
     const t1 = time * 0.725;
     const t2 = time - t1;
+    node.setScale(s1);
     return tween(node)
       .set({ opacity: 0, scale: s1 })
-      .to(t1, { opacity: 255, scale: s2 }, { easing: "sineInOut" })
-      .to(t2, { scale: Vec3.ONE }, { easing: "sineInOut" });
+      .to(t1, { opacity: 255, scale: s2 }, { easing: "sineIn" })
+      .to(t2, { scale: Vec3.ONE }, { easing: "sineIn" });
   },
 };
 
@@ -37,8 +38,8 @@ export const PopupOutTw: ITweenEntry = {
     const t1 = time * 0.275;
     const t2 = time - t1;
     return tween(node)
-      .set({ opacity: 255, scale: s1 })
-      .to(t1, { opacity: 0, scale: s2 }, { easing: "sineInOut" })
-      .to(t2, { scale: Vec3.ONE }, { easing: "sineInOut" });
+      .set({ opacity: 255 })
+      .to(t1, { scale: s1 }, { easing: "sineOut" })
+      .to(t2, { opacity: 0, scale: s2 }, { easing: "sineOut" });
   },
 };

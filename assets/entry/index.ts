@@ -30,6 +30,8 @@ qin.ioc.eventBus.app.subscribes(
         type: "Popup",
         prefabPath: "l:resources@ui/pfb-popup-userinfo",
         controller: UiPopupUserinfoController,
+        enterTweenLib: "tweener-popup-in",
+        exitTweenLib: "tweener-popup-out",
         cachePolicy: "LRU",
         modal: false,
         closeOnMaskClick: false,

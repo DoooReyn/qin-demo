@@ -125,6 +125,28 @@ export class UIManager extends Dependency implements IUIManager {
     return child;
   }
 
+  /**
+   * 播放进入动画（若配置了 enterTweenLib）
+   */
+  private async __playEnterTween(config: UIConfig, node: Node): Promise<void> {
+    const lib = config.enterTweenLib;
+    if (!lib || !ioc.tweener) {
+      return;
+    }
+    await ioc.tweener.play(node, lib, { duration: 0.3 });
+  }
+
+  /**
+   * 播放退出动画（若配置了 exitTweenLib）
+   */
+  private async __playExitTween(config: UIConfig, node: Node): Promise<void> {
+    const lib = config.exitTweenLib;
+    if (!lib || !ioc.tweener) {
+      return;
+    }
+    await ioc.tweener.play(node, lib, { duration: 0.3 });
+  }
+
   private async __createInstance(
     config: UIConfig,
     parent: Node
@@ -138,10 +160,7 @@ export class UIManager extends Dependency implements IUIManager {
     const node = instantiate(prefab as Prefab);
     parent.addChild(node);
 
-    const ControllerCtor = config.controller as any;
-    const comp = node.getComponent(ControllerCtor) ?? node.addComponent(ControllerCtor);
-    const controller = comp as any as IUIView;
-
+    const controller = node.acquire(config.controller);
     controller?.onViewCreated?.();
 
     return { config, node, controller };
@@ -255,10 +274,12 @@ export class UIManager extends Dependency implements IUIManager {
     const layers = this.ensureRoot();
 
     if (this.__screen) {
-      this.__screen.controller.onViewWillDisappear?.();
-      this.__screen.controller.onViewDidDisappear?.();
-      this.__screen.controller.onViewDisposed?.();
-      this.__screen.node.removeFromParent();
+      const old = this.__screen;
+      old.controller.onViewWillDisappear?.();
+      await this.__playExitTween(old.config, old.node);
+      old.controller.onViewDidDisappear?.();
+      old.controller.onViewDisposed?.();
+      old.node.removeFromParent();
       this.__screen = null;
     }
 
@@ -266,6 +287,8 @@ export class UIManager extends Dependency implements IUIManager {
     if (!inst) return;
 
     inst.controller.onViewWillAppear?.(params);
+    await this.__playEnterTween(config, inst.node);
+    inst.node.uiOpacity.destroy();
     inst.controller.onViewDidAppear?.();
 
     this.__screen = inst;
@@ -302,6 +325,7 @@ export class UIManager extends Dependency implements IUIManager {
     const top = this.__pageStack[this.__pageStack.length - 1];
     if (top) {
       top.controller.onViewWillDisappear?.();
+      await this.__playExitTween(top.config, top.node);
       top.controller.onViewDidDisappear?.();
     }
 
@@ -309,6 +333,7 @@ export class UIManager extends Dependency implements IUIManager {
     if (!inst) return;
 
     inst.controller.onViewWillAppear?.(params);
+    await this.__playEnterTween(config, inst.node);
     inst.controller.onViewDidAppear?.();
     inst.controller.onViewFocus?.();
 
@@ -322,6 +347,7 @@ export class UIManager extends Dependency implements IUIManager {
 
     const top = this.__pageStack.pop()!;
     top.controller.onViewWillDisappear?.();
+    await this.__playExitTween(top.config, top.node);
     top.controller.onViewDidDisappear?.();
     top.controller.onViewDisposed?.();
     top.node.removeFromParent();
@@ -367,6 +393,7 @@ export class UIManager extends Dependency implements IUIManager {
     if (!inst) return;
 
     inst.controller.onViewWillAppear?.(params);
+    await this.__playEnterTween(config, inst.node);
     inst.controller.onViewDidAppear?.();
     inst.controller.onViewFocus?.();
 
@@ -380,7 +407,11 @@ export class UIManager extends Dependency implements IUIManager {
     }
 
     const top = this.__popupStack.pop()!;
-    this.__destroyStackItem(top);
+    top.controller.onViewWillDisappear?.();
+    await this.__playExitTween(top.config, top.node);
+    top.controller.onViewDidDisappear?.();
+    top.controller.onViewDisposed?.();
+    top.node.removeFromParent();
 
     // 让新的栈顶弹窗获得焦点
     const next = this.__popupStack[this.__popupStack.length - 1];
@@ -419,7 +450,11 @@ export class UIManager extends Dependency implements IUIManager {
     const inst = this.__popupStack[index];
     this.__popupStack.splice(index, 1);
 
-    this.__destroyStackItem(inst);
+    inst.controller.onViewWillDisappear?.();
+    await this.__playExitTween(inst.config, inst.node);
+    inst.controller.onViewDidDisappear?.();
+    inst.controller.onViewDisposed?.();
+    inst.node.removeFromParent();
 
     // 若移除的是栈顶，则让新的栈顶获得焦点
     if (index === this.__popupStack.length) {
@@ -441,6 +476,7 @@ export class UIManager extends Dependency implements IUIManager {
       // 暴力清栈：不触发生命周期，只移除节点
       while (this.__pageStack.length > 0) {
         const inst = this.__pageStack.pop()!;
+        inst.controller.onViewDisposed?.();
         inst.node.removeFromParent();
       }
 
@@ -467,6 +503,7 @@ export class UIManager extends Dependency implements IUIManager {
       // 暴力清栈：不触发生命周期，只移除节点
       while (this.__popupStack.length > 0) {
         const inst = this.__popupStack.pop()!;
+        inst.controller.onViewDisposed?.();
         inst.node.removeFromParent();
       }
 

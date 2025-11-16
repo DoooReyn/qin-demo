@@ -79,10 +79,12 @@ export class Tweener extends Dependency implements ITweener {
   }
 
   async play(node: Node, lib: string, args?: ITweenArgs): Promise<void> {
+    console.time(`播放缓动动画: ${lib}`);
     const [_, err] = await might.async(this.__play(node, lib, args));
     if (err) {
       ioc.logcat?.tweener.e(`缓动动画: ${lib} 执行失败`, err);
     }
+    console.timeEnd(`播放缓动动画: ${lib}`);
   }
 
   pause(node: Node, lib: string): void {
@@ -239,17 +241,22 @@ export class Tweener extends Dependency implements ITweener {
       const t1 = tween(node).call(() => {
         const [, e] = might.sync(() => args.onStart?.call(args.context, node));
         if (e) ioc.logcat?.tweener.e(`缓动动画: ${lib} onStart 回调异常`, e);
+        // ioc.logcat.tweener.i(`缓动动画: ${lib} 第一阶段播放结束`);
       });
       const [t2, createErr] = might.sync(() => entry.create(node, args));
       if (createErr || !t2) {
         ioc.logcat?.tweener.e(`缓动动画: ${lib} 构建失败`, createErr);
         return resolve();
       }
+      // t2.call(() => {
+      //   ioc.logcat.tweener.i(`缓动动画: ${lib} 第二阶段播放结束`);
+      // });
       const t3 = tween(node).call(() => {
         const map = this.__tweens.get(node.uuid);
         map?.delete(lib);
         const [, e] = might.sync(() => args.onEnd?.call(args.context, node));
         if (e) ioc.logcat?.tweener.e(`缓动动画: ${lib} onEnd 回调异常`, e);
+        // ioc.logcat.tweener.i(`缓动动画: ${lib} 第三阶段播放结束`);
         resolve();
       });
       const twn = tween().sequence(t1, t2, t3).target(node).bindNodeState(true);
