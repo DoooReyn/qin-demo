@@ -1,0 +1,428 @@
+# UI 管理系统 设计方案 v1
+
+> 本文档基于前期规划与讨论，仅覆盖本轮 MVP 范围。
+
+---
+
+## 1. 总体目标与定位
+
+- **目标**：为项目提供一套统一的 UI 管理系统，用于：
+  - UI 交互表现与导航
+  - 消息与数据更新订阅
+  - 资源管理（加载、缓存、清理）
+  - 严格的 UI 生命周期管理
+- **目标用户**：项目内开发者
+- **集成方式**：作为依赖项注册到现有 `ioc` 系统，例如通过 `ioc.ui` 访问。
+
+---
+
+## 2. UI 类型与分层
+
+### 2.1 UI 类型
+
+系统支持 4 大类型：
+
+- **Screen**（一级页面）
+
+  - 顶级界面，如主界面、战斗主场景
+  - 同一时刻只允许一个实例存在
+  - 默认缓存策略：**即时销毁**（DestroyImmediately）
+
+- **Page**（二级页面）
+
+  - 次级界面，如背包、任务、角色详情等
+  - 支持导航与缓存
+  - 默认缓存策略：**LRU**，默认最大缓存数量：**3**
+
+- **Popup**（弹窗）
+
+  - 弹窗界面，如确认框、设置、提示等
+  - 支持多弹窗堆叠
+  - 支持模态 / 非模态、遮罩点击关闭配置
+
+- **Overlay**（全局悬浮层）
+  - 示例：Tips、飘字、HUD、引导遮罩等
+  - 不参与导航栈
+  - 固定缓存策略：**不销毁（Persistent）**
+  - 约定子类型：
+    - `Toast`：轻提示 / 飘字
+    - `Drawer`：抽屉面板
+    - `Marquee`：跑马灯
+    - `Guide`：引导层
+
+### 2.2 节点层级结构
+
+在 `MainAtom` 的 `root` 下挂载统一的 `UIRoot`：
+
+```text
+MainAtom.root
+  └─ UIRoot
+      ├─ ScreenLayer      // Screen 根节点
+      ├─ PageLayer        // Page 根节点
+      ├─ PopupLayer       // Popup 根节点 + Mask 节点
+      │    └─ MaskNode
+      └─ OverlayLayer     // Overlay 根节点
+           ├─ ToastOverlayRoot
+           ├─ DrawerOverlayRoot
+           ├─ MarqueeOverlayRoot
+           └─ GuideOverlayRoot
+```
+
+层级越上，视觉上越“在上面”，点击事件也更优先被上层拦截。
+
+---
+
+## 3. 导航与栈设计
+
+### 3.1 Screen 导航
+
+- **特性**：
+  - 顶层界面，单实例
+  - 默认缓存策略：DestroyImmediately
+- **导航接口示意**：
+
+```ts
+ioc.ui.openScreen(keyOrClass, params?);
+```
+
+- **行为**：
+  - 若存在当前 Screen：
+    - 调用当前 Screen 的 `onViewWillDisappear` → 出场动画 → `onViewDidDisappear`
+    - 根据缓存策略决定是否调用 `onViewDisposed` 并销毁
+  - 创建/取出新 Screen：
+    - 首次：`onViewCreated`
+    - 然后：`onViewWillAppear(params)` → 入场动画 → `onViewDidAppear`
+
+### 3.2 Page 导航（PageStack）
+
+- Page 导航基于栈：
+
+```text
+PageStack: [Page1, Page2, Page3, ...]
+```
+
+- 打开 Page：
+
+```ts
+ioc.ui.openPage(keyOrClass, params?);
+```
+
+- 流程：
+
+  1. 当前顶部 Page 执行 `onViewWillDisappear` → 出场动画 → `onViewDidDisappear`
+  2. 获取/创建新 Page：
+     - 首次：`onViewCreated`
+  3. 调用 `onViewWillAppear(params)` → 入场动画 → `onViewDidAppear`
+  4. Page 入栈
+
+- 后退：
+
+```ts
+ioc.ui.back(); // 若无 Popup，则作用于 Page 栈
+```
+
+- 行为：
+  1. 若存在 Popup 栈，优先处理 Popup（见下文）
+  2. 否则弹出顶部 Page：
+     - 顶部 Page：`onViewWillDisappear` → 出场动画 → `onViewDidDisappear` → 按缓存策略处理
+     - 恢复新的顶部 Page：`onViewWillAppear` → 入场动画 → `onViewDidAppear` → `onViewFocus`
+
+### 3.3 Popup 导航与堆叠
+
+- 弹窗栈：
+
+```text
+PopupStack: [A, B, C, ...]
+```
+
+- 打开 Popup：
+
+```ts
+ioc.ui.openPopup(keyOrClass, params?);
+```
+
+- 行为：
+
+  - 若栈中**不存在**同 key：
+    - 获取/创建 Popup，`onViewCreated?` → `onViewWillAppear` → 入场动画 → `onViewDidAppear`
+    - 入栈
+  - 若栈中**已存在**同 key（重复激活）：
+    - 进行“去重 + 提升”：
+      - 例：`A -> B -> C -> D -> B` 再次打开 B：
+        - 移除 B 之后的 [C, D]
+        - 将 B 提到栈顶
+        - 最终栈：`A -> B`
+    - 调用 B 的 `onViewFocus()`（不必重复整套 appear 动画，可选）
+
+- 关闭弹窗：
+
+```ts
+ioc.ui.closeTopPopup();
+ioc.ui.closePopup(keyOrClass);
+```
+
+- 栈顶关闭流程：
+
+  1. `onViewWillDisappear`
+  2. 出场动画
+  3. `onViewDidDisappear`
+  4. 根据缓存策略（默认 LRU）决定是否 `onViewDisposed` + 销毁
+  5. 若栈中仍有 Popup 且为焦点：
+     - 顶部 Popup 执行 `onViewWillAppear` → 入场动画 → `onViewDidAppear` → `onViewFocus`
+
+- 与 Screen/Page 的关系：
+  - 关闭当前 Screen/Page 时，自动关闭其上的所有 Popup（清空相关栈）。
+
+### 3.4 Overlay
+
+- 不参与导航栈。
+- 管理方式：
+
+```ts
+ioc.ui.showOverlay(keyOrClass, params?);
+ioc.ui.hideOverlay(keyOrClass);
+```
+
+- 子类型：
+
+  - ToastOverlay：轻提示
+  - DrawerOverlay：抽屉层
+  - MarqueeOverlay：跑马灯
+  - GuideOverlay：引导
+
+- 缓存：
+  - 固定为 Persistent，创建一次后常驻，显隐由调用方通过 API 控制。
+
+---
+
+## 4. 生命周期与焦点
+
+### 4.1 生命周期钩子
+
+为避免与 Cocos 组件生命周期混淆，UI 使用带 `View` 前缀的语义化钩子：
+
+```ts
+interface IUIView {
+  onViewCreated?(): void; // 首次创建完成（节点和组件就绪）
+  onViewWillAppear?(params?: any): void; // 即将显示（动画前）
+  onViewDidAppear?(): void; // 显示完成（动画后，可交互）
+  onViewWillDisappear?(): void; // 即将隐藏/关闭（动画前）
+  onViewDidDisappear?(): void; // 隐藏/关闭完成（动画后）
+  onViewDisposed?(): void; // 彻底销毁（节点和资源已释放）
+
+  /**
+   * 视图在其所属层中重新获得“前台焦点”时触发：
+   * - 视图重复激活（如 Popup 栈中 B 再次被打开并提升为栈顶）
+   * - 导航/回退导致该视图重新成为当前可交互视图
+   */
+  onViewFocus?(): void;
+}
+```
+
+### 4.2 打开/关闭时序
+
+#### 打开流程（Page/Popup）
+
+```text
+openX(keyOrClass, params)
+
+1. 从 UICacheManager 获取或实例化节点
+2. 若首次：调用 onViewCreated()
+3. 调用 onViewWillAppear(params)
+4. UIAnimator 执行 enter 动画（Tweener）
+5. 动画完成后调用 onViewDidAppear()
+6. 更新栈/状态
+```
+
+#### 关闭流程
+
+```text
+closeX(...)
+
+1. 调用 onViewWillDisappear()
+2. UIAnimator 执行 exit 动画
+3. 动画完成后调用 onViewDidDisappear()
+4. 按缓存策略：
+   - DestroyImmediately:
+       onViewDisposed() → 销毁节点与资源
+   - LRU / Persistent:
+       缓存对象，交由 UICacheManager 管理
+5. 更新栈/状态
+```
+
+### 4.3 焦点获取时序
+
+- **重复激活**（如 Popup B 再次打开并提升到栈顶）：
+
+```text
+1. 调整 PopupStack，去除 B 之后的中间弹窗
+2. 调用目标视图 onViewFocus()
+```
+
+- **回退到当前视图**（如 Page3 → back → Page2）：
+
+```text
+1. 顶部 Page3 执行关闭流程
+2. 新顶部 Page2：
+   - onViewWillAppear()
+   - 入场动画
+   - onViewDidAppear()
+   - onViewFocus()
+```
+
+> 约定：首次显示时可以选择不触发 `onViewFocus`，只在“再次成为主视图”时触发。
+
+---
+
+## 5. 动画系统集成 Tweener
+
+### 5.1 设计目标
+
+- 为所有 UI 进出提供统一的缓动动画机制；
+- 默认动画 + 可配置自定义动画：
+  - 在 Tweener 中注册动画库（lib），
+  - UIConfig 中只需指定 `enterTweenLib` / `exitTweenLib`。
+
+### 5.2 UIAnimator 与 Tweener
+
+- `UIAnimator` 封装动画逻辑：
+
+  - 根据 UIConfig 拿到 lib 名称
+  - 调用 `ioc.tweener.play(node, lib, args?)`
+  - 提供 Promise/回调，以便 UIManager 在动画结束后再触发生命周期钩子。
+
+- 默认动画：
+  - Screen/Page/Popup 可定义一套通用 default lib，例如：
+    - `ui-screen-in`, `ui-screen-out`
+    - `ui-page-in`, `ui-page-out`
+    - `ui-popup-in`, `ui-popup-out`
+
+---
+
+## 6. 缓存与资源管理
+
+### 6.1 UIConfig
+
+逻辑上每个 UI 对应一个配置：
+
+```ts
+interface UIConfig {
+  key: string;
+  type: "Screen" | "Page" | "Popup" | "Overlay";
+  overlaySubtype?: "Toast" | "Drawer" | "Marquee" | "Guide";
+
+  prefabPath: string;
+  controller: Constructor<IUIView>;
+
+  cachePolicy: "DestroyImmediately" | "LRU" | "Persistent";
+  cacheCapacity?: number; // LRU 有效
+
+  enterTweenLib?: string;
+  exitTweenLib?: string;
+
+  modal?: boolean; // Popup
+  closeOnMaskClick?: boolean; // Popup
+}
+```
+
+### 6.2 UICacheManager
+
+- **Screen**：`DestroyImmediately`
+- **Page**：`LRU(capacity = 3)` 为默认，可针对个别 Page 调整策略
+- **Popup**：默认 `LRU`，全局容量可配置
+- **Overlay**：固定 `Persistent`
+
+内部结构示意：
+
+```text
+UICacheManager
+  ├─ screenCache: Map<key, CachedUI>               // 通常立即销毁或很小
+  ├─ pageCacheLRU: LRUList<key, CachedUI>          // capacity = 3（默认）
+  ├─ popupCacheLRU: LRUList<key, CachedUI>         // capacity = 配置项
+  └─ overlayCache: Map<key, CachedUI>              // Persistent
+```
+
+- 与 `AssetLoader` 集成：
+  - 所有 Prefab/资源通过 `ioc.loader` 统一加载/释放
+  - UICacheManager 决定何时调用释放逻辑。
+
+---
+
+## 7. 遮罩与模态
+
+### 7.1 结构
+
+```text
+PopupLayer
+  ├─ MaskNode
+  ├─ Popup_A
+  ├─ Popup_B
+  └─ ...
+```
+
+### 7.2 规则
+
+- 打开 Popup 时：
+
+  - 若 `modal = true`：
+    - 显示 MaskNode，拦截事件
+    - 若 `closeOnMaskClick = true`：点击 MaskNode 触发关闭当前栈顶 Popup
+  - 若 `modal = false`：
+    - 可不显示遮罩，或显示但不拦截（视设计实现）
+
+- 关闭 Popup：
+  - 若栈内仍有模态 Popup：Mask 绑定到新的栈顶
+  - 否则隐藏 MaskNode。
+
+---
+
+## 8. 对外 API 草案
+
+```ts
+// Screen
+openScreen(keyOrClass: string | Constructor, params?: any): Promise<void>;
+
+// Page
+openPage(keyOrClass: string | Constructor, params?: any): Promise<void>;
+
+// Popup
+openPopup(keyOrClass: string | Constructor, params?: any): Promise<void>;
+closeTopPopup(): Promise<void>;
+closePopup(keyOrClass: string | Constructor): Promise<void>;
+
+// Overlay
+showOverlay(keyOrClass: string | Constructor, params?: any): Promise<void>;
+hideOverlay(keyOrClass: string | Constructor): Promise<void>;
+
+// 通用导航
+back(): Promise<void>; // 优先关闭 Popup，再考虑 Page 回退
+```
+
+这些方法将以依赖形式挂到 `ioc.ui` 上供业务侧使用。
+
+---
+
+## 9. 与现有依赖的集成
+
+- `UIManager`：
+
+  - 作为依赖注入实现，如 `@Injectable({ name: "UIManager", priority: xxx })`，在 `ioc` 初始化阶段挂载。
+
+- 依赖关系：
+  - `ioc.loader`（AssetLoader）：负责加载/释放 Prefab 与资源
+  - `ioc.tweener`：负责执行 UI 动画
+  - `ioc.eventBus`（可选）：配合 MVC 做消息分发
+  - `ioc.launcher` / `MainAtom`：提供 `root` 以创建 `UIRoot`
+
+---
+
+## 10. 后续工作
+
+- 基于本设计在 `assets/qin/dependency` 等目录下实现：
+  - UIManager 依赖及 UIRoot/Layers 创建
+  - Screen/Page/Popup/Overlay 基类与生命周期 + onViewFocus
+  - 导航与栈管理、缓存策略、遮罩与 Tweener 集成
+- 后续可以扩展：
+  - 更复杂的数据绑定机制
+  - UI 状态调试面板
+  - 用配置表/工具自动生成 UIConfig 映射
