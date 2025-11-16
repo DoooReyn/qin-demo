@@ -21,7 +21,6 @@ export interface UIConfig {
   controller: Constructor<any>;
 
   cachePolicy: UICachePolicy;
-  cacheCapacity?: number;
 
   enterTweenLib?: string;
   exitTweenLib?: string;

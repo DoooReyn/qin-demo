@@ -24,12 +24,10 @@ export class UIManager extends Dependency implements IUIManager {
   /** Page 缓存（按 key，一次仅缓存一个实例） */
   private __pageCache: Map<string, { config: UIConfig; node: Node; controller: IUIView }> = new Map();
   private __pageCacheLRU: string[] = [];
-  private readonly __pageCacheCapacity = 3;
 
   /** Popup 缓存（按 key，一次仅缓存一个实例） */
   private __popupCache: Map<string, { config: UIConfig; node: Node; controller: IUIView }> = new Map();
   private __popupCacheLRU: string[] = [];
-  private readonly __popupCacheCapacity = 5;
 
   get layers(): IUIRootLayers | null {
     return this.__layers;
@@ -196,7 +194,8 @@ export class UIManager extends Dependency implements IUIManager {
 
     // 仅 LRU 需要淘汰；Persistent 不淘汰
     if (config.cachePolicy === "LRU") {
-      while (this.__pageCacheLRU.length > this.__pageCacheCapacity) {
+      const capacity = PRESET.UI.PAGE_CACHE_CAPACITY;
+      while (this.__pageCacheLRU.length > capacity) {
         const evictKey = this.__pageCacheLRU.shift();
         if (!evictKey) break;
         const evicted = this.__pageCache.get(evictKey);
@@ -237,7 +236,8 @@ export class UIManager extends Dependency implements IUIManager {
     this.__popupCacheLRU.push(key);
 
     if (config.cachePolicy === "LRU") {
-      while (this.__popupCacheLRU.length > this.__popupCacheCapacity) {
+      const capacity = PRESET.UI.POPUP_CACHE_CAPACITY;
+      while (this.__popupCacheLRU.length > capacity) {
         const evictKey = this.__popupCacheLRU.shift();
         if (!evictKey) break;
         const evicted = this.__popupCache.get(evictKey);

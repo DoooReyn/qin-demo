@@ -283,4 +283,11 @@ export const PRESET = {
     /** 黑色，四分之一透明 */
     BLACK_25: "#00000040",
   },
+  /** UI 相关配置 */
+  UI: {
+    /** Page LRU 缓存容量 */
+    PAGE_CACHE_CAPACITY: 3,
+    /** Popup LRU 缓存容量 */
+    POPUP_CACHE_CAPACITY: 5,
+  },
 } as const;
