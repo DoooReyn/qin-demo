@@ -270,32 +270,103 @@ closeX(...)
    - onViewFocus()
 ```
 
-> 约定：首次显示时可以选择不触发 `onViewFocus`，只在“再次成为主视图”时触发。
+- 在 Tweener 中注册动画库（lib），
+- UIConfig 中只需指定 `enterTweenLib` / `exitTweenLib`。
 
----
+### 5.2 UIAnimator 与 Tweener（概念）
 
-## 5. 动画系统集成 Tweener
-
-### 5.1 设计目标
-
-- 为所有 UI 进出提供统一的缓动动画机制；
-- 默认动画 + 可配置自定义动画：
-  - 在 Tweener 中注册动画库（lib），
-  - UIConfig 中只需指定 `enterTweenLib` / `exitTweenLib`。
-
-### 5.2 UIAnimator 与 Tweener
-
-- `UIAnimator` 封装动画逻辑：
+- `UIAnimator` 封装动画逻辑（概念层）：
 
   - 根据 UIConfig 拿到 lib 名称
   - 调用 `ioc.tweener.play(node, lib, args?)`
   - 提供 Promise/回调，以便 UIManager 在动画结束后再触发生命周期钩子。
 
-- 默认动画：
+- 默认动画（可选）：
   - Screen/Page/Popup 可定义一套通用 default lib，例如：
     - `ui-screen-in`, `ui-screen-out`
     - `ui-page-in`, `ui-page-out`
     - `ui-popup-in`, `ui-popup-out`
+
+### 5.3 当前实现中的动画策略
+
+> 本节描述的是 MVP 中 `UIManager` 已落地的实际动画调用时机，便于和代码对上。
+
+- **配置入口**：
+
+  - `UIConfig.enterTweenLib?: string`：进场动画使用的 Tweener 库名。
+  - `UIConfig.exitTweenLib?: string`：退场动画使用的 Tweener 库名。
+  - 若未配置或 `ioc.tweener` 不存在，则该视图不开启动画，直接走生命周期。
+
+- **调用方式**：
+
+  - 内部通过私有方法：
+
+    ```ts
+    __playEnterTween(config, node); // 使用 enterTweenLib
+    __playExitTween(config, node); // 使用 exitTweenLib
+    ```
+
+  - 两者都简单地调用 `ioc.tweener.play(node, lib, { duration: 0.3 })`，具体 easing/细节由对应 Tweener 条目（如 `tweener-popup-in/out`）负责。
+
+- **Screen 动画时序**：
+
+  - 关闭旧 Screen：
+    - `onViewWillDisappear()`
+    - 执行退出动画 `exitTweenLib`
+    - `onViewDidDisappear()` → `onViewDisposed()` → 销毁节点
+  - 打开新 Screen：
+    - `onViewWillAppear(params)`
+    - 执行进入动画 `enterTweenLib`
+    - `onViewDidAppear()`
+
+- **Page 动画时序**：
+
+  - 打开新 Page 时：
+
+    - 若存在旧栈顶 Page：
+      - 旧 Page：`onViewWillDisappear()` → 退出动画 → `onViewDidDisappear()`
+    - 新 Page：
+      - `onViewWillAppear(params)` → 进入动画 → `onViewDidAppear()` → `onViewFocus()`
+
+  - 关闭 Page 时：
+
+    - 被关闭的栈顶 Page：
+      - `onViewWillDisappear()` → 退出动画 → `onViewDidDisappear()` → `onViewDisposed()` → 销毁节点
+    - 新栈顶 Page（若有）：
+      - `onViewWillAppear()` → `onViewDidAppear()` → `onViewFocus()`
+
+  - **重复激活 Page（栈中已有同 config）**：
+    - 只截断栈并将目标 Page 提到栈顶，**不播放动画**，仅调用 `onViewFocus()`。
+
+- **Popup 动画时序**：
+
+  - 打开新 Popup：
+
+    - `onViewWillAppear(params)` → 进入动画 → `onViewDidAppear()` → `onViewFocus()`
+    - 入栈并更新遮罩状态。
+
+  - 关闭栈顶 Popup：
+
+    - 栈顶 Popup：`onViewWillDisappear()` → 退出动画 → `onViewDidDisappear()` → `onViewDisposed()` → 销毁节点
+    - 若栈中仍有 Popup：栈顶 Popup 执行 `onViewWillAppear()` → `onViewDidAppear()` → `onViewFocus()`。
+
+  - 通过 `closePopup(keyOrClass)` 关闭指定 Popup 时，仅对目标弹窗执行上述关闭时序；若关闭的是栈顶，会额外唤醒新的栈顶弹窗。
+
+  - **重复激活 Popup（栈中已有同 config）**：
+    - 截断栈到该 Popup，**不重复播放动画**，仅调用其 `onViewFocus()`。
+
+- **clearPage / clearPopup 的动画策略**：
+
+  - `force = true`：
+
+    - 不播放进入/退出动画；
+    - 不调用 `onViewWillDisappear` / `onViewDidDisappear`；
+    - 但仍会对每个视图调用一次 `onViewDisposed()`，再销毁节点；
+    - 清空 Popup 后会尝试对下层 Page 栈顶执行 `onViewFocus()`，清空 Page 后会对 Screen 执行 `onViewFocus()`。
+
+  - `force = false`：
+    - 按正常关闭流程遍历栈顶到栈底：
+      - `onViewWillDisappear()` → **不播放动画（当前实现）** → `onViewDidDisappear()` → `onViewDisposed()` → 销毁节点。
 
 ---
 
