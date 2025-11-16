@@ -32,7 +32,7 @@ qin.ioc.eventBus.app.subscribes(
           enterTweenLib: "tweener-popup-in",
           exitTweenLib: "tweener-popup-out",
           cachePolicy: "LRU",
-          modal: false,
+          modal: true,
           closeOnMaskClick: false,
         },
       ]);

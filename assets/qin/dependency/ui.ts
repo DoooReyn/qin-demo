@@ -2,72 +2,10 @@ import { Node, Prefab, instantiate, UITransform, screen, Widget, Graphics } from
 
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
-import { IUIManager, IUIRootLayers, IUIView, IUIViewInstance, UIConfig } from "./ui.typings";
+import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
 import { PRESET } from "../preset";
 import { colors } from "../ability";
-
-/**
- * 通用视图缓存：支持 DestroyImmediately / LRU / Persistent
- */
-class UIViewCache {
-  private readonly __map = new Map<string, IUIViewInstance>();
-  private __lru: string[] = [];
-
-  constructor(private readonly __capacity: number) {}
-
-  /** 将实例放入缓存，或根据策略直接销毁 */
-  put(inst: IUIViewInstance): void {
-    const { config } = inst;
-
-    if (config.cachePolicy === "DestroyImmediately") {
-      inst.controller.onViewDisposed?.();
-      inst.node.destroy();
-      return;
-    }
-
-    const key = config.key;
-    this.__map.set(key, inst);
-
-    // 更新 LRU 顺序：移除旧位置，再推入队尾
-    this.__lru = this.__lru.filter((k) => k !== key);
-    this.__lru.push(key);
-
-    if (config.cachePolicy === "LRU") {
-      while (this.__lru.length > this.__capacity) {
-        const evictKey = this.__lru.shift();
-        if (!evictKey) break;
-        const evicted = this.__map.get(evictKey);
-        if (evicted) {
-          evicted.controller.onViewDisposed?.();
-          evicted.node.destroy();
-          this.__map.delete(evictKey);
-        }
-      }
-    }
-    // Persistent: 不做淘汰，由 clear 统一清理
-  }
-
-  /** 从缓存中取出实例（若存在），同时从缓存移除 */
-  take(config: UIConfig): IUIViewInstance | null {
-    const key = config.key;
-    const inst = this.__map.get(key) ?? null;
-    if (!inst) return null;
-
-    this.__map.delete(key);
-    this.__lru = this.__lru.filter((k) => k !== key);
-    return inst;
-  }
-
-  /** 清空缓存（用于 onDetach 等场景） */
-  clear(): void {
-    this.__map.forEach((inst) => {
-      inst.controller.onViewDisposed?.();
-      inst.node.destroy();
-    });
-    this.__map.clear();
-    this.__lru = [];
-  }
-}
+import { PageLayerManager, PopupLayerManager } from "./ui-stack-layer-manager";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -81,14 +19,8 @@ export class UIManager extends Dependency implements IUIManager {
   private __registry: Map<string, UIConfig> = new Map();
 
   private __screen: { config: UIConfig; node: Node; controller: IUIView } | null = null;
-  private __pageStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
-  private __popupStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
-
-  /** Page 缓存（按 key，一次仅缓存一个实例） */
-  private __pageCache = new UIViewCache(PRESET.UI.PAGE_CACHE_CAPACITY);
-
-  /** Popup 缓存（按 key，一次仅缓存一个实例） */
-  private __popupCache = new UIViewCache(PRESET.UI.POPUP_CACHE_CAPACITY);
+  private __pageManager: PageLayerManager;
+  private __popupManager: PopupLayerManager;
 
   get layers(): IUIRootLayers | null {
     return this.__layers;
@@ -167,6 +99,12 @@ export class UIManager extends Dependency implements IUIManager {
       guideOverlayRoot,
     };
 
+    const playEnterTween = this.__playEnterTween.bind(this);
+    const playExitTween = this.__playExitTween.bind(this);
+    const createInstance = this.__createInstance.bind(this);
+    this.__pageManager = new PageLayerManager(pageLayer, playEnterTween, playExitTween, createInstance);
+    this.__popupManager = new PopupLayerManager(popupLayer, playEnterTween, playExitTween, createInstance);
+
     return this.__layers;
   }
 
@@ -237,26 +175,6 @@ export class UIManager extends Dependency implements IUIManager {
 
   // === Page / Popup 缓存相关工具 ===
 
-  /** 将 Page 实例放入缓存（根据 cachePolicy 决定是否缓存与淘汰） */
-  private __cachePageInstance(inst: { config: UIConfig; node: Node; controller: IUIView }): void {
-    this.__pageCache.put(inst);
-  }
-
-  /** 从 Page 缓存中取出实例（若存在） */
-  private __takePageFromCache(config: UIConfig): { config: UIConfig; node: Node; controller: IUIView } | null {
-    return this.__pageCache.take(config);
-  }
-
-  /** 将 Popup 实例放入缓存（根据 cachePolicy 决定是否缓存与淘汰） */
-  private __cachePopupInstance(inst: { config: UIConfig; node: Node; controller: IUIView }): void {
-    this.__popupCache.put(inst);
-  }
-
-  /** 从 Popup 缓存中取出实例（若存在） */
-  private __takePopupFromCache(config: UIConfig): { config: UIConfig; node: Node; controller: IUIView } | null {
-    return this.__popupCache.take(config);
-  }
-
   /**
    * 更新弹窗遮罩的可见性
    */
@@ -265,13 +183,12 @@ export class UIManager extends Dependency implements IUIManager {
     const { popupMask: mask } = this.__layers;
 
     // 栈为空：直接隐藏遮罩
-    if (this.__popupStack.length === 0) {
+    if (this.__popupManager.size === 0) {
       mask.active = false;
       return;
     }
 
-    const top = this.__popupStack[this.__popupStack.length - 1];
-
+    const top = this.__popupManager.top!;
     mask.active = true;
 
     // 模态：半透明黑色遮罩；非模态：遮罩全透明，仅用于截断点击
@@ -307,9 +224,9 @@ export class UIManager extends Dependency implements IUIManager {
     item.controller.onViewDidDisappear?.();
 
     if (item.config.type === "Page") {
-      this.__cachePageInstance(item);
+      this.__pageManager.cacheInstance(item);
     } else if (item.config.type === "Popup") {
-      this.__cachePopupInstance(item);
+      this.__popupManager.cacheInstance(item);
     } else {
       // 其他类型暂不缓存
       item.controller.onViewDisposed?.();
@@ -333,7 +250,7 @@ export class UIManager extends Dependency implements IUIManager {
    * 弹窗遮罩点击回调
    */
   private async __onPopupMaskClicked() {
-    const top = this.__popupStack[this.__popupStack.length - 1];
+    const top = this.__popupManager.top;
     if (!top) return;
 
     // 非模态弹窗：允许点击遮罩关闭自身
@@ -400,68 +317,14 @@ export class UIManager extends Dependency implements IUIManager {
       return;
     }
 
-    const layers = this.ensureRoot();
-
-    // 检查是否已在栈中存在相同配置的 Page
-    let existedIndex = -1;
-    for (let i = this.__pageStack.length - 1; i >= 0; i--) {
-      if (this.__pageStack[i].config === config) {
-        existedIndex = i;
-        break;
-      }
-    }
-
-    if (existedIndex >= 0) {
-      // A -> B -> C -> D -> B 场景：截断栈，使其形如 A -> B
-      this.__truncateStackTo(this.__pageStack, existedIndex);
-      const target = this.__pageStack[existedIndex];
-      // 已位于栈顶，不再执行 appear 生命周期，仅刷新焦点
-      target.controller.onViewFocus?.();
-      return;
-    }
-
-    const top = this.__pageStack[this.__pageStack.length - 1];
-    if (top) {
-      top.controller.onViewWillDisappear?.();
-      await this.__playExitTween(top.config, top.node);
-      top.controller.onViewDidDisappear?.();
-    }
-
-    // 优先从缓存中复用实例
-    let inst = this.__takePageFromCache(config);
-    if (inst) {
-      layers.pageLayer.addChild(inst.node);
-    } else {
-      inst = await this.__createInstance(config, layers.pageLayer);
-    }
-    if (!inst) return;
-
-    inst.controller.onViewWillAppear?.(params);
-    await this.__playEnterTween(config, inst.node);
-    inst.controller.onViewDidAppear?.();
-    inst.controller.onViewFocus?.();
-
-    this.__pageStack.push(inst);
+    await this.__pageManager.open(config, params);
   }
 
   async closePage(): Promise<void> {
-    if (this.__pageStack.length === 0) {
-      return;
-    }
+    this.__pageManager.close();
 
-    const top = this.__pageStack.pop()!;
-    top.controller.onViewWillDisappear?.();
-    await this.__playExitTween(top.config, top.node);
-    top.controller.onViewDidDisappear?.();
-
-    // 根据缓存策略决定销毁或缓存
-    this.__cachePageInstance(top);
-
-    const next = this.__pageStack[this.__pageStack.length - 1];
-    if (next) {
-      next.controller.onViewWillAppear?.();
-      next.controller.onViewDidAppear?.();
-      next.controller.onViewFocus?.();
+    if (this.__pageManager.size == 0) {
+      this.__screen?.controller.onViewFocus?.();
     }
   }
 
@@ -473,121 +336,30 @@ export class UIManager extends Dependency implements IUIManager {
       return;
     }
 
-    const layers = this.ensureRoot();
-
-    // 检查是否已在栈中存在相同配置的弹窗
-    let existedIndex = -1;
-    for (let i = this.__popupStack.length - 1; i >= 0; i--) {
-      if (this.__popupStack[i].config === config) {
-        existedIndex = i;
-        break;
-      }
-    }
-
-    if (existedIndex >= 0) {
-      // A -> B -> C -> D -> B 场景：截断栈，使其形如 A -> B
-      this.__truncateStackTo(this.__popupStack, existedIndex);
-      this.__updatePopupMask();
-      const target = this.__popupStack[existedIndex];
-      // 已位于栈顶，无需再次插入，只需触发焦点回调
-      target.controller.onViewFocus?.();
-      return;
-    }
-
-    // 优先从缓存中复用实例
-    let inst = this.__takePopupFromCache(config);
-    if (inst) {
-      layers.popupLayer.addChild(inst.node);
-    } else {
-      inst = await this.__createInstance(config, layers.popupLayer);
-    }
-    if (!inst) return;
-
-    inst.controller.onViewWillAppear?.(params);
-    await this.__playEnterTween(config, inst.node);
-    inst.controller.onViewDidAppear?.();
-    inst.controller.onViewFocus?.();
-
-    this.__popupStack.push(inst);
+    await this.__popupManager.open(config, params);
     this.__updatePopupMask();
   }
 
   async closeTopPopup(): Promise<void> {
-    if (this.__popupStack.length === 0) {
-      return;
-    }
-
-    const top = this.__popupStack.pop()!;
-    top.controller.onViewWillDisappear?.();
-    await this.__playExitTween(top.config, top.node);
-    top.controller.onViewDidDisappear?.();
-
-    this.__cachePopupInstance(top);
-
-    // 让新的栈顶弹窗获得焦点
-    const next = this.__popupStack[this.__popupStack.length - 1];
-    if (next) {
-      next.controller.onViewWillAppear?.();
-      next.controller.onViewDidAppear?.();
-      next.controller.onViewFocus?.();
-    }
-
+    await this.__popupManager.close();
     this.__updatePopupMask();
   }
 
   async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
-    if (this.__popupStack.length === 0) {
-      return;
-    }
-
     const config = this.__getConfig(keyOrClass);
     if (!config) {
       ioc.logcat?.qin.ef("UIManager.closePopup: 未找到 UIConfig, key={0}", String(keyOrClass));
       return;
     }
 
-    let index = -1;
-    for (let i = this.__popupStack.length - 1; i >= 0; i--) {
-      if (this.__popupStack[i].config === config) {
-        index = i;
-        break;
-      }
-    }
-
-    if (index === -1) {
-      return;
-    }
-
-    const inst = this.__popupStack[index];
-    this.__popupStack.splice(index, 1);
-
-    inst.controller.onViewWillDisappear?.();
-    await this.__playExitTween(inst.config, inst.node);
-    inst.controller.onViewDidDisappear?.();
-
-    this.__cachePopupInstance(inst);
-
-    // 若移除的是栈顶，则让新的栈顶获得焦点
-    if (index === this.__popupStack.length) {
-      const next = this.__popupStack[this.__popupStack.length - 1];
-      if (next) {
-        next.controller.onViewWillAppear?.();
-        next.controller.onViewDidAppear?.();
-        next.controller.onViewFocus?.();
-      }
-    }
+    await this.__popupManager.closeBy(config);
 
     this.__updatePopupMask();
   }
 
   async clearPage(): Promise<void> {
     // 清栈：执行完整的生命周期，并根据缓存策略处理
-    while (this.__pageStack.length > 0) {
-      const inst = this.__pageStack.pop()!;
-      inst.controller.onViewWillDisappear?.();
-      inst.controller.onViewDidDisappear?.();
-      this.__cachePageInstance(inst);
-    }
+    await this.__pageManager.clear();
 
     // 聚焦上一层的顶层视图：Screen
     if (this.__screen) {
@@ -597,20 +369,13 @@ export class UIManager extends Dependency implements IUIManager {
 
   async clearPopup(): Promise<void> {
     // 清栈：执行完整的生命周期，并根据缓存策略处理
-    while (this.__popupStack.length > 0) {
-      const inst = this.__popupStack.pop()!;
-      inst.controller.onViewWillDisappear?.();
-      inst.controller.onViewDidDisappear?.();
-      this.__cachePopupInstance(inst);
-    }
+    await this.__popupManager.clear();
 
+    // 更新遮罩
     this.__updatePopupMask();
 
     // 聚焦上一层的顶层视图：Page 栈顶
-    const topPage = this.__pageStack[this.__pageStack.length - 1];
-    if (topPage) {
-      topPage.controller.onViewFocus?.();
-    }
+    this.__pageManager.focusTop();
   }
 
   async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
@@ -624,13 +389,13 @@ export class UIManager extends Dependency implements IUIManager {
 
   async back(): Promise<void> {
     // 优先关闭栈顶弹窗
-    if (this.__popupStack.length > 0) {
+    if (this.__popupManager.size > 0) {
       await this.closeTopPopup();
       return;
     }
 
     // 其次回退 Page 栈
-    if (this.__pageStack.length > 1) {
+    if (this.__pageManager.size > 1) {
       await this.closePage();
       return;
     }
