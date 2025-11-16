@@ -24,6 +24,7 @@ import {
   ITweener,
   IRedDotManager,
   IRichTextAtlas,
+  IUIManager,
 } from "./dependency";
 
 /**
@@ -228,6 +229,11 @@ export class IoC {
   /** 富文本图集管理 */
   get richTextAtlas() {
     return this.resolve<IRichTextAtlas>("RichTextAtlas");
+  }
+
+  /** UI 管理系统 */
+  get ui() {
+    return this.resolve<IUIManager>("UIManager");
   }
 }
 

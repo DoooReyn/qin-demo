@@ -71,6 +71,9 @@ export class Application {
       // 初始化富文本图集
       ioc.richTextAtlas.initialize();
 
+      // 初始化 UI 管理器
+      ioc.ui.ensureRoot();
+
       // 通知应用启动完成
       ioc.eventBus.app.publish(PRESET.EVENT.APP_AFTER_LAUNCHED);
 
