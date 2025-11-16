@@ -68,6 +68,8 @@ export const PRESET = {
     APP_ENTER_FOREGROUND: "app:enter-foreground",
     /** 应用进入后台 */
     APP_ENTER_BACKGROUND: "app:enter-background",
+    /** UI 根节点已创建 */
+    APP_UI_ROOT_ENSURED: "app:ui-root-ensured",
     /** 应用内存不足 */
     APP_LOW_MEMORY: "app:low-memory",
     /** 应用窗口尺寸变化 */

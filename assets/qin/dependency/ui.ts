@@ -1,4 +1,4 @@
-import { Node } from "cc";
+import { Node, Prefab, instantiate } from "cc";
 
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
@@ -7,7 +7,7 @@ import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
 /**
  * UI 管理系统依赖（骨架实现）
  */
-@Injectable({ name: "UIManager", priority: 220 })
+@Injectable({ name: "UIManager", priority: 230 })
 export class UIManager extends Dependency implements IUIManager {
   /** UIRoot 与各层级节点 */
   private __layers: IUIRootLayers | null = null;
@@ -15,8 +15,30 @@ export class UIManager extends Dependency implements IUIManager {
   /** UI 配置表占位（后续可接配置表或代码注册） */
   private __registry: Map<string, UIConfig> = new Map();
 
+  private __screen: { config: UIConfig; node: Node; controller: IUIView } | null = null;
+  private __pageStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
+  private __popupStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
+
   get layers(): IUIRootLayers | null {
     return this.__layers;
+  }
+
+  /**
+   * 注册单个 UI 配置
+   */
+  register(config: UIConfig): void {
+    if (this.__registry.has(config.key)) {
+      ioc.logcat?.qin.wf("UIManager.register: 重复注册 UIConfig key={0}", config.key);
+      return;
+    }
+    this.__registry.set(config.key, config);
+  }
+
+  /**
+   * 批量注册 UI 配置
+   */
+  registerMany(configs: UIConfig[]): void {
+    configs.forEach((cfg) => this.register(cfg));
   }
 
   async onAttach(): Promise<void> {
@@ -86,21 +108,118 @@ export class UIManager extends Dependency implements IUIManager {
     return child;
   }
 
+  private async __createInstance(
+    config: UIConfig,
+    parent: Node
+  ): Promise<{ config: UIConfig; node: Node; controller: IUIView } | null> {
+    const prefab = await ioc.loader?.loadPrefab(config.prefabPath);
+    if (!prefab) {
+      ioc.logcat?.qin.ef("UIManager.__createInstance: 预制体加载失败 path={0}", config.prefabPath);
+      return null;
+    }
+
+    const node = instantiate(prefab as Prefab);
+    parent.addChild(node);
+
+    const ControllerCtor = config.controller as any;
+    const comp = node.getComponent(ControllerCtor) ?? node.addComponent(ControllerCtor);
+    const controller = comp as any as IUIView;
+
+    controller?.onViewCreated?.();
+
+    return { config, node, controller };
+  }
+
+  /**
+   * 根据 key 或 controller 构造器解析 UIConfig
+   */
+  private __getConfig(keyOrClass: string | (new (...args: any[]) => IUIView)): UIConfig | undefined {
+    if (typeof keyOrClass === "string") {
+      return this.__registry.get(keyOrClass);
+    }
+
+    for (const cfg of this.__registry.values()) {
+      if (cfg.controller === keyOrClass) {
+        return cfg;
+      }
+    }
+
+    return undefined;
+  }
+
   // === 以下为导航与显示接口骨架，后续将根据设计文档补充具体逻辑 ===
 
   async openScreen(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     this.ensureRoot();
-    // TODO: 实现 Screen 打开逻辑（栈管理 + 生命周期 + 缓存策略）
+    const config = this.__getConfig(keyOrClass);
+    if (!config) {
+      ioc.logcat?.qin.ef("UIManager.openScreen: 未找到 UIConfig, key={0}", String(keyOrClass));
+      return;
+    }
+
+    const layers = this.ensureRoot();
+
+    if (this.__screen) {
+      this.__screen.controller.onViewWillDisappear?.();
+      this.__screen.controller.onViewDidDisappear?.();
+      this.__screen.controller.onViewDisposed?.();
+      this.__screen.node.removeFromParent();
+      this.__screen = null;
+    }
+
+    const inst = await this.__createInstance(config, layers.screenLayer);
+    if (!inst) return;
+
+    inst.controller.onViewWillAppear?.(params);
+    inst.controller.onViewDidAppear?.();
+
+    this.__screen = inst;
   }
 
   async openPage(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     this.ensureRoot();
-    // TODO: 实现 Page 打开逻辑
+    const config = this.__getConfig(keyOrClass);
+    if (!config) {
+      ioc.logcat?.qin.ef("UIManager.openPage: 未找到 UIConfig, key={0}", String(keyOrClass));
+      return;
+    }
+
+    const layers = this.ensureRoot();
+
+    const top = this.__pageStack[this.__pageStack.length - 1];
+    if (top) {
+      top.controller.onViewWillDisappear?.();
+      top.controller.onViewDidDisappear?.();
+    }
+
+    const inst = await this.__createInstance(config, layers.pageLayer);
+    if (!inst) return;
+
+    inst.controller.onViewWillAppear?.(params);
+    inst.controller.onViewDidAppear?.();
+    inst.controller.onViewFocus?.();
+
+    this.__pageStack.push(inst);
   }
 
   async openPopup(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     this.ensureRoot();
-    // TODO: 实现 Popup 打开逻辑
+    const config = this.__getConfig(keyOrClass);
+    if (!config) {
+      ioc.logcat?.qin.ef("UIManager.openPopup: 未找到 UIConfig, key={0}", String(keyOrClass));
+      return;
+    }
+
+    const layers = this.ensureRoot();
+
+    const inst = await this.__createInstance(config, layers.popupLayer);
+    if (!inst) return;
+
+    inst.controller.onViewWillAppear?.(params);
+    inst.controller.onViewDidAppear?.();
+    inst.controller.onViewFocus?.();
+
+    this.__popupStack.push(inst);
   }
 
   async closeTopPopup(): Promise<void> {

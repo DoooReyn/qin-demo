@@ -14,7 +14,11 @@ export interface UIConfig {
   overlaySubtype?: UIOverlaySubtype;
 
   prefabPath: string;
-  controller: Constructor<IUIView>;
+  /**
+   * 视图控制脚本构造器
+   * 实际上应为继承自 Component 且实现 IUIView 的脚本，这里使用宽松类型，具体由调用方保证
+   */
+  controller: Constructor<any>;
 
   cachePolicy: UICachePolicy;
   cacheCapacity?: number;
@@ -60,6 +64,12 @@ export interface IUIManager extends IDependency {
 
   /** 初始化或获取 UIRoot 及各层级节点 */
   ensureRoot(): IUIRootLayers;
+
+  /** 注册单个 UI 配置 */
+  register(config: UIConfig): void;
+
+  /** 批量注册 UI 配置 */
+  registerMany(configs: UIConfig[]): void;
 
   /** 打开一级 Screen */
   openScreen(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;

@@ -73,12 +73,13 @@ export class Application {
 
       // 初始化 UI 管理器
       ioc.ui.ensureRoot();
-
-      // 通知应用启动完成
-      ioc.eventBus.app.publish(PRESET.EVENT.APP_AFTER_LAUNCHED);
+      ioc.eventBus.app.publish(PRESET.EVENT.APP_UI_ROOT_ENSURED);
 
       // 启动应用循环
       ioc.looper.start();
+
+      // 通知应用启动完成
+      ioc.eventBus.app.publish(PRESET.EVENT.APP_AFTER_LAUNCHED);
     });
 
     // 标记为初始化完成
