@@ -202,6 +202,25 @@ export class UIManager extends Dependency implements IUIManager {
     this.__pageStack.push(inst);
   }
 
+  async closePage(): Promise<void> {
+    if (this.__pageStack.length === 0) {
+      return;
+    }
+
+    const top = this.__pageStack.pop()!;
+    top.controller.onViewWillDisappear?.();
+    top.controller.onViewDidDisappear?.();
+    top.controller.onViewDisposed?.();
+    top.node.removeFromParent();
+
+    const next = this.__pageStack[this.__pageStack.length - 1];
+    if (next) {
+      next.controller.onViewWillAppear?.();
+      next.controller.onViewDidAppear?.();
+      next.controller.onViewFocus?.();
+    }
+  }
+
   async openPopup(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     this.ensureRoot();
     const config = this.__getConfig(keyOrClass);
@@ -284,6 +303,59 @@ export class UIManager extends Dependency implements IUIManager {
     }
   }
 
+  async clearPage(options?: { force?: boolean }): Promise<void> {
+    const force = options?.force === true;
+
+    if (force) {
+      // 暴力清栈：不触发生命周期，只移除节点
+      while (this.__pageStack.length > 0) {
+        const inst = this.__pageStack.pop()!;
+        inst.node.removeFromParent();
+      }
+
+      // 聚焦上一层的顶层视图：Screen
+      if (this.__screen) {
+        this.__screen.controller.onViewFocus?.();
+      }
+    } else {
+      // 正常清栈：执行完整的生命周期
+      while (this.__pageStack.length > 0) {
+        const inst = this.__pageStack.pop()!;
+        inst.controller.onViewWillDisappear?.();
+        inst.controller.onViewDidDisappear?.();
+        inst.controller.onViewDisposed?.();
+        inst.node.removeFromParent();
+      }
+    }
+  }
+
+  async clearPopup(options?: { force?: boolean }): Promise<void> {
+    const force = options?.force === true;
+
+    if (force) {
+      // 暴力清栈：不触发生命周期，只移除节点
+      while (this.__popupStack.length > 0) {
+        const inst = this.__popupStack.pop()!;
+        inst.node.removeFromParent();
+      }
+
+      // 聚焦上一层的顶层视图：Page 栈顶
+      const topPage = this.__pageStack[this.__pageStack.length - 1];
+      if (topPage) {
+        topPage.controller.onViewFocus?.();
+      }
+    } else {
+      // 正常清栈：执行完整的生命周期
+      while (this.__popupStack.length > 0) {
+        const inst = this.__popupStack.pop()!;
+        inst.controller.onViewWillDisappear?.();
+        inst.controller.onViewDidDisappear?.();
+        inst.controller.onViewDisposed?.();
+        inst.node.removeFromParent();
+      }
+    }
+  }
+
   async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     this.ensureRoot();
     // TODO: 显示 Overlay
@@ -302,18 +374,7 @@ export class UIManager extends Dependency implements IUIManager {
 
     // 其次回退 Page 栈
     if (this.__pageStack.length > 1) {
-      const top = this.__pageStack.pop()!;
-      top.controller.onViewWillDisappear?.();
-      top.controller.onViewDidDisappear?.();
-      top.controller.onViewDisposed?.();
-      top.node.removeFromParent();
-
-      const next = this.__pageStack[this.__pageStack.length - 1];
-      if (next) {
-        next.controller.onViewWillAppear?.();
-        next.controller.onViewDidAppear?.();
-        next.controller.onViewFocus?.();
-      }
+      await this.closePage();
       return;
     }
     // 若无 Page 可回退，则暂不处理 Screen，交由业务决定是否切换场景/Screen
