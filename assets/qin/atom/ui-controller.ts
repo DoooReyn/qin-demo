@@ -1,5 +1,5 @@
 import { mock } from "../ability";
-import { Atom } from "../atom";
+import { Atom } from "./atom";
 import { IUIView } from "../dependency/ui.typings";
 
 /**

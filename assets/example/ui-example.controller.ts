@@ -1,7 +1,6 @@
 import { _decorator } from "cc";
 
-import ioc from "../qin/ioc";
-import { UIController } from "../qin/extends/ui-controller";
+import { ioc, UIController } from "../qin";
 
 const { ccclass } = _decorator;
 

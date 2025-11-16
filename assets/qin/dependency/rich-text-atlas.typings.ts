@@ -1,7 +1,7 @@
 import { ImageAsset, SpriteFrame } from "cc";
 
 import { IDependency } from "./dependency.typings";
-import { IRichTextStyle } from "../atom/rich-text-atom";
+import { IRichTextStyle } from "../atom";
 
 /**
  * 富文本图集条目尺寸
