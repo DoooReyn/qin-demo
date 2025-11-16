@@ -74,6 +74,9 @@ export class UIManager extends Dependency implements IUIManager {
     const overlayLayer = this.__getOrCreateChild(uiRoot, "OverlayLayer");
 
     const popupMask = this.__getOrCreateChild(popupLayer, "PopupMask");
+    popupMask.active = false;
+    // 遮罩点击：根据栈顶弹窗配置决定是否关闭弹窗
+    popupMask.on(Node.EventType.TOUCH_END, this.__onPopupMaskClicked, this);
 
     const toastOverlayRoot = this.__getOrCreateChild(overlayLayer, "ToastOverlayRoot");
     const drawerOverlayRoot = this.__getOrCreateChild(overlayLayer, "DrawerOverlayRoot");
@@ -128,6 +131,61 @@ export class UIManager extends Dependency implements IUIManager {
     controller?.onViewCreated?.();
 
     return { config, node, controller };
+  }
+
+  /**
+   * 更新弹窗遮罩的可见性
+   */
+  private __updatePopupMask(): void {
+    if (!this.__layers) return;
+    const { popupMask: mask, popupLayer } = this.__layers;
+    const top = this.__popupStack[this.__popupStack.length - 1];
+
+    if (!top || !top.config.modal) {
+      mask.active = false;
+      return;
+    }
+
+    mask.active = true;
+    // 确保遮罩位于当前栈顶弹窗正下方
+    const topNode = top.node;
+    const topIndex = topNode.getSiblingIndex();
+    // 将遮罩插入到栈顶弹窗正下方（索引比弹窗小 1）
+    const targetIndex = Math.max(0, topIndex);
+    mask.setSiblingIndex(targetIndex);
+  }
+
+  /**
+   * 关闭并销毁一个栈元素：执行完整生命周期并移除节点
+   */
+  private __destroyStackItem(item: { config: UIConfig; node: Node; controller: IUIView }): void {
+    item.controller.onViewWillDisappear?.();
+    item.controller.onViewDidDisappear?.();
+    item.controller.onViewDisposed?.();
+    item.node.removeFromParent();
+  }
+
+  /**
+   * 截断栈到指定下标（包含 targetIndex），并为被移除元素执行完整生命周期
+   * 若 targetIndex 为 -1，则清空整个栈
+   */
+  private __truncateStackTo(stack: { config: UIConfig; node: Node; controller: IUIView }[], targetIndex: number): void {
+    const minLength = targetIndex < 0 ? 0 : targetIndex + 1;
+    while (stack.length > minLength) {
+      const inst = stack.pop()!;
+      this.__destroyStackItem(inst);
+    }
+  }
+
+  /**
+   * 弹窗遮罩点击回调
+   */
+  private async __onPopupMaskClicked() {
+    const top = this.__popupStack[this.__popupStack.length - 1];
+    if (!top) return;
+    if (top.config.closeOnMaskClick) {
+      await this.closeTopPopup();
+    }
   }
 
   /**
@@ -186,6 +244,24 @@ export class UIManager extends Dependency implements IUIManager {
 
     const layers = this.ensureRoot();
 
+    // 检查是否已在栈中存在相同配置的 Page
+    let existedIndex = -1;
+    for (let i = this.__pageStack.length - 1; i >= 0; i--) {
+      if (this.__pageStack[i].config === config) {
+        existedIndex = i;
+        break;
+      }
+    }
+
+    if (existedIndex >= 0) {
+      // A -> B -> C -> D -> B 场景：截断栈，使其形如 A -> B
+      this.__truncateStackTo(this.__pageStack, existedIndex);
+      const target = this.__pageStack[existedIndex];
+      // 已位于栈顶，不再执行 appear 生命周期，仅刷新焦点
+      target.controller.onViewFocus?.();
+      return;
+    }
+
     const top = this.__pageStack[this.__pageStack.length - 1];
     if (top) {
       top.controller.onViewWillDisappear?.();
@@ -231,6 +307,25 @@ export class UIManager extends Dependency implements IUIManager {
 
     const layers = this.ensureRoot();
 
+    // 检查是否已在栈中存在相同配置的弹窗
+    let existedIndex = -1;
+    for (let i = this.__popupStack.length - 1; i >= 0; i--) {
+      if (this.__popupStack[i].config === config) {
+        existedIndex = i;
+        break;
+      }
+    }
+
+    if (existedIndex >= 0) {
+      // A -> B -> C -> D -> B 场景：截断栈，使其形如 A -> B
+      this.__truncateStackTo(this.__popupStack, existedIndex);
+      this.__updatePopupMask();
+      const target = this.__popupStack[existedIndex];
+      // 已位于栈顶，无需再次插入，只需触发焦点回调
+      target.controller.onViewFocus?.();
+      return;
+    }
+
     const inst = await this.__createInstance(config, layers.popupLayer);
     if (!inst) return;
 
@@ -239,6 +334,7 @@ export class UIManager extends Dependency implements IUIManager {
     inst.controller.onViewFocus?.();
 
     this.__popupStack.push(inst);
+    this.__updatePopupMask();
   }
 
   async closeTopPopup(): Promise<void> {
@@ -247,10 +343,7 @@ export class UIManager extends Dependency implements IUIManager {
     }
 
     const top = this.__popupStack.pop()!;
-    top.controller.onViewWillDisappear?.();
-    top.controller.onViewDidDisappear?.();
-    top.controller.onViewDisposed?.();
-    top.node.removeFromParent();
+    this.__destroyStackItem(top);
 
     // 让新的栈顶弹窗获得焦点
     const next = this.__popupStack[this.__popupStack.length - 1];
@@ -259,6 +352,8 @@ export class UIManager extends Dependency implements IUIManager {
       next.controller.onViewDidAppear?.();
       next.controller.onViewFocus?.();
     }
+
+    this.__updatePopupMask();
   }
 
   async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
@@ -287,10 +382,7 @@ export class UIManager extends Dependency implements IUIManager {
     const inst = this.__popupStack[index];
     this.__popupStack.splice(index, 1);
 
-    inst.controller.onViewWillDisappear?.();
-    inst.controller.onViewDidDisappear?.();
-    inst.controller.onViewDisposed?.();
-    inst.node.removeFromParent();
+    this.__destroyStackItem(inst);
 
     // 若移除的是栈顶，则让新的栈顶获得焦点
     if (index === this.__popupStack.length) {
@@ -301,6 +393,8 @@ export class UIManager extends Dependency implements IUIManager {
         next.controller.onViewFocus?.();
       }
     }
+
+    this.__updatePopupMask();
   }
 
   async clearPage(options?: { force?: boolean }): Promise<void> {
@@ -354,6 +448,8 @@ export class UIManager extends Dependency implements IUIManager {
         inst.node.removeFromParent();
       }
     }
+
+    this.__updatePopupMask();
   }
 
   async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
