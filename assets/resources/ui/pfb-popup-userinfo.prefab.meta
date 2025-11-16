@@ -2,12 +2,12 @@
   "ver": "1.1.50",
   "importer": "prefab",
   "imported": true,
-  "uuid": "7288ab89-9c66-44c1-a1c3-c215012974fb",
+  "uuid": "660a4e80-d9aa-4365-beee-b4c56dd3f0cf",
   "files": [
     ".json"
   ],
   "subMetas": {},
   "userData": {
-    "syncNodeName": "pfb-main"
+    "syncNodeName": "pfb-popup-userinfo"
   }
 }

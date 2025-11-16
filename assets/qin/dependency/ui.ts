@@ -223,11 +223,65 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async closeTopPopup(): Promise<void> {
-    // TODO: 关闭栈顶弹窗
+    if (this.__popupStack.length === 0) {
+      return;
+    }
+
+    const top = this.__popupStack.pop()!;
+    top.controller.onViewWillDisappear?.();
+    top.controller.onViewDidDisappear?.();
+    top.controller.onViewDisposed?.();
+    top.node.removeFromParent();
+
+    // 让新的栈顶弹窗获得焦点
+    const next = this.__popupStack[this.__popupStack.length - 1];
+    if (next) {
+      next.controller.onViewWillAppear?.();
+      next.controller.onViewDidAppear?.();
+      next.controller.onViewFocus?.();
+    }
   }
 
   async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
-    // TODO: 关闭指定弹窗
+    if (this.__popupStack.length === 0) {
+      return;
+    }
+
+    const config = this.__getConfig(keyOrClass);
+    if (!config) {
+      ioc.logcat?.qin.ef("UIManager.closePopup: 未找到 UIConfig, key={0}", String(keyOrClass));
+      return;
+    }
+
+    let index = -1;
+    for (let i = this.__popupStack.length - 1; i >= 0; i--) {
+      if (this.__popupStack[i].config === config) {
+        index = i;
+        break;
+      }
+    }
+
+    if (index === -1) {
+      return;
+    }
+
+    const inst = this.__popupStack[index];
+    this.__popupStack.splice(index, 1);
+
+    inst.controller.onViewWillDisappear?.();
+    inst.controller.onViewDidDisappear?.();
+    inst.controller.onViewDisposed?.();
+    inst.node.removeFromParent();
+
+    // 若移除的是栈顶，则让新的栈顶获得焦点
+    if (index === this.__popupStack.length) {
+      const next = this.__popupStack[this.__popupStack.length - 1];
+      if (next) {
+        next.controller.onViewWillAppear?.();
+        next.controller.onViewDidAppear?.();
+        next.controller.onViewFocus?.();
+      }
+    }
   }
 
   async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
@@ -240,6 +294,28 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async back(): Promise<void> {
-    // TODO: 通用后退：优先关闭 Popup，再考虑 Page 回退
+    // 优先关闭栈顶弹窗
+    if (this.__popupStack.length > 0) {
+      await this.closeTopPopup();
+      return;
+    }
+
+    // 其次回退 Page 栈
+    if (this.__pageStack.length > 1) {
+      const top = this.__pageStack.pop()!;
+      top.controller.onViewWillDisappear?.();
+      top.controller.onViewDidDisappear?.();
+      top.controller.onViewDisposed?.();
+      top.node.removeFromParent();
+
+      const next = this.__pageStack[this.__pageStack.length - 1];
+      if (next) {
+        next.controller.onViewWillAppear?.();
+        next.controller.onViewDidAppear?.();
+        next.controller.onViewFocus?.();
+      }
+      return;
+    }
+    // 若无 Page 可回退，则暂不处理 Screen，交由业务决定是否切换场景/Screen
   }
 }
