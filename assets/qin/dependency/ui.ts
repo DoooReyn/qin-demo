@@ -21,6 +21,16 @@ export class UIManager extends Dependency implements IUIManager {
   private __pageStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
   private __popupStack: { config: UIConfig; node: Node; controller: IUIView }[] = [];
 
+  /** Page 缓存（按 key，一次仅缓存一个实例） */
+  private __pageCache: Map<string, { config: UIConfig; node: Node; controller: IUIView }> = new Map();
+  private __pageCacheLRU: string[] = [];
+  private readonly __pageCacheCapacity = 3;
+
+  /** Popup 缓存（按 key，一次仅缓存一个实例） */
+  private __popupCache: Map<string, { config: UIConfig; node: Node; controller: IUIView }> = new Map();
+  private __popupCacheLRU: string[] = [];
+  private readonly __popupCacheCapacity = 5;
+
   get layers(): IUIRootLayers | null {
     return this.__layers;
   }
@@ -166,6 +176,91 @@ export class UIManager extends Dependency implements IUIManager {
     return { config, node, controller };
   }
 
+  // === Page / Popup 缓存相关工具 ===
+
+  /** 将 Page 实例放入缓存（根据 cachePolicy 决定是否缓存与淘汰） */
+  private __cachePageInstance(inst: { config: UIConfig; node: Node; controller: IUIView }): void {
+    const { config } = inst;
+    if (config.cachePolicy === "DestroyImmediately") {
+      inst.controller.onViewDisposed?.();
+      inst.node.destroy();
+      return;
+    }
+
+    const key = config.key;
+    this.__pageCache.set(key, inst);
+
+    // 更新 LRU：先移除旧位置，再推入队尾
+    this.__pageCacheLRU = this.__pageCacheLRU.filter((k) => k !== key);
+    this.__pageCacheLRU.push(key);
+
+    // 仅 LRU 需要淘汰；Persistent 不淘汰
+    if (config.cachePolicy === "LRU") {
+      while (this.__pageCacheLRU.length > this.__pageCacheCapacity) {
+        const evictKey = this.__pageCacheLRU.shift();
+        if (!evictKey) break;
+        const evicted = this.__pageCache.get(evictKey);
+        if (evicted) {
+          evicted.controller.onViewDisposed?.();
+          evicted.node.destroy();
+          this.__pageCache.delete(evictKey);
+        }
+      }
+    }
+  }
+
+  /** 从 Page 缓存中取出实例（若存在） */
+  private __takePageFromCache(config: UIConfig): { config: UIConfig; node: Node; controller: IUIView } | null {
+    const key = config.key;
+    const inst = this.__pageCache.get(key) ?? null;
+    if (!inst) return null;
+
+    this.__pageCache.delete(key);
+    this.__pageCacheLRU = this.__pageCacheLRU.filter((k) => k !== key);
+    return inst;
+  }
+
+  /** 将 Popup 实例放入缓存（根据 cachePolicy 决定是否缓存与淘汰） */
+  private __cachePopupInstance(inst: { config: UIConfig; node: Node; controller: IUIView }): void {
+    const { config } = inst;
+    if (config.cachePolicy === "DestroyImmediately") {
+      inst.controller.onViewDisposed?.();
+      inst.node.destroy();
+      return;
+    }
+
+    const key = config.key;
+    this.__popupCache.set(key, inst);
+
+    // 更新 LRU：先移除旧位置，再推入队尾
+    this.__popupCacheLRU = this.__popupCacheLRU.filter((k) => k !== key);
+    this.__popupCacheLRU.push(key);
+
+    if (config.cachePolicy === "LRU") {
+      while (this.__popupCacheLRU.length > this.__popupCacheCapacity) {
+        const evictKey = this.__popupCacheLRU.shift();
+        if (!evictKey) break;
+        const evicted = this.__popupCache.get(evictKey);
+        if (evicted) {
+          evicted.controller.onViewDisposed?.();
+          evicted.node.destroy();
+          this.__popupCache.delete(evictKey);
+        }
+      }
+    }
+  }
+
+  /** 从 Popup 缓存中取出实例（若存在） */
+  private __takePopupFromCache(config: UIConfig): { config: UIConfig; node: Node; controller: IUIView } | null {
+    const key = config.key;
+    const inst = this.__popupCache.get(key) ?? null;
+    if (!inst) return null;
+
+    this.__popupCache.delete(key);
+    this.__popupCacheLRU = this.__popupCacheLRU.filter((k) => k !== key);
+    return inst;
+  }
+
   /**
    * 更新弹窗遮罩的可见性
    */
@@ -209,13 +304,21 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   /**
-   * 关闭并销毁一个栈元素：执行完整生命周期并移除节点
+   * 关闭并移除一个栈元素：执行完整生命周期，并根据 cachePolicy 决定销毁或缓存
    */
   private __destroyStackItem(item: { config: UIConfig; node: Node; controller: IUIView }): void {
     item.controller.onViewWillDisappear?.();
     item.controller.onViewDidDisappear?.();
-    item.controller.onViewDisposed?.();
-    item.node.removeFromParent();
+
+    if (item.config.type === "Page") {
+      this.__cachePageInstance(item);
+    } else if (item.config.type === "Popup") {
+      this.__cachePopupInstance(item);
+    } else {
+      // 其他类型暂不缓存
+      item.controller.onViewDisposed?.();
+      item.node.destroy();
+    }
   }
 
   /**
@@ -279,7 +382,7 @@ export class UIManager extends Dependency implements IUIManager {
       await this.__playExitTween(old.config, old.node);
       old.controller.onViewDidDisappear?.();
       old.controller.onViewDisposed?.();
-      old.node.removeFromParent();
+      old.node.destroy();
       this.__screen = null;
     }
 
@@ -288,7 +391,6 @@ export class UIManager extends Dependency implements IUIManager {
 
     inst.controller.onViewWillAppear?.(params);
     await this.__playEnterTween(config, inst.node);
-    inst.node.uiOpacity.destroy();
     inst.controller.onViewDidAppear?.();
 
     this.__screen = inst;
@@ -329,7 +431,13 @@ export class UIManager extends Dependency implements IUIManager {
       top.controller.onViewDidDisappear?.();
     }
 
-    const inst = await this.__createInstance(config, layers.pageLayer);
+    // 优先从缓存中复用实例
+    let inst = this.__takePageFromCache(config);
+    if (inst) {
+      layers.pageLayer.addChild(inst.node);
+    } else {
+      inst = await this.__createInstance(config, layers.pageLayer);
+    }
     if (!inst) return;
 
     inst.controller.onViewWillAppear?.(params);
@@ -349,8 +457,9 @@ export class UIManager extends Dependency implements IUIManager {
     top.controller.onViewWillDisappear?.();
     await this.__playExitTween(top.config, top.node);
     top.controller.onViewDidDisappear?.();
-    top.controller.onViewDisposed?.();
-    top.node.removeFromParent();
+
+    // 根据缓存策略决定销毁或缓存
+    this.__cachePageInstance(top);
 
     const next = this.__pageStack[this.__pageStack.length - 1];
     if (next) {
@@ -389,7 +498,13 @@ export class UIManager extends Dependency implements IUIManager {
       return;
     }
 
-    const inst = await this.__createInstance(config, layers.popupLayer);
+    // 优先从缓存中复用实例
+    let inst = this.__takePopupFromCache(config);
+    if (inst) {
+      layers.popupLayer.addChild(inst.node);
+    } else {
+      inst = await this.__createInstance(config, layers.popupLayer);
+    }
     if (!inst) return;
 
     inst.controller.onViewWillAppear?.(params);
@@ -410,8 +525,8 @@ export class UIManager extends Dependency implements IUIManager {
     top.controller.onViewWillDisappear?.();
     await this.__playExitTween(top.config, top.node);
     top.controller.onViewDidDisappear?.();
-    top.controller.onViewDisposed?.();
-    top.node.removeFromParent();
+
+    this.__cachePopupInstance(top);
 
     // 让新的栈顶弹窗获得焦点
     const next = this.__popupStack[this.__popupStack.length - 1];
@@ -453,8 +568,8 @@ export class UIManager extends Dependency implements IUIManager {
     inst.controller.onViewWillDisappear?.();
     await this.__playExitTween(inst.config, inst.node);
     inst.controller.onViewDidDisappear?.();
-    inst.controller.onViewDisposed?.();
-    inst.node.removeFromParent();
+
+    this.__cachePopupInstance(inst);
 
     // 若移除的是栈顶，则让新的栈顶获得焦点
     if (index === this.__popupStack.length) {
@@ -469,61 +584,37 @@ export class UIManager extends Dependency implements IUIManager {
     this.__updatePopupMask();
   }
 
-  async clearPage(options?: { force?: boolean }): Promise<void> {
-    const force = options?.force === true;
+  async clearPage(): Promise<void> {
+    // 清栈：执行完整的生命周期，并根据缓存策略处理
+    while (this.__pageStack.length > 0) {
+      const inst = this.__pageStack.pop()!;
+      inst.controller.onViewWillDisappear?.();
+      inst.controller.onViewDidDisappear?.();
+      this.__cachePageInstance(inst);
+    }
 
-    if (force) {
-      // 暴力清栈：不触发生命周期，只移除节点
-      while (this.__pageStack.length > 0) {
-        const inst = this.__pageStack.pop()!;
-        inst.controller.onViewDisposed?.();
-        inst.node.removeFromParent();
-      }
-
-      // 聚焦上一层的顶层视图：Screen
-      if (this.__screen) {
-        this.__screen.controller.onViewFocus?.();
-      }
-    } else {
-      // 正常清栈：执行完整的生命周期
-      while (this.__pageStack.length > 0) {
-        const inst = this.__pageStack.pop()!;
-        inst.controller.onViewWillDisappear?.();
-        inst.controller.onViewDidDisappear?.();
-        inst.controller.onViewDisposed?.();
-        inst.node.removeFromParent();
-      }
+    // 聚焦上一层的顶层视图：Screen
+    if (this.__screen) {
+      this.__screen.controller.onViewFocus?.();
     }
   }
 
-  async clearPopup(options?: { force?: boolean }): Promise<void> {
-    const force = options?.force === true;
-
-    if (force) {
-      // 暴力清栈：不触发生命周期，只移除节点
-      while (this.__popupStack.length > 0) {
-        const inst = this.__popupStack.pop()!;
-        inst.controller.onViewDisposed?.();
-        inst.node.removeFromParent();
-      }
-
-      // 聚焦上一层的顶层视图：Page 栈顶
-      const topPage = this.__pageStack[this.__pageStack.length - 1];
-      if (topPage) {
-        topPage.controller.onViewFocus?.();
-      }
-    } else {
-      // 正常清栈：执行完整的生命周期
-      while (this.__popupStack.length > 0) {
-        const inst = this.__popupStack.pop()!;
-        inst.controller.onViewWillDisappear?.();
-        inst.controller.onViewDidDisappear?.();
-        inst.controller.onViewDisposed?.();
-        inst.node.removeFromParent();
-      }
+  async clearPopup(): Promise<void> {
+    // 清栈：执行完整的生命周期，并根据缓存策略处理
+    while (this.__popupStack.length > 0) {
+      const inst = this.__popupStack.pop()!;
+      inst.controller.onViewWillDisappear?.();
+      inst.controller.onViewDidDisappear?.();
+      this.__cachePopupInstance(inst);
     }
 
     this.__updatePopupMask();
+
+    // 聚焦上一层的顶层视图：Page 栈顶
+    const topPage = this.__pageStack[this.__pageStack.length - 1];
+    if (topPage) {
+      topPage.controller.onViewFocus?.();
+    }
   }
 
   async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {

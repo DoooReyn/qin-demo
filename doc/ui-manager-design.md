@@ -357,16 +357,13 @@ closeX(...)
 
 - **clearPage / clearPopup 的动画策略**：
 
-  - `force = true`：
+  - 目前实现中不再区分 `force` 模式，`clearPage` / `clearPopup` 始终按“正常关闭流程”遍历整个栈：
 
-    - 不播放进入/退出动画；
-    - 不调用 `onViewWillDisappear` / `onViewDidDisappear`；
-    - 但仍会对每个视图调用一次 `onViewDisposed()`，再销毁节点；
-    - 清空 Popup 后会尝试对下层 Page 栈顶执行 `onViewFocus()`，清空 Page 后会对 Screen 执行 `onViewFocus()`。
-
-  - `force = false`：
-    - 按正常关闭流程遍历栈顶到栈底：
-      - `onViewWillDisappear()` → **不播放动画（当前实现）** → `onViewDidDisappear()` → `onViewDisposed()` → 销毁节点。
+    - 依次对栈内视图执行：`onViewWillDisappear()` →（无进/退动画）→ `onViewDidDisappear()`；
+    - 然后根据各自的 `cachePolicy`：
+      - `DestroyImmediately`：调用 `onViewDisposed()` 后销毁节点；
+      - `LRU` / `Persistent`：将实例交给缓存管理（在缓存淘汰时调用 `onViewDisposed()` 并销毁节点）。
+    - 清空 Popup 后，若 Page 栈仍有元素，则对 Page 栈顶调用 `onViewFocus()`；清空 Page 后，若 Screen 仍存在，则对 Screen 调用 `onViewFocus()`。
 
 ---
 
