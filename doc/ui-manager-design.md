@@ -668,7 +668,259 @@ UIManager 内部会为每个层级构造一个 [UIStackLayerManager][ui-stack-la
 
 ---
 
+## 16. UIController 与视图绑定
+
+### 16.1 UIController 职责
+
+- 继承自 `Atom`，实现 [IUIView][ui-typings] 接口，接入框架生命周期：
+  - `onViewCreated / onViewWillAppear / onViewDidAppear / onViewWillDisappear / onViewDidDisappear / onViewDisposed / onViewFocus`
+- 不直接管理层级、动画和缓存，这些由 [UIManager][ui-dependency] + [UIScreenManager][ui-stack-layer-manager] + [UIStackLayerManager][ui-stack-layer-manager] 处理。
+- 聚焦在：
+  - 视图内部节点/组件的结构化绑定。
+  - 处理交互事件（按钮点击等）。
+  - 在需要时调用 [UIManager][ui-dependency] 进行导航（例如 [ioc.ui.openPopup(...)][ui-dependency]、[ioc.ui.back()][ui-dependency]）。
+
+框架提供了泛型基类：
+
+```ts
+export abstract class UIController<M extends UIBindingMap = {}> extends Atom implements IUIView {
+  /** 根据绑定配置自动生成的引用字典 */
+  protected refs!: BindingRefs<M>;
+
+  onViewCreated(): void {
+    const spec = (this.constructor as unknown as { UiSpec: UIBindingMap }).UiSpec ?? {};
+    this.refs = this.__bindView(this.node, spec) as BindingRefs<M>;
+  }
+
+  // 其它 IUIView 生命周期方法由子类按需覆写
+}
+```
+
+- 每个具体的 Controller 通过静态字段 `UiSpec` 声明绑定描述。
+- [UIController][ui-controller] 在 [onViewCreated][ui-typings] 中自动执行绑定，并将结果写入 `this.refs`。
+
+---
+
+### 16.2 绑定配置：UiSpec
+
+每个 [UIController][ui-controller] 子类通过 `static UiSpec` 声明自身需要的节点/组件：
+
+```ts
+protected static readonly UiSpec: UIBindingMap = {
+  // ...
+};
+```
+
+`UiSpec` 支持两种等价写法：
+
+#### 16.2.1 对象形式
+
+```ts
+title: {
+  kind: "component",
+  path: "Body/Title",
+  component: Label,
+},
+btnClose: {
+  kind: "component",
+  path: "Body/Button",
+  component: Button,
+},
+rootNode: {
+  kind: "node",
+  path: ".",
+},
+```
+
+- `kind: "node"`：绑定到 `Node`。
+- `kind: "component"`：绑定到单个组件。
+- `kind: "components"`：绑定到多个组件数组。
+- `path`：从控制器根节点出发的相对路径，使用 `"A/B/C"` 形式逐级 `getChildByName` 解析。
+- `required?: boolean`：
+  - 默认 `true`：找不到对应节点/组件时会打 warning 日志。
+  - `false`：找不到时返回 `null` 或空数组，不打 warning。
+
+#### 16.2.2 元组形式（推荐）
+
+为了简化书写，可以用更轻量的元组写法：
+
+```ts
+// 只要节点：Node | null
+root: ["."] as const; // 等价于 { path: ".", kind: "node" }
+header: ["Header", "node"] as const;
+
+// 单个组件：InstanceType<Ctor> | null
+title: ["Body/Title", "component", Label] as const;
+btnClose: ["Body/Button", "component", Button] as const;
+
+// 多个组件：InstanceType<Ctor>[]
+items: ["ListRoot", "components", ItemComponent] as const;
+```
+
+元组语义：
+
+- `[path]` 或 `[path, "node"]` → `Node | null`
+- `[path, "component", Ctor]` → `InstanceType<Ctor> | null`
+- `[path, "components", Ctor]` → `InstanceType<Ctor>[]`
+
+对象形式与元组形式可以混用，本质上由 UIController 内部统一规范成 [UIBindingSpec][ui-controller]。
+
+**补充：前缀匹配语法（仅对 `kind: "components"` 生效）**
+
+- 当 `path` 最后一段以 `#` 结尾时，会将该段视为“名字前缀”，在其父节点下收集所有以此前缀开头的子节点，然后在这些子节点上批量获取组件。
+- 示例：
+
+  ```ts
+  protected static readonly UiSpec = {
+    // ListRoot 下有 Item0、Item1、Item2 等多个子节点
+    items: ["ListRoot/Item#", "components", ItemComponent],
+  } as const satisfies UIBindingMap;
+
+  // 绑定结果：this.refs.items 的类型为 ItemComponent[]
+  ```
+
+- 若父节点路径解析失败：
+  - `required !== false` 时会打印一条 warning 日志。
+  - 结果为 `[]`。
+
+---
+
+### 16.3 BindingRefs 与 this.refs
+
+[UIController][ui-controller] 使用泛型参数和条件类型自动推导 `refs` 的类型：
+
+```ts
+export type BindingRefs<M extends UIBindingMap> = {
+  [K in keyof M]: BindingResult<M[K]>;
+};
+```
+
+- 对象形式：
+  - `{ kind: "node", ... }` → `Node | null`
+  - `{ kind: "component", component: Label }` → `Label | null`
+- 元组形式：
+  - `["Title"]` → `Node | null`
+  - `["Title", "component", Label]` → `Label | null`
+  - `["Root", "components", ItemComponent]` → `ItemComponent[]`
+
+因此在 Controller 中：
+
+```ts
+protected static readonly UiSpec = {
+  btnOpen: ["Button", "component", Button],
+  labTitle: ["Title", "component", Label],
+} as const satisfies UIBindingMap;
+
+onViewWillAppear(params?: any): void {
+  super.onViewWillAppear(params);
+
+  this.refs.labTitle!.string = "主页面";
+  this.refs.btnOpen!.node.on(PRESET.EVENT.CLICK, this.__onClickOpen, this);
+}
+```
+
+- `this.refs.btnOpen` 的类型推导为 `Button | null`。
+- `this.refs.labTitle` 的类型推导为 `Label | null`。
+- 绑定成功与否统一由 path 解析逻辑控制，建议在使用前判 null 或使用非空断言（`!`）在逻辑上保证。
+
+在 [onViewDisposed()][ui-typings] 中，基类会将 `this.refs` 重置，以避免持有悬挂引用。
+
+---
+
+### 16.4 示例：Page 控制器
+
+```ts
+import { Button, Label } from "cc";
+import { ioc, mock, PRESET, RichTextAtom, UIBindingMap, UIController } from "../../qin";
+import { UiPopupUserinfoController } from "./ui-popup-userinfo.controller";
+
+/**
+ * 主页面
+ */
+@mock.decorator.ccclass("UiPageMainController")
+export class UiPageMainController extends UIController<typeof UiPageMainController.UiSpec> {
+  protected static readonly UiSpec = {
+    btnOpen: ["Button", "component", Button],
+    labTitle: ["Title", "component", Label],
+    richText: ["HyperText", "component", RichTextAtom],
+  } as const satisfies UIBindingMap;
+
+  onViewWillAppear(params?: any): void {
+    super.onViewWillAppear(params);
+
+    this.refs.labTitle!.string = "主页面";
+    this.refs.btnOpen!.node.on(PRESET.EVENT.CLICK, this.__doOpenUserInfoPopup, this);
+    ioc.logcat.qin.d(this.refs.richText?.text);
+  }
+
+  onViewWillDisappear(): void {
+    this.refs.btnOpen?.node.off(PRESET.EVENT.CLICK, this.__doOpenUserInfoPopup, this);
+    super.onViewWillDisappear();
+  }
+
+  private __doOpenUserInfoPopup() {
+    ioc.ui.openPopup(UiPopupUserinfoController);
+  }
+}
+```
+
+- `UiSpec` 只在类内部声明一次，类型参数直接使用 `typeof UiPageMainController.UiSpec`。
+- [onViewWillAppear][ui-popup-userinfo] 中通过 `refs` 使用已经绑定好的组件引用。
+- 点击按钮时通过 [UIManager][ui-dependency] 打开 Popup。
+
+---
+
+### 16.5 示例：Popup 控制器
+
+```ts
+import { Label, Button } from "cc";
+import { mock, PRESET, UIBindingMap, UIController } from "../../qin";
+
+@mock.decorator.ccclass("UiPopupUserinfoController")
+export class UiPopupUserinfoController extends UIController<typeof UiPopupUserinfoController.UiSpec> {
+  protected static readonly UiSpec = {
+    labTitle: ["Body/Title", "component", Label],
+    btnClose: ["Body/Button", "component", Button],
+  } as const satisfies UIBindingMap;
+
+  onViewWillAppear(params?: any): void {
+    super.onViewWillAppear(params);
+    this.refs.labTitle!.string = "用户信息";
+    this.refs.btnClose!.node.on(PRESET.EVENT.CLICK, this.back, this);
+  }
+
+  onViewWillDisappear(): void {
+    this.refs.btnClose?.node.off(PRESET.EVENT.CLICK, this.back, this);
+    super.onViewWillDisappear();
+  }
+}
+```
+
+- 通过 `UiSpec` 绑定标题与关闭按钮。
+- Popup 的关闭行为当前使用通用 [back()][ui-dependency]：
+  - 若当前有 Popup 栈顶，[UIManager.back()][ui-dependency] 会优先关闭栈顶 Popup。
+  - 若无 Popup，则尝试回退 Page（详见前文「back 行为」章节）。
+
+---
+
+### 16.6 小结
+
+- [UIController][ui-controller] 提供了**声明式视图绑定**能力：
+  - 一处声明 `static UiSpec`。
+  - 框架自动在 [onViewCreated][ui-typings] 中完成查找/绑定。
+- 对象形式适合复杂配置（包含 `required` 等字段），元组形式适合日常快速绑定。
+- 强类型通过 [BindingRefs<typeof UiSpec>][ui-controller] 自动推导，避免手写 `refs` 类型。
+
+> 未来如果引入 [closeSelf()][ui-controller] 等更高级的控制器导航 API，可以在本节补充一小段说明，约定控制器级别的“关闭自己”语义与 UIManager 的对应关系。
+
+---
+
+## 完成这段文档后，可以把 todo 里的「ui-doc-sync」标记为 completed。
+
+[ui-controller]: ../assets/qin/atom/ui-controller.ts
 [ui-dependency]: ../assets/qin/dependency/ui.ts
 [ui-stack-layer-manager]: ../assets/qin/dependency/ui-stack-layer-manager.ts
 [ui-typings]: ../assets/qin/dependency/ui.typings.ts
 [ui-view-cache]: ../assets/qin/dependency/ui-view-cache.ts
+[ui-popup-userinfo]: ../assets/entry/view/ui-popup-userinfo.controller.ts
+[ui-page-main]: ../assets/entry/view/ui-page-main.controller.ts
