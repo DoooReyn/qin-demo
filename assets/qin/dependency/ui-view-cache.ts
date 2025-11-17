@@ -61,4 +61,13 @@ export class UIViewCache {
     this.__map.clear();
     this.__lru = [];
   }
+
+  /** 调试用：返回当前缓存快照 */
+  getDebugSnapshot(): { size: number; keys: string[]; lru: string[] } {
+    return {
+      size: this.__map.size,
+      keys: Array.from(this.__map.keys()),
+      lru: [...this.__lru],
+    };
+  }
 }

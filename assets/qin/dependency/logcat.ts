@@ -147,6 +147,10 @@ export class Logcat extends Dependency implements ILogcat {
     return this.acquire("red");
   }
 
+  get ui() {
+    return this.acquire("ui");
+  }
+
   clear(): void {
     this.__container.clear();
   }

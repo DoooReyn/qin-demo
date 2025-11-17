@@ -392,4 +392,42 @@ export class UIManager extends Dependency implements IUIManager {
 
     this.__backing = false;
   }
+
+  /**
+   * 调试：打印当前 Screen / Page / Popup 栈信息
+   */
+  debugLogStacks(tag: string = "UIManager"): void {
+    const screenKey = this.__screen?.config.key ?? null;
+    const pageKeys = this.__pageManager?.getStackKeys() ?? [];
+    const popupKeys = this.__popupManager?.getStackKeys() ?? [];
+
+    const payload = {
+      tag,
+      screen: screenKey,
+      pages: pageKeys,
+      popups: popupKeys,
+    };
+
+    ioc.logcat.ui.d("[UI Debug] stacks: ", payload);
+  }
+
+  /**
+   * 调试：打印当前 Page / Popup 缓存状态
+   */
+  debugLogCaches(tag: string = "UIManager"): void {
+    const pageCache = this.__pageManager?.getCacheSnapshot();
+    const popupCache = this.__popupManager?.getCacheSnapshot();
+
+    const payload = {
+      tag,
+      pageCache,
+      popupCache,
+    };
+
+    if (ioc.logcat?.qin?.df) {
+      ioc.logcat.qin.df("[UI Debug] caches: {0}", JSON.stringify(payload));
+    } else {
+      console.log("[UI Debug] caches", payload);
+    }
+  }
 }

@@ -58,6 +58,16 @@ export class UIStackLayerManager {
     }
   }
 
+  /** 调试用：返回当前栈中的视图 key 列表（从底到顶） */
+  getStackKeys(): string[] {
+    return this.stack.map((inst) => inst.config.key);
+  }
+
+  /** 调试用：返回缓存快照 */
+  getCacheSnapshot(): { size: number; keys: string[]; lru: string[] } {
+    return this.cache.getDebugSnapshot();
+  }
+
   protected async instantiate(config: UIConfig): Promise<IUIViewInstance | null> {
     const cached = this.cache.take(config);
     if (cached) {
