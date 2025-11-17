@@ -36,17 +36,47 @@ export interface ComponentsBindingSpec<T = any> extends BaseBindingSpec {
 /** 绑定配置 */
 export type UIBindingSpec = NodeBindingSpec | ComponentBindingSpec | ComponentsBindingSpec;
 
-/** 绑定表：key -> 绑定配置 */
-export type UIBindingMap = Record<string, UIBindingSpec>;
+/**
+ * 绑定条目：
+ * - 对象形式：{ path, kind, component? }
+ * - 元组形式：
+ *   - [path] 或 [path, "node"]
+ *   - [path, "component", ComponentCtor]
+ *   - [path, "components", ComponentCtor]
+ */
+export type UIBindingEntry =
+  | UIBindingSpec
+  | [path: string]
+  | [path: string, kind: "node"]
+  | [path: string, kind: "component", component: new (...args: any[]) => any]
+  | [path: string, kind: "components", component: new (...args: any[]) => any];
 
-/** 根据绑定配置推导绑定结果类型 */
-export type BindingResult<S extends UIBindingSpec> = S extends ComponentBindingSpec<infer C>
-  ? C | null
-  : S extends ComponentsBindingSpec<infer C>
-  ? C[]
-  : S extends NodeBindingSpec
-  ? Node | null
-  : unknown;
+/** 绑定表：key -> 绑定配置或元组 */
+export type UIBindingMap = Record<string, UIBindingEntry>;
+
+/** 根据绑定配置推导绑定结果类型（支持对象与元组两种形式） */
+export type BindingResult<S extends UIBindingEntry> =
+  // 对象形式：component / components / node
+  S extends ComponentBindingSpec<infer C>
+    ? C | null
+    : S extends ComponentsBindingSpec<infer C>
+    ? C[]
+    : S extends NodeBindingSpec
+    ? Node | null
+    : // 元组形式：[path] / [path, 'node']
+    S extends [string] | [string, "node"]
+    ? Node | null
+    : // 元组形式：[path, 'component', Ctor]
+    S extends [string, "component", infer Ctor]
+    ? Ctor extends new (...args: any[]) => infer I
+      ? I | null
+      : unknown
+    : // 元组形式：[path, 'components', Ctor]
+    S extends [string, "components", infer Ctor]
+    ? Ctor extends new (...args: any[]) => infer I
+      ? I[]
+      : unknown
+    : unknown;
 
 /** 根据绑定表推导最终引用字典类型 */
 export type BindingRefs<M extends UIBindingMap> = {
@@ -96,7 +126,23 @@ export abstract class UIController<M extends UIBindingMap = {}> extends Atom imp
     const result: Record<string, unknown> = {};
 
     for (const key of Object.keys(spec)) {
-      const conf = spec[key];
+      const entry = spec[key];
+
+      // 支持元组与对象两种写法，统一规范为对象配置
+      let conf: UIBindingSpec;
+      if (Array.isArray(entry)) {
+        const [path, kindOrUndefined, component] = entry as any[];
+        const kind = (kindOrUndefined ?? "node") as UIBindingKind;
+        if (kind === "node") {
+          conf = { kind: "node", path };
+        } else if (kind === "component") {
+          conf = { kind: "component", path, component: component as any };
+        } else {
+          conf = { kind: "components", path, component: component as any };
+        }
+      } else {
+        conf = entry;
+      }
       const required = conf.required ?? true;
 
       // 1. 路径解析到节点
