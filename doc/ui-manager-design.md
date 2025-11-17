@@ -927,3 +927,151 @@ export class UiPopupUserinfoController extends UIController<typeof UiPopupUserin
 [ui-view-cache]: ../assets/qin/dependency/ui-view-cache.ts
 [ui-popup-userinfo]: ../assets/entry/view/ui-popup-userinfo.controller.ts
 [ui-page-main]: ../assets/entry/view/ui-page-main.controller.ts
+
+---
+
+## 17. UI 错误与异常策略
+
+本节汇总 UI 管理相关的典型错误场景，以及当前实现中的日志与处理策略，方便排查问题与统一预期。
+
+### 17.1 配置相关错误
+
+- **UIConfig 未找到**
+
+  - 位置：`UIManager.__fetchConfig(keyOrClass, source)`。
+  - 行为：
+
+    ```ts
+    const config = this.__getConfig(keyOrClass);
+    if (!config) {
+      ioc.logcat?.qin.wf("UIManager.{0}: 未找到 UIConfig, key={1}", source, name);
+    }
+    ```
+
+  - 影响：
+    - 上层 `openScreen/openPage/openPopup/closePage/closePopup` 会在 `if (config) { ... }` 分支中提前返回，**不会进行任何 UI 打开/关闭操作**。
+    - 不抛异常，业务可以根据 log 排查配置问题。
+
+- **Prefab 加载失败**
+
+  - 位置：`UIManager.__createInstance(config, parent)`。
+  - 行为：
+
+    ```ts
+    const prefab = await ioc.loader?.loadPrefab(config.prefabPath);
+    if (!prefab) {
+      ioc.logcat?.qin.ef("UIManager.__createInstance: 预制体加载失败 path={0}", config.prefabPath);
+      return null;
+    }
+    ```
+
+  - 影响：
+    - 返回 `null`，调用方（`UIScreenManager` / `UIStackLayerManager`）不会将该视图加入栈或作为当前 Screen。
+    - 导航调用本身仍然 resolve，框架不会崩溃。
+
+### 17.2 绑定相关错误
+
+绑定逻辑集中在 [UIController][ui-controller] 的私有方法 `__bindView(root, spec)` 中。
+
+- **路径解析失败（节点未找到）**
+
+  - 场景：
+    - 普通路径：`path` 对应的节点不存在，例如 `"Body/Title"` 拼写错误。
+    - 或者 `kind: "nodes"` + `xxx#` 前缀语法中，父节点路径不存在。
+  - 行为：
+
+    ```ts
+    if (!node) {
+      if (required) {
+        ioc.logcat.ui.w(`解析绑定配置: 节点未找到, key=${key}, path=${conf.path}`);
+      }
+      result[key] = conf.kind === "components" || conf.kind === "nodes" ? [] : null;
+      continue;
+    }
+    ```
+
+    ```ts
+    if (!parentNode) {
+      if (required) {
+        ioc.logcat.ui.w(`解析绑定配置: 索引节点未找到, key=${key}, path=${conf.path}`);
+      }
+      result[key] = [];
+      continue;
+    }
+    ```
+
+  - 影响：
+    - `kind: "node" | "component"`：绑定结果为 `null`。
+    - `kind: "nodes" | "components"`：绑定结果为 `[]`。
+    - 不抛异常，仅通过 `ioc.logcat.ui` 打日志提示。
+
+- **组件未找到**
+
+  - 场景：节点存在，但指定组件类型未挂载，例如指定了 `Label`，实际节点上没有该组件。
+  - 行为：
+
+    ```ts
+    case "component": {
+      result[key] = node.getComponent(conf.component) ?? null;
+      if (result[key] == null && required) {
+        ioc.logcat.ui.w(`解析绑定配置: 组件未找到, key=${key}, path=${conf.path}`);
+      }
+      break;
+    }
+
+    case "components": {
+      result[key] = node.getComponents(conf.component);
+      if ((result[key] as Component[]).length === 0 && required) {
+        ioc.logcat.ui.w(`解析绑定配置: 组件未找到, key=${key}, path=${conf.path}`);
+      }
+      break;
+    }
+    ```
+
+  - 影响：
+    - `component`：绑定结果为 `null`。
+    - `components`：绑定结果为 `[]`。
+    - 同样不抛异常，仅记录 warning 日志。
+
+> 建议：控制器在使用 `this.refs.xxx` 时，应根据需要判空或使用非空断言：
+>
+> - 日常业务代码可以：`this.refs.btnOpen?.node.on(...)`。
+> - 对“必须存在”的关键节点，可以在开发阶段允许 `this.refs.xxx!`，通过日志快速发现配置/Prefab 问题。
+
+### 17.3 框架前置条件与运行时约束
+
+- **UIRoot 未就绪（硬前置条件）**
+
+  - 位置：`UIManager.ensureRoot()`。
+  - 行为：
+
+    ```ts
+    if (!launcher || !launcher.root) {
+      throw new Error("UIManager.ensureRoot: launcher.root 未就绪，请在场景初始化完成后使用 UI 系统");
+    }
+    ```
+
+  - 影响：
+    - 这是少数会直接抛异常的场景，用于保护初始化流程。
+    - 项目中应在场景/根节点就绪后，再调用 `ensureRoot` / 启动 UI。
+
+- **back 调用防抖与重入保护**
+
+  - 位置：`UIManager.back()`。
+  - 行为：
+
+    ```ts
+    if (this.__backing) {
+      ioc.logcat?.qin.wf("UIManager.back: 返回中，请稍后重试");
+      return;
+    }
+    this.__backing = true;
+    // ... 执行关闭 Popup / Page 的逻辑 ...
+    this.__backing = false;
+    ```
+
+  - 影响：
+    - 避免玩家连续触发返回键导致重复关闭或状态错乱。
+    - 第二次及之后的调用会被忽略，并打印一条 warning 级别的日志。
+
+---
