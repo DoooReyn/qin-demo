@@ -765,18 +765,21 @@ items: ["ListRoot", "components", ItemComponent] as const;
 
 对象形式与元组形式可以混用，本质上由 UIController 内部统一规范成 [UIBindingSpec][ui-controller]。
 
-**补充：前缀匹配语法（仅对 `kind: "components"` 生效）**
+**补充：前缀匹配语法（仅对 `kind: "nodes"` 生效）**
 
-- 当 `path` 最后一段以 `#` 结尾时，会将该段视为“名字前缀”，在其父节点下收集所有以此前缀开头的子节点，然后在这些子节点上批量获取组件。
+- 当 `path` 最后一段以 `#` 结尾时，会将该段视为“名字前缀”，在其父节点下收集所有以此前缀开头的子节点，并将这些子节点组成 `Node[]` 绑定到 `refs`。
 - 示例：
 
   ```ts
   protected static readonly UiSpec = {
     // ListRoot 下有 Item0、Item1、Item2 等多个子节点
-    items: ["ListRoot/Item#", "components", ItemComponent],
+    itemNodes: {
+      kind: "nodes",
+      path: "ListRoot/Item#",
+    },
   } as const satisfies UIBindingMap;
 
-  // 绑定结果：this.refs.items 的类型为 ItemComponent[]
+  // 绑定结果：this.refs.itemNodes 的类型为 Node[]
   ```
 
 - 若父节点路径解析失败：

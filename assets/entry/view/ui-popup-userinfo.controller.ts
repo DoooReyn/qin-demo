@@ -1,5 +1,5 @@
 import { Label, Button } from "cc";
-import { mock, PRESET, UIBindingMap, UIController } from "../../qin";
+import { ioc, mock, PRESET, UIBindingMap, UIController } from "../../qin";
 
 /**
  * 用户信息弹窗
@@ -9,12 +9,15 @@ export class UiPopupUserinfoController extends UIController<typeof UiPopupUserin
   protected static readonly UiSpec = {
     labTitle: ["Body/Title", "component", Label],
     btnClose: ["Body/Button", "component", Button],
+    keyNodes: ["Body/K#", "nodes"],
+    valNodes: ["Body/V#", "nodes"],
   } as const satisfies UIBindingMap;
 
   onViewWillAppear(params?: any): void {
     super.onViewWillAppear(params);
     this.refs.labTitle.string = "用户信息";
     this.refs.btnClose.node.on(PRESET.EVENT.CLICK, this.back, this);
+    ioc.logcat.ui.d(this.refs.keyNodes.map((v) => v.name).join("|"), this.refs.valNodes.map((v) => v.name).join("|"));
   }
 
   onViewWillDisappear(): void {

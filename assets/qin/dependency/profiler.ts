@@ -11,7 +11,7 @@ import { IProfiler } from "./profiler.typings";
 @Injectable({ name: "Profiler", priority: 150 })
 export class Profiler extends Dependency implements IProfiler {
   /** 是否输出详细信息 */
-  private __verbose: boolean = false;
+  private __verbose: boolean = true;
   /** 当前纹理映射 */
   private __texturesMap: Map<number, Texture2D> = new Map();
   /** 纹理日志记录 */
@@ -149,6 +149,8 @@ export class Profiler extends Dependency implements IProfiler {
    * 监控纹理数量
    */
   private __monitorTextures() {
+    if (!this.__verbose || !ioc.environment.isDev) return;
+
     const that = this;
     // @ts-ignore
     const construct: any = Texture2D.prototype._createTexture;
@@ -199,7 +201,8 @@ export class Profiler extends Dependency implements IProfiler {
           `开关: ${dam.enabled ? "On" : "Off"}`,
           `当前图集数量: ${dam.atlasCount}`,
           `最大图集数量: ${dam.maxAtlasCount}`,
-          `最大纹理尺寸: ${dam.maxFrameSize}x${dam.maxFrameSize}`,
+          `单图集的尺寸: ${dam.textureSize}x${dam.textureSize}`,
+          `可入图集的最大纹理尺寸: ${dam.maxFrameSize}x${dam.maxFrameSize}`,
         ].join("\n");
       });
     }
@@ -211,14 +214,14 @@ export class Profiler extends Dependency implements IProfiler {
    * @param hash 纹理哈希值
    */
   private __appendTextureLog(header: string, hash: number) {
-    if (this.__verbose) {
-      const head = `${header}<${hash}>`;
-      const stack = [head, this.getErrorStack(6)].join("\n");
-      if (this.__texturesLog.has(hash)) {
-        this.__texturesLog.get(hash)!.push(stack);
-      } else {
-        this.__texturesLog.set(hash, [stack]);
-      }
+    if (!this.__verbose || !ioc.environment.isDev) return;
+
+    const head = `${header}<${hash}>`;
+    const stack = [head, this.getErrorStack(6)].join("\n");
+    if (this.__texturesLog.has(hash)) {
+      this.__texturesLog.get(hash)!.push(stack);
+    } else {
+      this.__texturesLog.set(hash, [stack]);
     }
   }
 
@@ -333,6 +336,32 @@ export class Profiler extends Dependency implements IProfiler {
     if (this.__texturesLog.has(hash)) {
       this.__texturesLog.get(hash)!.forEach((v) => ioc.logcat.qin.d(v));
     }
+  }
+
+  public getTextureCache(hash: number): Texture2D | undefined {
+    return this.__texturesMap.get(hash);
+  }
+
+  public dumpTextures() {
+    if (!ioc.environment.isDev) return;
+
+    let textures = [] as { hash: number; width: number; height: number; memoryUsage: string }[];
+    let totalMemory = 0;
+    this.__texturesMap.forEach((v) => {
+      const memory = (v.width * v.height * 4) / 1024;
+      textures.push({
+        hash: v.getHash(),
+        width: v.width,
+        height: v.height,
+        memoryUsage: memory.toFixed(2) + "K",
+      });
+      totalMemory += memory / 1024;
+    });
+    ioc.logcat.qin.d(`占用内存: ${totalMemory.toFixed(2)}M`);
+    console.table(
+      textures.sort((a, b) => b.width * b.height - a.width * a.height),
+      ["hash", "width", "height", "memoryUsage"]
+    );
   }
 
   public reload() {

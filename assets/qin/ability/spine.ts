@@ -68,7 +68,6 @@ export const spine: ISpine = {
     if (slotIndex === -1)
       return ioc.logcat.res.ef("骨骼动画: {0} 未找到皮肤 {1} 的插槽 {2}", skl.name, skinName, slotName);
 
-    console.log(skin, slotName, skin.attachments);
     const attachment = skin.getAttachment(slotIndex, attachmentName);
     if (!attachment)
       return ioc.logcat.res.ef("骨骼动画: {0} 未找到皮肤 {1} 的附件 {2}", skl.name, skinName, attachmentName);

@@ -61,6 +61,16 @@ export interface IProfiler extends IDependency {
    */
   dumpTextureLog(hashOrTexture: number | Texture2D): void;
 
+  /**
+   * 获取纹理缓存
+   * @param hash 纹理哈希值
+   * @returns 纹理缓存
+   */
+  getTextureCache(hash: number): Texture2D | undefined;
+
+  /** 打印纹理列表 */
+  dumpTextures(): void;
+
   /** 重载网页 */
   reload(): void;
 

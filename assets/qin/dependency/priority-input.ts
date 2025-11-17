@@ -98,7 +98,7 @@ class CCPriorityInput extends EventTarget implements ICCPriorityInput {
   }
 
   public onThrowException() {
-    console.error(new Error("Handle input event failed."));
+    ioc.logcat.qin.e(new Error("Handle input event failed."));
   }
 }
 
