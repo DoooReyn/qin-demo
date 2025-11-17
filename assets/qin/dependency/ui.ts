@@ -1,4 +1,4 @@
-import { Node, Prefab, instantiate, UITransform, screen, Widget, Graphics } from "cc";
+import { Node, instantiate, UITransform, screen, Widget, Graphics } from "cc";
 
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
@@ -14,15 +14,18 @@ import { UIStackLayerManager, UIScreenManager } from "./ui-stack-layer-manager";
 export class UIManager extends Dependency implements IUIManager {
   /** UIRoot 与各层级节点 */
   private __layers: IUIRootLayers | null = null;
-
   /** UI 配置表占位（后续可接配置表或代码注册） */
   private __registry: Map<string, UIConfig> = new Map();
-
+  /** Screen 管理器 */
   private __screenManager: UIScreenManager | null = null;
+  /** Page 管理器 */
   private __pageManager: UIStackLayerManager | null = null;
+  /** Popup 管理器 */
   private __popupManager: UIStackLayerManager | null = null;
+  /** 是否正在后退 */
   private __backing = false;
 
+  /** UIRoot 及各层级节点 */
   get layers(): IUIRootLayers | null {
     return this.__layers;
   }
@@ -42,6 +45,7 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 注册单个 UI 配置
+   * @param config UI 配置
    */
   register(config: UIConfig): void {
     if (this.__registry.has(config.key)) {
@@ -53,6 +57,7 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 批量注册 UI 配置
+   * @param configs UI 配置列表
    */
   registerMany(configs: UIConfig[]): void {
     configs.forEach((cfg) => this.register(cfg));
@@ -60,6 +65,7 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 初始化或获取 UIRoot 及各层级节点
+   * @returns UIRoot 及各层级节点
    */
   ensureRoot(): IUIRootLayers {
     if (this.__layers) {
@@ -122,6 +128,9 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 工具：根据名称获取或创建子节点
+   * @param parent 父节点
+   * @param name 子节点名称
+   * @returns 子节点
    */
   private __getOrCreateChild(parent: Node, name: string): Node {
     let child = parent.getChildByName(name);
@@ -146,6 +155,8 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 播放进入动画（若配置了 enterTweenLib）
+   * @param config UI 配置
+   * @param node 视图节点
    */
   private async __playEnterTween(config: UIConfig, node: Node): Promise<void> {
     const lib = config.enterTweenLib;
@@ -157,6 +168,8 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 播放退出动画（若配置了 exitTweenLib）
+   * @param config UI 配置
+   * @param node 视图节点
    */
   private async __playExitTween(config: UIConfig, node: Node): Promise<void> {
     const lib = config.exitTweenLib;
@@ -166,6 +179,12 @@ export class UIManager extends Dependency implements IUIManager {
     await ioc.tweener.play(node, lib, { duration: 0.3 });
   }
 
+  /**
+   * 创建 UI 实例
+   * @param config UI 配置
+   * @param parent 父节点
+   * @returns UI 实例
+   */
   private async __createInstance(
     config: UIConfig,
     parent: Node
@@ -243,6 +262,8 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 根据 key 或 controller 构造器解析 UIConfig
+   * @param keyOrClass UIConfig key 或 controller 构造器
+   * @returns UIConfig
    */
   private __getConfig(keyOrClass: string | (new (...args: any[]) => IUIView)): UIConfig | undefined {
     if (typeof keyOrClass === "string") {
@@ -258,6 +279,12 @@ export class UIManager extends Dependency implements IUIManager {
     return undefined;
   }
 
+  /**
+   * 根据 key 或 controller 构造器解析 UIConfig
+   * @param keyOrClass UIConfig key 或 controller 构造器
+   * @param source 调用来源
+   * @returns UIConfig
+   */
   private __fetchConfig(keyOrClass: string | (new (...args: any[]) => IUIView), source: string): UIConfig | undefined {
     const name = typeof keyOrClass === "string" ? keyOrClass : keyOrClass.name;
     const config = this.__getConfig(keyOrClass);
@@ -383,6 +410,7 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 调试：打印当前 Screen / Page / Popup 栈信息
+   * @param tag 标识
    */
   debugLogStacks(tag: string = "UIManager"): void {
     const screenKey = this.__screenManager.currentKey ?? null;
@@ -401,6 +429,7 @@ export class UIManager extends Dependency implements IUIManager {
 
   /**
    * 调试：打印当前 Page / Popup 缓存状态
+   * @param tag 标识
    */
   debugLogCaches(tag: string = "UIManager"): void {
     const pageCache = this.__pageManager?.getCacheSnapshot();
