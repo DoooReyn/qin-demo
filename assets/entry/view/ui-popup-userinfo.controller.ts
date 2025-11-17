@@ -1,28 +1,23 @@
 import { Label, Button } from "cc";
 import { mock, PRESET, UIBindingMap, UIController } from "../../qin";
 
-/** 绑定配置 */
-const UiSpec = {
-  title: {
-    kind: "component",
-    path: "Title",
-    component: Label,
-  },
-  btnClose: {
-    kind: "component",
-    path: "Button",
-    component: Button,
-  },
-} satisfies UIBindingMap;
-
 /**
  * 用户信息弹窗
  */
 @mock.decorator.ccclass("UiPopupUserinfoController")
-export class UiPopupUserinfoController extends UIController<typeof UiSpec> {
-  defineBindings() {
-    return UiSpec;
-  }
+export class UiPopupUserinfoController extends UIController<typeof UiPopupUserinfoController.UiSpec> {
+  protected static readonly UiSpec = {
+    title: {
+      kind: "component",
+      path: "Title",
+      component: Label,
+    },
+    btnClose: {
+      kind: "component",
+      path: "Button",
+      component: Button,
+    },
+  } satisfies UIBindingMap;
 
   onViewWillAppear(params?: any): void {
     super.onViewWillAppear(params);

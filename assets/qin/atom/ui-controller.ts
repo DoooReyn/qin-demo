@@ -57,20 +57,15 @@ export type BindingRefs<M extends UIBindingMap> = {
  * UI 控制器基类
  * - 继承 Atom，接入框架的生命周期
  * - 实现 IUIView 接口，提供空实现，方便子类按需覆写
- * - 支持通过 defineBindings 声明式绑定节点/组件，结果存放于 this._refs
+ * - 支持通过 static UiSpec 声明式绑定节点/组件，结果存放于 this._refs
  */
 @mock.decorator.ccclass("UIController")
 export abstract class UIController<M extends UIBindingMap = {}> extends Atom implements IUIView {
   /** 视图引用字典（根据绑定配置自动生成） */
   protected refs!: BindingRefs<M>;
 
-  /** 子类可覆写，返回绑定配置表 */
-  protected defineBindings(): M {
-    return {} as M;
-  }
-
   onViewCreated(): void {
-    const spec = this.defineBindings();
+    const spec = (this.constructor as unknown as { UiSpec: UIBindingMap }).UiSpec ?? {};
     this.refs = this.__bindView(this.node, spec) as BindingRefs<M>;
   }
 

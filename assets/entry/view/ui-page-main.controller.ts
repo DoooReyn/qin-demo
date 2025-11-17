@@ -2,33 +2,28 @@ import { Button, Label } from "cc";
 import { ioc, mock, PRESET, RichTextAtom, UIBindingMap, UIController } from "../../qin";
 import { UiPopupUserinfoController } from "./ui-popup-userinfo.controller";
 
-/** 绑定配置 */
-const UiSpec = {
-  btnOpen: {
-    kind: "component",
-    path: "Button",
-    component: Button,
-  },
-  title: {
-    kind: "component",
-    path: "Title",
-    component: Label,
-  },
-  hyperText: {
-    kind: "component",
-    path: "HyperText",
-    component: RichTextAtom,
-  },
-} satisfies UIBindingMap;
-
 /**
  * 主页面
  */
 @mock.decorator.ccclass("UiPageMainController")
-export class UiPageMainController extends UIController<typeof UiSpec> {
-  defineBindings() {
-    return UiSpec;
-  }
+export class UiPageMainController extends UIController<typeof UiPageMainController.UiSpec> {
+  protected static readonly UiSpec = {
+    btnOpen: {
+      kind: "component",
+      path: "Button",
+      component: Button,
+    },
+    title: {
+      kind: "component",
+      path: "Title",
+      component: Label,
+    },
+    hyperText: {
+      kind: "component",
+      path: "HyperText",
+      component: RichTextAtom,
+    },
+  } satisfies UIBindingMap;
 
   onViewWillAppear(params?: any): void {
     super.onViewWillAppear(params);
