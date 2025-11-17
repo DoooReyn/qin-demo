@@ -304,6 +304,8 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async closeScreen() {
+    this.__popupManager.clear();
+    this.__pageManager.clear();
     return this.__screenManager.close();
   }
 
