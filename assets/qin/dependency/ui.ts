@@ -21,9 +21,22 @@ export class UIManager extends Dependency implements IUIManager {
   private __screen: { config: UIConfig; node: Node; controller: IUIView } | null = null;
   private __pageManager: PageLayerManager;
   private __popupManager: PopupLayerManager;
+  private __backing = false;
 
   get layers(): IUIRootLayers | null {
     return this.__layers;
+  }
+
+  async onAttach(): Promise<void> {
+    // 懒初始化 UIRoot，由 ensureRoot 负责真正创建
+    return super.onAttach();
+  }
+
+  async onDetach(): Promise<void> {
+    // TODO: 清理所有 UI / 释放资源（后续实现）
+    this.__layers = null;
+    this.__registry.clear();
+    return super.onDetach();
   }
 
   /**
@@ -44,18 +57,6 @@ export class UIManager extends Dependency implements IUIManager {
     configs.forEach((cfg) => this.register(cfg));
   }
 
-  async onAttach(): Promise<void> {
-    // 懒初始化 UIRoot，由 ensureRoot 负责真正创建
-    return super.onAttach();
-  }
-
-  async onDetach(): Promise<void> {
-    // TODO: 清理所有 UI / 释放资源（后续实现）
-    this.__layers = null;
-    this.__registry.clear();
-    return super.onDetach();
-  }
-
   /**
    * 初始化或获取 UIRoot 及各层级节点
    */
@@ -70,21 +71,18 @@ export class UIManager extends Dependency implements IUIManager {
     }
 
     const root = launcher.root;
-    const uiRoot = this.__getOrCreateChild(root, "UIRoot");
-    const screenLayer = this.__getOrCreateChild(uiRoot, "ScreenLayer");
-    const pageLayer = this.__getOrCreateChild(uiRoot, "PageLayer");
-    const popupLayer = this.__getOrCreateChild(uiRoot, "PopupLayer");
-    const overlayLayer = this.__getOrCreateChild(uiRoot, "OverlayLayer");
-
-    const popupMask = this.__getOrCreateChild(popupLayer, "PopupMask");
+    const uiRoot = this.__getOrCreateChild(root, "ui-root");
+    const screenLayer = this.__getOrCreateChild(uiRoot, "ui-screen");
+    const pageLayer = this.__getOrCreateChild(uiRoot, "ui-page");
+    const popupLayer = this.__getOrCreateChild(uiRoot, "ui-popup");
+    const overlayLayer = this.__getOrCreateChild(uiRoot, "ui-overlay");
+    const popupMask = this.__getOrCreateChild(popupLayer, "ui-popup-mask");
     popupMask.active = false;
-    // 遮罩点击：根据栈顶弹窗配置决定是否关闭弹窗
     popupMask.on(Node.EventType.TOUCH_END, this.__onPopupMaskClicked, this);
-
-    const toastOverlayRoot = this.__getOrCreateChild(overlayLayer, "ToastOverlayRoot");
-    const drawerOverlayRoot = this.__getOrCreateChild(overlayLayer, "DrawerOverlayRoot");
-    const marqueeOverlayRoot = this.__getOrCreateChild(overlayLayer, "MarqueeOverlayRoot");
-    const guideOverlayRoot = this.__getOrCreateChild(overlayLayer, "GuideOverlayRoot");
+    const toastOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-toast-overlay");
+    const drawerOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-drawer-overlay");
+    const marqueeOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-marquee-overlay");
+    const guideOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-guide-overlay");
 
     this.__layers = {
       root: uiRoot,
@@ -116,8 +114,9 @@ export class UIManager extends Dependency implements IUIManager {
     if (!child) {
       child = new Node(name);
       const trans = child.acquire(UITransform);
-      trans.setContentSize(screen.windowSize);
       const widget = child.acquire(Widget);
+      parent.addChild(child);
+      trans.setContentSize(screen.windowSize);
       widget.left = 0;
       widget.right = 0;
       widget.top = 0;
@@ -126,7 +125,6 @@ export class UIManager extends Dependency implements IUIManager {
       widget.isAlignRight = true;
       widget.isAlignTop = true;
       widget.isAlignBottom = true;
-      parent.addChild(child);
       widget.updateAlignment();
     }
     return child;
@@ -164,7 +162,7 @@ export class UIManager extends Dependency implements IUIManager {
       return null;
     }
 
-    const node = instantiate(prefab as Prefab);
+    const node = instantiate(prefab);
     parent.addChild(node);
 
     const controller = node.acquire(config.controller);
@@ -217,36 +215,6 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   /**
-   * 关闭并移除一个栈元素：执行完整生命周期，并根据 cachePolicy 决定销毁或缓存
-   */
-  private __destroyStackItem(item: { config: UIConfig; node: Node; controller: IUIView }): void {
-    item.controller.onViewWillDisappear?.();
-    item.controller.onViewDidDisappear?.();
-
-    if (item.config.type === "Page") {
-      this.__pageManager.cacheInstance(item);
-    } else if (item.config.type === "Popup") {
-      this.__popupManager.cacheInstance(item);
-    } else {
-      // 其他类型暂不缓存
-      item.controller.onViewDisposed?.();
-      item.node.destroy();
-    }
-  }
-
-  /**
-   * 截断栈到指定下标（包含 targetIndex），并为被移除元素执行完整生命周期
-   * 若 targetIndex 为 -1，则清空整个栈
-   */
-  private __truncateStackTo(stack: { config: UIConfig; node: Node; controller: IUIView }[], targetIndex: number): void {
-    const minLength = targetIndex < 0 ? 0 : targetIndex + 1;
-    while (stack.length > minLength) {
-      const inst = stack.pop()!;
-      this.__destroyStackItem(inst);
-    }
-  }
-
-  /**
    * 弹窗遮罩点击回调
    */
   private async __onPopupMaskClicked() {
@@ -268,7 +236,7 @@ export class UIManager extends Dependency implements IUIManager {
       return this.__registry.get(keyOrClass);
     }
 
-    for (const cfg of this.__registry.values()) {
+    for (const [_, cfg] of this.__registry) {
       if (cfg.controller === keyOrClass) {
         return cfg;
       }
@@ -277,17 +245,20 @@ export class UIManager extends Dependency implements IUIManager {
     return undefined;
   }
 
+  private __fetchConfig(keyOrClass: string | (new (...args: any[]) => IUIView), source: string): UIConfig | undefined {
+    const name = typeof keyOrClass === "string" ? keyOrClass : keyOrClass.name;
+    const config = this.__getConfig(keyOrClass);
+    if (!config) {
+      ioc.logcat?.qin.wf("UIManager.{0}: 未找到 UIConfig, key={1}", source, name);
+    }
+    return config;
+  }
+
   // === 以下为导航与显示接口骨架，后续将根据设计文档补充具体逻辑 ===
 
   async openScreen(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    this.ensureRoot();
-    const config = this.__getConfig(keyOrClass);
-    if (!config) {
-      ioc.logcat?.qin.ef("UIManager.openScreen: 未找到 UIConfig, key={0}", String(keyOrClass));
-      return;
-    }
-
-    const layers = this.ensureRoot();
+    const config = this.__fetchConfig(keyOrClass, "openScreen");
+    if (!config) return;
 
     if (this.__screen) {
       const old = this.__screen;
@@ -299,7 +270,7 @@ export class UIManager extends Dependency implements IUIManager {
       this.__screen = null;
     }
 
-    const inst = await this.__createInstance(config, layers.screenLayer);
+    const inst = await this.__createInstance(config, this.__layers.screenLayer);
     if (!inst) return;
 
     inst.controller.onViewWillAppear?.(params);
@@ -310,51 +281,33 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async openPage(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    this.ensureRoot();
-    const config = this.__getConfig(keyOrClass);
-    if (!config) {
-      ioc.logcat?.qin.ef("UIManager.openPage: 未找到 UIConfig, key={0}", String(keyOrClass));
-      return;
-    }
+    const config = this.__fetchConfig(keyOrClass, "openPage");
+    if (!config) return;
 
     await this.__pageManager.open(config, params);
   }
 
-  async closePage(): Promise<void> {
-    this.__pageManager.close();
+  async closePage(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
+    if (this.__pageManager.size == 0) return;
+
+    const config = this.__fetchConfig(keyOrClass, "closePage");
+    if (!config) return;
+
+    await this.__pageManager.closeBy(config);
 
     if (this.__pageManager.size == 0) {
       this.__screen?.controller.onViewFocus?.();
     }
   }
 
-  async openPopup(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    this.ensureRoot();
-    const config = this.__getConfig(keyOrClass);
-    if (!config) {
-      ioc.logcat?.qin.ef("UIManager.openPopup: 未找到 UIConfig, key={0}", String(keyOrClass));
-      return;
+  async closeTopPage(): Promise<void> {
+    if (this.__pageManager.size == 0) return;
+
+    await this.__pageManager.close();
+
+    if (this.__pageManager.size == 0) {
+      this.__screen?.controller.onViewFocus?.();
     }
-
-    await this.__popupManager.open(config, params);
-    this.__updatePopupMask();
-  }
-
-  async closeTopPopup(): Promise<void> {
-    await this.__popupManager.close();
-    this.__updatePopupMask();
-  }
-
-  async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
-    const config = this.__getConfig(keyOrClass);
-    if (!config) {
-      ioc.logcat?.qin.ef("UIManager.closePopup: 未找到 UIConfig, key={0}", String(keyOrClass));
-      return;
-    }
-
-    await this.__popupManager.closeBy(config);
-
-    this.__updatePopupMask();
   }
 
   async clearPage(): Promise<void> {
@@ -365,6 +318,28 @@ export class UIManager extends Dependency implements IUIManager {
     if (this.__screen) {
       this.__screen.controller.onViewFocus?.();
     }
+  }
+
+  async openPopup(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
+    const config = this.__fetchConfig(keyOrClass, "openPopup");
+    if (!config) return;
+
+    await this.__popupManager.open(config, params);
+    this.__updatePopupMask();
+  }
+
+  async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
+    const config = this.__fetchConfig(keyOrClass, "closePopup");
+    if (!config) return;
+
+    await this.__popupManager.closeBy(config);
+
+    this.__updatePopupMask();
+  }
+
+  async closeTopPopup(): Promise<void> {
+    await this.__popupManager.close();
+    this.__updatePopupMask();
   }
 
   async clearPopup(): Promise<void> {
@@ -379,7 +354,6 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    this.ensureRoot();
     // TODO: 显示 Overlay
   }
 
@@ -388,17 +362,23 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async back(): Promise<void> {
-    // 优先关闭栈顶弹窗
-    if (this.__popupManager.size > 0) {
-      await this.closeTopPopup();
+    if (this.__backing) {
+      ioc.logcat?.qin.wf("UIManager.back: 返回中，请稍后重试");
       return;
     }
 
-    // 其次回退 Page 栈
-    if (this.__pageManager.size > 1) {
-      await this.closePage();
-      return;
+    this.__backing = true;
+
+    if (this.__popupManager.size > 0) {
+      // 优先关闭栈顶弹窗
+      await this.closeTopPopup();
+    } else if (this.__pageManager.size > 1) {
+      // 其次回退 Page 栈
+      await this.closeTopPage();
+    } else {
+      // 若无 Page 可回退，则暂不处理 Screen，交由业务决定是否切换场景/Screen
     }
-    // 若无 Page 可回退，则暂不处理 Screen，交由业务决定是否切换场景/Screen
+
+    this.__backing = false;
   }
 }

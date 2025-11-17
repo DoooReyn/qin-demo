@@ -77,7 +77,7 @@ export interface IUIManager extends IDependency {
   openPage(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
 
   /** 关闭当前顶部 Page */
-  closePage(): Promise<void>;
+  closeTopPage(): Promise<void>;
 
   /** 清空所有 Page 栈 */
   clearPage(): Promise<void>;
