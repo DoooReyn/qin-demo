@@ -2,7 +2,7 @@ import { Node, Tween, tween } from "cc";
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
 import { ITweener, ITweenArgs, ITweenEntry } from "./tweener.typings";
-import { might } from "../ability/might";
+import { might, mock } from "../ability";
 import {
   PopupInTw,
   PopupOutTw,
@@ -78,13 +78,12 @@ export class Tweener extends Dependency implements ITweener {
     return false;
   }
 
+  @mock.logExecutionTime("Tweener.play")
   async play(node: Node, lib: string, args?: ITweenArgs): Promise<void> {
-    console.time(`播放缓动动画: ${lib}`);
     const [_, err] = await might.async(this.__play(node, lib, args));
     if (err) {
       ioc.logcat?.tweener.e(`缓动动画: ${lib} 执行失败`, err);
     }
-    console.timeEnd(`播放缓动动画: ${lib}`);
   }
 
   pause(node: Node, lib: string): void {
