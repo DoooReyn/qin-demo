@@ -16,13 +16,12 @@ export class UiPageMainController extends UIController<typeof UiPageMainControll
   onViewWillAppear(params?: any): void {
     super.onViewWillAppear(params);
 
-    this.refs.labTitle.string = "主页面";
-    this.refs.btnOpen.node.on(PRESET.EVENT.CLICK, this.__doOpenUserInfoPopup, this);
-    ioc.logcat.qin.d(this.refs.richText.text);
+    if (this.refs.labTitle) this.refs.labTitle.string = "主页面";
+    this.refs.btnOpen?.node.on(PRESET.EVENT.CLICK, this.__doOpenUserInfoPopup, this);
   }
 
   onViewWillDisappear(): void {
-    this.refs.btnOpen.node.off(PRESET.EVENT.CLICK, this.back, this);
+    this.refs.btnOpen?.node.off(PRESET.EVENT.CLICK, this.__doOpenUserInfoPopup, this);
 
     super.onViewWillDisappear();
   }

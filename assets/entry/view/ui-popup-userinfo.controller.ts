@@ -15,13 +15,15 @@ export class UiPopupUserinfoController extends UIController<typeof UiPopupUserin
 
   onViewWillAppear(params?: any): void {
     super.onViewWillAppear(params);
-    this.refs.labTitle.string = "用户信息";
-    this.refs.btnClose.node.on(PRESET.EVENT.CLICK, this.back, this);
-    ioc.logcat.ui.d(this.refs.keyNodes.map((v) => v.name).join("|"), this.refs.valNodes.map((v) => v.name).join("|"));
+    if (this.refs.labTitle) this.refs.labTitle.string = "用户信息";
+    this.refs.btnClose?.node.on(PRESET.EVENT.CLICK, this.back, this);
+    if (this.refs.valNodes && this.refs.keyNodes) {
+      ioc.logcat.ui.d(this.refs.keyNodes.map((v) => v.name).join("|"), this.refs.valNodes.map((v) => v.name).join("|"));
+    }
   }
 
   onViewWillDisappear(): void {
-    this.refs.btnClose.node.off(PRESET.EVENT.CLICK, this.back, this);
+    this.refs.btnClose?.node.off(PRESET.EVENT.CLICK, this.back, this);
     super.onViewWillDisappear();
   }
 }
