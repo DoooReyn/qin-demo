@@ -73,6 +73,12 @@ export interface IUIManager extends IDependency {
   /** 打开一级 Screen */
   openScreen(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
 
+  /** 关闭一级 Screen */
+  closeScreen(): Promise<void>;
+
+  /** 清空所有 Screen */
+  clearScreen(): void;
+
   /** 打开二级 Page */
   openPage(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
 

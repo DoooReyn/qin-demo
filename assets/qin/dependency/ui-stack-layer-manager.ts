@@ -197,3 +197,68 @@ export class UIStackLayerManager {
     this.cache.clear();
   }
 }
+
+/**
+ * Screen 管理：单实例，无栈，始终 DestroyImmediately
+ */
+export class UIScreenManager {
+  private __current: IUIViewInstance | null = null;
+
+  constructor(
+    private readonly layerNode: Node,
+    private readonly playEnter: UILayerPlayEnter,
+    private readonly playExit: UILayerPlayExit,
+    private readonly createInstance: UILayerCreateInstance
+  ) {}
+
+  get current(): IUIViewInstance | null {
+    return this.__current;
+  }
+
+  get currentKey(): string | undefined {
+    return this.__current?.config.key;
+  }
+
+  async open(config: UIConfig, params?: any): Promise<void> {
+    const old = this.__current;
+    if (old) {
+      old.controller.onViewWillDisappear?.();
+      await this.playExit(old.config, old.node);
+      old.controller.onViewDidDisappear?.();
+      old.controller.onViewDisposed?.();
+      old.node.destroy();
+      this.__current = null;
+    }
+
+    const inst = await this.createInstance(config, this.layerNode);
+    if (!inst) return;
+
+    inst.controller.onViewWillAppear?.(params);
+    await this.playEnter(config, inst.node, params);
+    inst.controller.onViewDidAppear?.();
+
+    this.__current = inst;
+  }
+
+  async close(force: boolean = false) {
+    const current = this.__current;
+    if (current) {
+      current.controller.onViewWillDisappear?.();
+      if (!force) {
+        await this.playExit(current.config, current.node);
+      }
+      current.controller.onViewDidDisappear?.();
+      current.controller.onViewDisposed?.();
+      current.node.destroy();
+      this.__current = null;
+    }
+  }
+
+  focus(): void {
+    this.__current?.controller.onViewFocus?.();
+  }
+
+  destroy() {
+    this.close(true);
+  }
+}

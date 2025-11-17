@@ -5,7 +5,7 @@ import { Dependency } from "./dependency";
 import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
 import { PRESET } from "../preset";
 import { colors } from "../ability";
-import { UIStackLayerManager } from "./ui-stack-layer-manager";
+import { UIStackLayerManager, UIScreenManager } from "./ui-stack-layer-manager";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -18,24 +18,25 @@ export class UIManager extends Dependency implements IUIManager {
   /** UI 配置表占位（后续可接配置表或代码注册） */
   private __registry: Map<string, UIConfig> = new Map();
 
-  private __screen: { config: UIConfig; node: Node; controller: IUIView } | null = null;
-  private __pageManager: UIStackLayerManager;
-  private __popupManager: UIStackLayerManager;
+  private __screenManager: UIScreenManager | null = null;
+  private __pageManager: UIStackLayerManager | null = null;
+  private __popupManager: UIStackLayerManager | null = null;
   private __backing = false;
 
   get layers(): IUIRootLayers | null {
     return this.__layers;
   }
 
-  async onAttach(): Promise<void> {
-    // 懒初始化 UIRoot，由 ensureRoot 负责真正创建
-    return super.onAttach();
-  }
-
   async onDetach(): Promise<void> {
-    // TODO: 清理所有 UI / 释放资源（后续实现）
-    this.__layers = null;
     this.__registry.clear();
+    this.__popupManager?.destroy();
+    this.__pageManager?.destroy();
+    this.__screenManager?.destroy();
+    this.__layers?.root.destroy();
+    this.__layers = null;
+    this.__screenManager = null;
+    this.__pageManager = null;
+    this.__popupManager = null;
     return super.onDetach();
   }
 
@@ -100,6 +101,7 @@ export class UIManager extends Dependency implements IUIManager {
     const playEnterTween = this.__playEnterTween.bind(this);
     const playExitTween = this.__playExitTween.bind(this);
     const createInstance = this.__createInstance.bind(this);
+    this.__screenManager = new UIScreenManager(screenLayer, playEnterTween, playExitTween, createInstance);
     this.__pageManager = new UIStackLayerManager(
       pageLayer,
       PRESET.UI.PAGE_CACHE_CAPACITY,
@@ -269,55 +271,44 @@ export class UIManager extends Dependency implements IUIManager {
 
   async openScreen(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     const config = this.__fetchConfig(keyOrClass, "openScreen");
-    if (!config) return;
-
-    if (this.__screen) {
-      const old = this.__screen;
-      old.controller.onViewWillDisappear?.();
-      await this.__playExitTween(old.config, old.node);
-      old.controller.onViewDidDisappear?.();
-      old.controller.onViewDisposed?.();
-      old.node.destroy();
-      this.__screen = null;
+    if (config) {
+      await this.__screenManager.open(config, params);
     }
+  }
 
-    const inst = await this.__createInstance(config, this.__layers.screenLayer);
-    if (!inst) return;
+  async closeScreen() {
+    return this.__screenManager.close();
+  }
 
-    inst.controller.onViewWillAppear?.(params);
-    await this.__playEnterTween(config, inst.node);
-    inst.controller.onViewDidAppear?.();
-
-    this.__screen = inst;
+  clearScreen() {
+    this.__screenManager.destroy();
   }
 
   async openPage(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     const config = this.__fetchConfig(keyOrClass, "openPage");
-    if (!config) return;
-
-    await this.__pageManager.open(config, params);
+    if (config) {
+      await this.__pageManager.open(config, params);
+    }
   }
 
   async closePage(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
     if (this.__pageManager.size == 0) return;
 
     const config = this.__fetchConfig(keyOrClass, "closePage");
-    if (!config) return;
-
-    await this.__pageManager.closeBy(config);
-
-    if (this.__pageManager.size == 0) {
-      this.__screen?.controller.onViewFocus?.();
+    if (config) {
+      await this.__pageManager.closeBy(config);
+      if (this.__pageManager.size == 0) {
+        this.__screenManager.focus();
+      }
     }
   }
 
   async closeTopPage(): Promise<void> {
     if (this.__pageManager.size == 0) return;
 
-    await this.__pageManager.close();
-
-    if (this.__pageManager.size == 0) {
-      this.__screen?.controller.onViewFocus?.();
+    const top = this.__pageManager.top;
+    if (top) {
+      await this.closePage(top.config.key);
     }
   }
 
@@ -326,26 +317,23 @@ export class UIManager extends Dependency implements IUIManager {
     this.__pageManager.clear();
 
     // 聚焦上一层的顶层视图：Screen
-    if (this.__screen) {
-      this.__screen.controller.onViewFocus?.();
-    }
+    this.__screenManager.focus();
   }
 
   async openPopup(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
     const config = this.__fetchConfig(keyOrClass, "openPopup");
-    if (!config) return;
-
-    await this.__popupManager.open(config, params);
-    this.__updatePopupMask();
+    if (config) {
+      await this.__popupManager.open(config, params);
+      this.__updatePopupMask();
+    }
   }
 
   async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
     const config = this.__fetchConfig(keyOrClass, "closePopup");
-    if (!config) return;
-
-    await this.__popupManager.closeBy(config);
-
-    this.__updatePopupMask();
+    if (config) {
+      await this.__popupManager.closeBy(config);
+      this.__updatePopupMask();
+    }
   }
 
   async closeTopPopup(): Promise<void> {
@@ -397,7 +385,7 @@ export class UIManager extends Dependency implements IUIManager {
    * 调试：打印当前 Screen / Page / Popup 栈信息
    */
   debugLogStacks(tag: string = "UIManager"): void {
-    const screenKey = this.__screen?.config.key ?? null;
+    const screenKey = this.__screenManager.currentKey ?? null;
     const pageKeys = this.__pageManager?.getStackKeys() ?? [];
     const popupKeys = this.__popupManager?.getStackKeys() ?? [];
 
