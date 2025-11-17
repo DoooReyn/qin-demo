@@ -213,7 +213,6 @@ export class UIManager extends Dependency implements IUIManager {
         screen.windowSize.width + 10,
         screen.windowSize.height + 10
       );
-      console.log("blackboard.fillColor", blackboard.fillColor);
     } else {
       blackboard.clear();
       blackboard.enabled = false;

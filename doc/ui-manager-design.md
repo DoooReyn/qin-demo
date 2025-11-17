@@ -484,7 +484,178 @@ back(): Promise<void>; // 优先关闭 Popup，再考虑 Page 回退
 
 ---
 
-## 10. 后续工作
+## 10. UIStackLayerManager 抽象层
+
+### 职责
+
+- 维护单层 UI 栈（Page 或 Popup）的**有序栈结构**。
+- 负责该层的**生命周期调用**（`onViewWillAppear/DidAppear/WillDisappear/DidDisappear`）。
+- 负责调用 Tweener 执行**进场/退场动画**。
+- 管理该层的 **UIViewCache**（DestroyImmediately / LRU / Persistent）。
+
+UIManager 内部会为每个层级构造一个 [UIStackLayerManager](../assets/qin/dependency/ui-stack-layer-manager.ts) 实例：
+
+- Page 层：`pageManager = new UIStackLayerManager(pageLayer, PRESET.UI.PAGE_CACHE_CAPACITY, …)`
+- Popup 层：`popupManager = new UIStackLayerManager(popupLayer, PRESET.UI.POPUP_CACHE_CAPACITY, …)`
+
+### 公共行为约定
+
+#### open(config, params?)
+
+- 若栈中 **已经存在相同 config 的实例**：
+  - 通过 [truncateTo(existedIndex)](../assets/qin/dependency/ui-stack-layer-manager.ts) 截断栈（保留之前的所有下层视图 + 这个目标视图）。
+  - 不再执行 appear 生命周期，只调用该实例的 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+- 若栈中 **不存在相同实例**：
+  1. 对当前栈顶（如果有）调用：
+     - [onViewWillDisappear()](../assets/qin/dependency/ui.typings.ts)
+     - `exitTween`（[\_\_playExitTween](../assets/qin/dependency/ui.ts)）
+     - [onViewDidDisappear()](../assets/qin/dependency/ui.typings.ts)
+  2. 从缓存中尝试复用实例；若没有则通过 [\_\_createInstance](../assets/qin/dependency/ui.ts) 新建。
+  3. 对新实例调用：
+     - [onViewWillAppear(params)](../assets/qin/dependency/ui.typings.ts)
+     - `enterTween`（[\_\_playEnterTween](../assets/qin/dependency/ui.ts)）
+     - [onViewDidAppear()](../assets/qin/dependency/ui.typings.ts)
+  4. 将实例 push 入栈。
+- **注意**：打开新实例时 **不调用 [onViewFocus](../assets/qin/dependency/ui.typings.ts)**。Focus 只在以下场景发生：
+  - 复用已有实例（截断栈后）。
+  - 上层视图关闭后，下层栈顶被动拿回焦点。
+  - 清空某层后，由上一层明确触发 [focusTop()](../assets/qin/dependency/ui-stack-layer-manager.ts)。
+
+#### close()
+
+- 若栈为空，直接返回。
+- 弹出栈顶实例，对其调用：
+  - [onViewWillDisappear()](../assets/qin/dependency/ui.typings.ts)
+  - `exitTween`
+  - [onViewDidDisappear()](../assets/qin/dependency/ui.typings.ts)
+- 把该实例交给 [UIViewCache](../assets/qin/dependency/ui.ts)，按其 `cachePolicy` 决定销毁或缓存。
+- 然后对当前新栈顶调用 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)（若栈为空则不做任何事）。
+
+#### closeBy(config)
+
+- 在栈中从顶到底查找匹配该 config 的实例。
+- 若未找到，直接返回。
+- 找到后，从栈中移除该实例，并对其执行与 [close()](../assets/qin/dependency/ui-stack-layer-manager.ts) 相同的关闭逻辑：
+  - [onViewWillDisappear()](../assets/qin/dependency/ui.typings.ts)
+  - `exitTween`
+  - [onViewDidDisappear()](../assets/qin/dependency/ui.typings.ts)
+  - 交给 [UIViewCache](../assets/qin/dependency/ui.ts) 处理。
+- 最后对新栈顶调用 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+
+#### clear()
+
+- 依次从栈顶向下清空：
+  - 对每个实例调用 [onViewWillDisappear()](../assets/qin/dependency/ui.typings.ts)
+  - **不播放 exit 动画**
+  - 调用 [onViewDidDisappear()](../assets/qin/dependency/ui.typings.ts)
+  - 交给 [UIViewCache](../assets/qin/dependency/ui.ts) 处理。
+- 这个方法是“快速清栈”：不等待动画，用于场景切换、统一关闭等。
+
+#### focusTop()
+
+- 若栈顶存在，则调用其 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+- 不会触发 appear 生命周期，也不会有动画。
+
+---
+
+## 11. Page 层行为（通过 UIStackLayerManager 管理）
+
+### 打开 Page：openPage
+
+- UIManager 调用 [pageManager.open(config, params)](../assets/qin/dependency/ui.ts)。
+- 行为遵循 [UIStackLayerManager.open](../assets/qin/dependency/ui-stack-layer-manager.ts) 约定：
+  - 若重复激活同一 Page：截断栈，只调用目标 Page 的 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+  - 若打开新 Page：
+    - 上一 Page：`WillDisappear -> exitTween -> DidDisappear`。
+    - 新 Page：`WillAppear(params) -> enterTween -> DidAppear`。
+    - 不触发 [onViewFocus](../assets/qin/dependency/ui.typings.ts)。
+
+### 关闭 Page
+
+- [closeTopPage()](../assets/qin/dependency/ui.ts)：
+  - 调用 [pageManager.close()](../assets/qin/dependency/ui-stack-layer-manager.ts)。
+  - 若 Page 栈被清空，则让 Screen 调用一次 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+- [closePage(key)](../assets/qin/dependency/ui.ts)：
+  - 调用 [pageManager.closeBy(config)](../assets/qin/dependency/ui-stack-layer-manager.ts)。
+  - 若关闭后 Page 栈为空，同样将焦点交给 Screen。
+- [clearPage()](../assets/qin/dependency/ui.ts)：
+  - 调用 [pageManager.clear()](../assets/qin/dependency/ui.ts) 快速清栈（无动画）。
+  - 然后对 Screen 调用一次 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+
+---
+
+## 12. Popup 层行为（通过 UIStackLayerManager 管理）
+
+### 打开 Popup：openPopup
+
+- UIManager 调用 [popupManager.open(config, params)](../assets/qin/dependency/ui.ts)。
+- 行为遵循 [UIStackLayerManager.open](../assets/qin/dependency/ui-stack-layer-manager.ts) 约定：
+  - 若重复激活同一 Popup：截断栈，只调用目标 Popup 的 [onViewFocus()](../assets/qin/dependency/ui.typings.ts)。
+  - 若打开新 Popup：
+    - 上一 Popup（如果有）：`WillDisappear -> exitTween -> DidDisappear`。
+    - 新 Popup：`WillAppear(params) -> enterTween -> DidAppear`。
+    - 不触发 [onViewFocus](../assets/qin/dependency/ui.typings.ts)。
+- 打开或截断后都会刷新遮罩状态和遮罩层级。
+
+### 关闭 Popup
+
+- [closeTopPopup()](../assets/qin/dependency/ui.ts)：
+  - 调用 [popupManager.close()](../assets/qin/dependency/ui-stack-layer-manager.ts)。
+  - 然后 [\_\_updatePopupMask()](../assets/qin/dependency/ui.ts) 刷新遮罩。
+- [closePopup(key)](../assets/qin/dependency/ui.ts)：
+  - 调用 [popupManager.closeBy(config)](../assets/qin/dependency/ui-stack-layer-manager.ts)。
+  - 然后 [\_\_updatePopupMask()](../assets/qin/dependency/ui.ts)。
+- [clearPopup()](../assets/qin/dependency/ui.ts)：
+  - 调用 [popupManager.clear()](../assets/qin/dependency/ui.ts) 快速清栈（无动画）。
+  - 刷新遮罩（遮罩隐藏）。
+  - 最后调用 [pageManager.focusTop()](../assets/qin/dependency/ui-stack-layer-manager.ts)，把焦点交还给当前 Page 栈顶（若有）。
+
+---
+
+## 13. Popup 遮罩行为
+
+- 遮罩节点：`ui-popup-mask`，位于 PopupLayer 下，由 UIManager 在 [ensureRoot()](../assets/qin/dependency/ui.ts) 时创建。
+- 遮罩显示规则（[\_\_updatePopupMask](../assets/qin/dependency/ui.ts)）：
+
+  - 若 Popup 栈为空：
+    - `popupMask.active = false`。
+  - 若 Popup 栈非空：
+    - `popupMask.active = true`。
+    - 取当前 Popup 栈顶实例 [top = popupManager.top](../assets/qin/dependency/ui-stack-layer-manager.ts)：
+      - 若 `top.config.modal === true`：
+        - 启用 `Graphics`，画一层半透明黑色全屏遮罩（截断点击，视觉变暗）。
+      - 否则（非模态）：
+        - 清理 `Graphics`，关闭填充，仅保留节点用于**截断点击**或透明效果。
+    - 调整 sibling index，使遮罩始终位于栈顶弹窗的正下方。
+
+- 遮罩点击行为（[\_\_onPopupMaskClicked](../assets/qin/dependency/ui.ts)）：
+  - 获取当前栈顶 Popup [top](../assets/qin/dependency/ui-stack-layer-manager.ts)：
+    - 若无栈顶：不做任何事情。
+    - 若 `top.config.modal === true`：
+      - 点击只被遮罩截断，不触发关闭。
+    - 若 `top.config.modal === false` 且 `top.config.closeOnMaskClick === true`：
+      - 调用 [closeTopPopup()](../assets/qin/dependency/ui.ts)，即关闭栈顶 Popup。
+
+---
+
+## 14. back 行为
+
+[UIManager.back()](../assets/qin/dependency/ui.ts) 的策略：
+
+1. 若 `popupManager.size > 0`：
+   - 优先关闭栈顶 Popup（[closeTopPopup()](../assets/qin/dependency/ui.ts)）。
+2. 否则若 `pageManager.size > 1`：
+   - 回退 Page 栈：[closeTopPage()](../assets/qin/dependency/ui.ts)。
+3. 否则：
+   - 不处理 Screen，留给业务决定（例如切换场景）。
+
+为避免重复触发，[back()](../assets/qin/dependency/ui.ts) 内部使用 `__backing` 标记防抖：
+
+- 如果正在执行 back，再次调用会被忽略，并打一个警告 log。
+
+---
+
+## 15. 后续工作
 
 - 基于本设计在 `assets/qin/dependency` 等目录下实现：
   - UIManager 依赖及 UIRoot/Layers 创建
