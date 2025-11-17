@@ -1,4 +1,4 @@
-import { Node } from "cc";
+import { Node, Component } from "cc";
 
 import { mock } from "../ability";
 import { Atom } from "./atom";
@@ -168,9 +168,7 @@ export abstract class UIController<M extends UIBindingMap = {}> extends Atom imp
           const parentNode = this.__resolveNode(root, parentPath);
           if (!parentNode) {
             if (required) {
-              ioc.logcat.ui.w(
-                `UIController.bindView: parent path not found for prefix nodes binding, key=${key}, path=${conf.path}`
-              );
+              ioc.logcat.ui.w(`解析绑定配置: 索引节点未找到, key=${key}, path=${conf.path}`);
             }
             result[key] = [];
             continue;
@@ -187,7 +185,7 @@ export abstract class UIController<M extends UIBindingMap = {}> extends Atom imp
       if (!node) {
         if (required) {
           // 必需但未找到：给出警告，方便调试
-          ioc.logcat.ui.w(`UIController.bindView: path not found, key=${key}, path=${conf.path}`);
+          ioc.logcat.ui.w(`解析绑定配置: 节点未找到, key=${key}, path=${conf.path}`);
         }
         // 根据 kind 返回 null 或空数组
         result[key] = conf.kind === "components" || conf.kind === "nodes" ? [] : null;
@@ -206,10 +204,16 @@ export abstract class UIController<M extends UIBindingMap = {}> extends Atom imp
         }
         case "component": {
           result[key] = node.getComponent(conf.component) ?? null;
+          if (result[key] == null && required) {
+            ioc.logcat.ui.w(`解析绑定配置: 组件未找到, key=${key}, path=${conf.path}`);
+          }
           break;
         }
         case "components": {
           result[key] = node.getComponents(conf.component);
+          if ((result[key] as Component[]).length === 0 && required) {
+            ioc.logcat.ui.w(`解析绑定配置: 组件未找到, key=${key}, path=${conf.path}`);
+          }
           break;
         }
       }
