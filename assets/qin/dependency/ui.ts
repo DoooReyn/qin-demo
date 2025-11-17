@@ -5,7 +5,7 @@ import { Dependency } from "./dependency";
 import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
 import { PRESET } from "../preset";
 import { colors } from "../ability";
-import { PageLayerManager, PopupLayerManager } from "./ui-stack-layer-manager";
+import { UIStackLayerManager } from "./ui-stack-layer-manager";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -19,8 +19,8 @@ export class UIManager extends Dependency implements IUIManager {
   private __registry: Map<string, UIConfig> = new Map();
 
   private __screen: { config: UIConfig; node: Node; controller: IUIView } | null = null;
-  private __pageManager: PageLayerManager;
-  private __popupManager: PopupLayerManager;
+  private __pageManager: UIStackLayerManager;
+  private __popupManager: UIStackLayerManager;
   private __backing = false;
 
   get layers(): IUIRootLayers | null {
@@ -100,8 +100,20 @@ export class UIManager extends Dependency implements IUIManager {
     const playEnterTween = this.__playEnterTween.bind(this);
     const playExitTween = this.__playExitTween.bind(this);
     const createInstance = this.__createInstance.bind(this);
-    this.__pageManager = new PageLayerManager(pageLayer, playEnterTween, playExitTween, createInstance);
-    this.__popupManager = new PopupLayerManager(popupLayer, playEnterTween, playExitTween, createInstance);
+    this.__pageManager = new UIStackLayerManager(
+      pageLayer,
+      PRESET.UI.PAGE_CACHE_CAPACITY,
+      playEnterTween,
+      playExitTween,
+      createInstance
+    );
+    this.__popupManager = new UIStackLayerManager(
+      popupLayer,
+      PRESET.UI.POPUP_CACHE_CAPACITY,
+      playEnterTween,
+      playExitTween,
+      createInstance
+    );
 
     return this.__layers;
   }

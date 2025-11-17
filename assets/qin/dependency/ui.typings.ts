@@ -76,6 +76,9 @@ export interface IUIManager extends IDependency {
   /** 打开二级 Page */
   openPage(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
 
+  /** 关闭指定 Page */
+  closePage(keyOrClass: string | Constructor<IUIView>): Promise<void>;
+
   /** 关闭当前顶部 Page */
   closeTopPage(): Promise<void>;
 
@@ -85,11 +88,11 @@ export interface IUIManager extends IDependency {
   /** 打开弹窗 */
   openPopup(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
 
-  /** 关闭栈顶弹窗 */
-  closeTopPopup(): Promise<void>;
-
   /** 关闭指定弹窗 */
   closePopup(keyOrClass: string | Constructor<IUIView>): Promise<void>;
+
+  /** 关闭栈顶弹窗 */
+  closeTopPopup(): Promise<void>;
 
   /** 清空所有弹窗栈 */
   clearPopup(): Promise<void>;

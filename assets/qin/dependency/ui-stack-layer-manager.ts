@@ -11,17 +11,19 @@ export type UILayerCreateInstance = (config: UIConfig, parent: Node) => Promise<
 /**
  * UI 栈层通用逻辑：缓存 + 生命周期辅助
  */
-export abstract class UIStackLayerManager {
-  protected stack: IUIViewInstance[];
-  protected cache: UIViewCache;
+export class UIStackLayerManager {
+  protected readonly stack: IUIViewInstance[];
+  protected readonly cache: UIViewCache;
 
-  protected constructor(
-    protected layerNode: Node,
-    protected playEnter: UILayerPlayEnter,
-    protected playExit: UILayerPlayExit,
-    protected createInstance: UILayerCreateInstance
+  constructor(
+    protected readonly layerNode: Node,
+    protected readonly cacheCapacity: number,
+    protected readonly playEnter: UILayerPlayEnter,
+    protected readonly playExit: UILayerPlayExit,
+    protected readonly createInstance: UILayerCreateInstance
   ) {
     this.stack = [];
+    this.cache = new UIViewCache(this.cacheCapacity);
   }
 
   get size(): number {
@@ -51,15 +53,9 @@ export abstract class UIStackLayerManager {
 
   focusTop(): void {
     const top = this.stack[this.stack.length - 1];
-    if (!top) return;
-    top.controller.onViewWillAppear?.();
-    top.controller.onViewDidAppear?.();
-    top.controller.onViewFocus?.();
-  }
-
-  protected focusExisting(index: number): void {
-    const target = this.stack[index];
-    target.controller.onViewFocus?.();
+    if (top) {
+      top.controller.onViewFocus?.();
+    }
   }
 
   protected async instantiate(config: UIConfig): Promise<IUIViewInstance | null> {
@@ -147,7 +143,7 @@ export abstract class UIStackLayerManager {
     // 根据缓存策略决定销毁或缓存
     this.cache.put(top);
 
-    this.onCloseFocus();
+    this.focusTop();
   }
 
   async closeBy(config: UIConfig): Promise<void> {
@@ -177,21 +173,13 @@ export abstract class UIStackLayerManager {
     // 根据缓存策略决定销毁或缓存
     this.cache.put(inst);
 
-    this.onCloseFocus();
-  }
-
-  protected onCloseFocus() {
-    const next = this.stack[this.stack.length - 1];
-    if (next) {
-      next.controller.onViewFocus?.();
-    }
+    this.focusTop();
   }
 
   async clear(): Promise<void> {
     while (this.stack.length > 0) {
       const inst = this.stack.pop()!;
       inst.controller.onViewWillDisappear?.();
-      await this.playExit(inst.config, inst.node);
       inst.controller.onViewDidDisappear?.();
       this.cache.put(inst);
     }
@@ -200,29 +188,5 @@ export abstract class UIStackLayerManager {
   destroy() {
     this.clear();
     this.cache.clear();
-  }
-}
-
-export class PageLayerManager extends UIStackLayerManager {
-  constructor(
-    layerNode: Node,
-    playEnter: UILayerPlayEnter,
-    playExit: UILayerPlayExit,
-    createInstance: UILayerCreateInstance
-  ) {
-    super(layerNode, playEnter, playExit, createInstance);
-    this.cache = new UIViewCache(PRESET.UI.PAGE_CACHE_CAPACITY);
-  }
-}
-
-export class PopupLayerManager extends UIStackLayerManager {
-  constructor(
-    layerNode: Node,
-    playEnter: UILayerPlayEnter,
-    playExit: UILayerPlayExit,
-    createInstance: UILayerCreateInstance
-  ) {
-    super(layerNode, playEnter, playExit, createInstance);
-    this.cache = new UIViewCache(PRESET.UI.POPUP_CACHE_CAPACITY);
   }
 }
