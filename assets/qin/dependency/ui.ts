@@ -321,9 +321,9 @@ export class UIManager extends Dependency implements IUIManager {
     }
   }
 
-  async clearPage(): Promise<void> {
+  clearPage(): void {
     // 清栈：执行完整的生命周期，并根据缓存策略处理
-    await this.__pageManager.clear();
+    this.__pageManager.clear();
 
     // 聚焦上一层的顶层视图：Screen
     if (this.__screen) {
@@ -353,9 +353,9 @@ export class UIManager extends Dependency implements IUIManager {
     this.__updatePopupMask();
   }
 
-  async clearPopup(): Promise<void> {
+  clearPopup(): void {
     // 清栈：执行完整的生命周期，并根据缓存策略处理
-    await this.__popupManager.clear();
+    this.__popupManager.clear();
 
     // 更新遮罩
     this.__updatePopupMask();
@@ -381,13 +381,13 @@ export class UIManager extends Dependency implements IUIManager {
     this.__backing = true;
 
     if (this.__popupManager.size > 0) {
-      // 优先关闭栈顶弹窗
+      // 优先关闭 Popup
       await this.closeTopPopup();
-    } else if (this.__pageManager.size > 1) {
-      // 其次回退 Page 栈
+    } else if (this.__pageManager.size > 0) {
+      // 其次关闭 Page
       await this.closeTopPage();
     } else {
-      // 若无 Page 可回退，则暂不处理 Screen，交由业务决定是否切换场景/Screen
+      // 暂不处理 Screen
     }
 
     this.__backing = false;
@@ -424,10 +424,6 @@ export class UIManager extends Dependency implements IUIManager {
       popupCache,
     };
 
-    if (ioc.logcat?.qin?.df) {
-      ioc.logcat.qin.df("[UI Debug] caches: {0}", JSON.stringify(payload));
-    } else {
-      console.log("[UI Debug] caches", payload);
-    }
+    ioc.logcat.ui.d("[UI Debug] caches: ", payload);
   }
 }

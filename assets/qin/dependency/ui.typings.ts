@@ -83,7 +83,7 @@ export interface IUIManager extends IDependency {
   closeTopPage(): Promise<void>;
 
   /** 清空所有 Page 栈 */
-  clearPage(): Promise<void>;
+  clearPage(): void;
 
   /** 打开弹窗 */
   openPopup(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
@@ -95,7 +95,7 @@ export interface IUIManager extends IDependency {
   closeTopPopup(): Promise<void>;
 
   /** 清空所有弹窗栈 */
-  clearPopup(): Promise<void>;
+  clearPopup(): void;
 
   /** 显示 Overlay */
   showOverlay(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;

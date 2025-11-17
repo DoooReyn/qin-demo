@@ -81,21 +81,15 @@ export class UIStackLayerManager {
     inst.controller.onViewWillDisappear?.();
     await this.playExit(inst.config, inst.node);
     inst.controller.onViewDidDisappear?.();
+    inst.node.removeFromParent();
     this.cache.put(inst);
   }
 
   protected destroyWithoutAnimation(inst: IUIViewInstance): void {
     inst.controller.onViewWillDisappear?.();
     inst.controller.onViewDidDisappear?.();
+    inst.node.removeFromParent();
     this.cache.put(inst);
-  }
-
-  cacheInstance(inst: IUIViewInstance) {
-    this.cache.put(inst);
-  }
-
-  takeInstance(config: UIConfig): IUIViewInstance | null {
-    return this.cache.take(config);
   }
 
   async open(config: UIConfig, params?: any): Promise<void> {
@@ -125,7 +119,7 @@ export class UIStackLayerManager {
     }
 
     // 优先从缓存中复用实例
-    let inst = this.takeInstance(config);
+    let inst = this.cache.take(config);
     if (inst) {
       this.layerNode.addChild(inst.node);
     } else {
@@ -149,6 +143,7 @@ export class UIStackLayerManager {
     top.controller.onViewWillDisappear?.();
     await this.playExit(top.config, top.node);
     top.controller.onViewDidDisappear?.();
+    top.node.removeFromParent();
 
     // 根据缓存策略决定销毁或缓存
     this.cache.put(top);
@@ -179,6 +174,7 @@ export class UIStackLayerManager {
     inst.controller.onViewWillDisappear?.();
     await this.playExit(inst.config, inst.node);
     inst.controller.onViewDidDisappear?.();
+    inst.node.removeFromParent();
 
     // 根据缓存策略决定销毁或缓存
     this.cache.put(inst);
@@ -186,11 +182,12 @@ export class UIStackLayerManager {
     this.focusTop();
   }
 
-  async clear(): Promise<void> {
+  clear(): void {
     while (this.stack.length > 0) {
       const inst = this.stack.pop()!;
       inst.controller.onViewWillDisappear?.();
       inst.controller.onViewDidDisappear?.();
+      inst.node.removeFromParent();
       this.cache.put(inst);
     }
   }
