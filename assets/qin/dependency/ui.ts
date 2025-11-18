@@ -1,4 +1,4 @@
-import { Node, instantiate, UITransform, screen, Widget, Graphics } from "cc";
+import { Node, instantiate, UITransform, Widget, Graphics, Layout, view } from "cc";
 
 import ioc, { Injectable } from "../ioc";
 import { Dependency } from "./dependency";
@@ -8,7 +8,7 @@ import { colors } from "../ability";
 import { UIStackLayerManager } from "./ui-stack-layer-manager";
 import { UIScreenManager } from "./ui-screen-manager";
 import { ToastOptions, ToastService, ToastServiceImpl } from "./ui-toast-service";
-import { Layout } from "cc";
+import { DrawerOptions, DrawerService, DrawerServiceImpl } from "./ui-drawer-service";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -29,6 +29,8 @@ export class UIManager extends Dependency implements IUIManager {
   private __backing = false;
   /** Toast 子服务 */
   private __toast: ToastService = new ToastServiceImpl(PRESET.UI.TOAST_CONFIG_KEY);
+  /** Drawer 子服务（使用全局样式） */
+  private __drawer: DrawerService = new DrawerServiceImpl(PRESET.UI.DRAWER_CONFIG_KEY);
 
   /** UIRoot 及各层级节点 */
   get layers(): IUIRootLayers | null {
@@ -38,6 +40,11 @@ export class UIManager extends Dependency implements IUIManager {
   /** Toast 子服务视图 */
   get toast(): ToastService {
     return this.__toast;
+  }
+
+  /** Drawer 子服务视图 */
+  get drawer(): DrawerService {
+    return this.__drawer;
   }
 
   async onDetach(): Promise<void> {
@@ -156,8 +163,9 @@ export class UIManager extends Dependency implements IUIManager {
       child = new Node(name);
       const trans = child.acquire(UITransform);
       const widget = child.acquire(Widget);
+      const vsize = view.getVisibleSize();
       parent.addChild(child);
-      trans.setContentSize(screen.windowSize);
+      trans.setContentSize(vsize);
       widget.left = 0;
       widget.right = 0;
       widget.top = 0;
@@ -253,15 +261,11 @@ export class UIManager extends Dependency implements IUIManager {
     // 模态：半透明黑色遮罩；非模态：遮罩全透明，仅用于截断点击
     const blackboard = mask.acquire(Graphics);
     if (top.config.modal) {
+      const vsize = view.getVisibleSize();
       blackboard.enabled = true;
       blackboard.clear();
       blackboard.fillColor = colors.from(PRESET.COLOR.BLACK_25);
-      blackboard.fillRect(
-        -(screen.windowSize.width >> 1) - 5,
-        -(screen.windowSize.height >> 1) - 5,
-        screen.windowSize.width + 10,
-        screen.windowSize.height + 10
-      );
+      blackboard.fillRect(-(vsize.width >> 1) - 5, -(vsize.height >> 1) - 5, vsize.width + 10, vsize.height + 10);
     } else {
       blackboard.clear();
       blackboard.enabled = false;
@@ -417,6 +421,16 @@ export class UIManager extends Dependency implements IUIManager {
   /** 清空 Toast 队列并隐藏当前 Toast（语法糖，转发到 ToastService.clear） */
   clearToast(): void {
     this.__toast.clear();
+  }
+
+  /** 打开一个 Drawer（语法糖，转发到 DrawerService.enqueue） */
+  openDrawer(params?: any, options?: DrawerOptions): void {
+    this.__drawer.enqueue(params, options);
+  }
+
+  /** 清空 Drawer 队列（语法糖，转发到 DrawerService.clear） */
+  clearDrawer(): void {
+    this.__drawer.clear();
   }
 
   async back(): Promise<void> {

@@ -33,7 +33,7 @@ export class ToastServiceImpl implements ToastService {
   ) {}
 
   enqueue(message: string, options?: ToastOptions): void {
-    const payload: ToastPayload = { message, options };
+    const payload: ToastPayload = { message, options: { duration: 2, ...(options ?? {}) } };
     this.__showToast(payload);
   }
 

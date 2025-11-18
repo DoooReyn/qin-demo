@@ -3,6 +3,7 @@ import { Node } from "cc";
 import { IDependency } from "./dependency.typings";
 import { Constructor } from "../typings";
 import { ToastOptions, ToastService } from "./ui-toast-service";
+import { DrawerOptions, DrawerService } from "./ui-drawer-service";
 import { UIController } from "../atom";
 
 /** UI 类型 */
@@ -153,6 +154,15 @@ export interface IUIManager extends IDependency {
 
   /** 清空 Toast 队列并隐藏当前 Toast（语法糖，转发到 ToastService.clear） */
   clearToast(): void;
+
+  /** Drawer 子服务 */
+  readonly drawer: DrawerService;
+
+  /** 打开一个 Drawer（语法糖，转发到 DrawerService.enqueue） */
+  openDrawer(params?: any, options?: DrawerOptions): void;
+
+  /** 清空 Drawer 队列（语法糖，转发到 DrawerService.clear） */
+  clearDrawer(): void;
 
   /** 通用后退：优先关闭 Popup，再考虑 Page 回退 */
   back(): Promise<void>;

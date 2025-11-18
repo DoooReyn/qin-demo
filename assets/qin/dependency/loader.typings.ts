@@ -1,7 +1,24 @@
 import {
-  sp, AnimationClip, Asset, AssetManager, AudioClip, BitmapFont, BufferAsset, Font, ImageAsset,
-  JsonAsset, ParticleAsset, Prefab, Rect, SpriteAtlas, SpriteFrame, Texture2D, TextAsset,
-  TiledMapAsset, TTFFont, VideoClip
+  sp,
+  AnimationClip,
+  Asset,
+  AssetManager,
+  AudioClip,
+  BitmapFont,
+  BufferAsset,
+  Font,
+  ImageAsset,
+  JsonAsset,
+  ParticleAsset,
+  Prefab,
+  Rect,
+  SpriteAtlas,
+  SpriteFrame,
+  Texture2D,
+  TextAsset,
+  TiledMapAsset,
+  TTFFont,
+  VideoClip,
 } from "cc";
 
 import { Constructor, IMemoryImageSource } from "../typings";
@@ -607,7 +624,7 @@ export interface IAssetLoader extends IDependency {
    */
   preload(
     items: PreloadItem[],
-    onProgress?: (finished: number, total: number, path: string, loaded: boolean) => void,
+    onProgress?: (finished: number, total: number, path: string, loaded: boolean) => void
   ): Promise<void>;
 
   /**
@@ -617,7 +634,7 @@ export interface IAssetLoader extends IDependency {
    */
   loadMany(
     items: LoadItem[],
-    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void,
+    onProgress?: (finished: number, total: number, path?: string, loaded?: boolean) => void
   ): Promise<void>;
 
   /**
@@ -629,6 +646,7 @@ export interface IAssetLoader extends IDependency {
   loadSequence(
     tasks: LoadItem[],
     onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
+    onComplete?: (finished: number, total: number) => void | Promise<void>
   ): () => void;
 
   /**
@@ -641,7 +659,8 @@ export interface IAssetLoader extends IDependency {
   loadParallel(
     items: LoadItem[],
     onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
-    concurrency?: number,
+    onComplete?: (finished: number, total: number) => void | Promise<void>,
+    concurrency?: number
   ): () => void;
 }
 

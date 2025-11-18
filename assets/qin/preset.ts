@@ -47,6 +47,8 @@ export const PRESET = {
     POPUP_CACHE_CAPACITY: 5,
     /** Toast 对应的 UIConfig.key */
     TOAST_CONFIG_KEY: "ui-toast",
+    /** Drawer 对应的 UIConfig.key */
+    DRAWER_CONFIG_KEY: "ui-drawer",
   },
   /** 内置事件 */
   EVENT: {

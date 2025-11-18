@@ -1,13 +1,14 @@
 import { UiPageMainController } from "./view/ui-page-main.controller";
 import { UiPopupUserinfoController } from "./view/ui-popup-userinfo.controller";
 import { UiToastController } from "./view/ui-toast.controller";
+import { UiDrawerController } from "./view/ui-drawer.controller";
 import { UIConfig, PRESET } from "../qin";
 import { UiLocator } from "./ui-locator";
 
 /** UI 绑定 */
 export const UiBindings: UIConfig[] = [
   {
-    key: "ui-toast",
+    key: PRESET.UI.TOAST_CONFIG_KEY,
     type: "Overlay",
     overlaySubtype: "Toast",
     prefabPath: UiLocator.Toast,
@@ -15,6 +16,16 @@ export const UiBindings: UIConfig[] = [
     cachePolicy: "Persistent",
     enterTweenLib: "tweener-blur-in",
     exitTweenLib: "tweener-blur-out",
+  },
+  {
+    key: PRESET.UI.DRAWER_CONFIG_KEY,
+    type: "Overlay",
+    overlaySubtype: "Drawer",
+    prefabPath: UiLocator.Drawer,
+    controller: UiDrawerController,
+    cachePolicy: "Persistent",
+    enterTweenLib: "tweener-drawer-in",
+    exitTweenLib: "tweener-drawer-out",
   },
   {
     key: "ui-page-main",

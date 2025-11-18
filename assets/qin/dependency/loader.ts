@@ -974,7 +974,8 @@ export class AssetLoader extends Dependency implements IAssetLoader {
 
   loadSequence(
     tasks: LoadItem[],
-    onProgress?: (finished: number, total: number, path: string, success: boolean) => void
+    onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
+    onComplete?: (finished: number, total: number) => void | Promise<void>
   ): () => void {
     const total = tasks.length;
     let index = 0;
@@ -988,6 +989,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
       }
 
       if (index >= total) {
+        onComplete?.(finished, total);
         return;
       }
 
@@ -1027,6 +1029,7 @@ export class AssetLoader extends Dependency implements IAssetLoader {
   loadParallel(
     items: LoadItem[],
     onProgress?: (finished: number, total: number, path: string, success: boolean) => void,
+    onComplete?: (finished: number, total: number) => void,
     concurrency: number = 0
   ) {
     let finished = 0;
@@ -1037,15 +1040,17 @@ export class AssetLoader extends Dependency implements IAssetLoader {
       const tasks = items.map(
         (item) =>
           new LoadTask(...item, (asset) => {
-            if (asset) {
-              finished++;
-            }
+            finished++;
 
             const options = item[1];
             const url = this.__parsePath(options.path)[1];
 
             if (onProgress) {
               onProgress(finished, total, url, asset != null);
+            }
+
+            if (finished >= total && onComplete) {
+              onComplete(finished, total);
             }
 
             if (!asset && this.logEnabled) {
@@ -1065,15 +1070,17 @@ export class AssetLoader extends Dependency implements IAssetLoader {
       const tasks = items.map(
         (item) =>
           new LoadTask(...item, (asset) => {
-            if (asset) {
-              finished++;
-            }
+            finished++;
 
             const options = item[1];
             const url = this.__parsePath(options.path)[1];
 
             if (onProgress) {
               onProgress(finished, total, url, asset != null);
+            }
+
+            if (finished >= total && onComplete) {
+              onComplete(finished, total);
             }
 
             if (!asset && this.logEnabled) {

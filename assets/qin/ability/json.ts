@@ -22,7 +22,7 @@ export const json: IJson = {
     return JSON.stringify(data, null, 0);
   },
   decode(data: string): object {
-    const [ret, err] = might.sync(JSON.parse, JSON, data);
+    const [ret, err] = might.sync(() => JSON.parse(data));
     if (err) {
       ioc.logcat.qin.e("JSON 解析失败:", data);
     }

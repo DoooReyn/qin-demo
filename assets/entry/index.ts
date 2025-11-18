@@ -26,7 +26,7 @@ qin.ioc.eventBus.app.subscribes(
     async handle() {
       qin.ioc.logcat.qin.i("Qin's application is launched.");
 
-      await qin.ioc.loader.loadParallel(
+      qin.ioc.loader.loadParallel(
         [
           [Prefab, { path: UiLocator.Toast }],
           [Prefab, { path: UiLocator.Drawer }],
@@ -44,12 +44,12 @@ qin.ioc.eventBus.app.subscribes(
             prefab && qin.ioc.nodePool.register(prefab);
           }
         },
+        async () => {
+          await qin.ioc.ui.openPage("ui-page-main");
+          await qin.ioc.ui.openPopup("ui-popup-userinfo");
+        },
         4
       );
-
-      await qin.ioc.ui.openPage("ui-page-main");
-
-      await qin.ioc.ui.openPopup("ui-popup-userinfo");
     },
     once: true,
   }

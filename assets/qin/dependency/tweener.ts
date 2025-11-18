@@ -15,6 +15,8 @@ import {
   EarthquakeTw,
   JellyShakeTw,
   ScrollNumberTw,
+  DrawerInTw,
+  DrawerOutTw,
 } from "../tweener";
 
 /**
@@ -30,6 +32,8 @@ export class Tweener extends Dependency implements ITweener {
   onAttach(): Promise<void> {
     this.register(BlurInTw);
     this.register(BlurOutTw);
+    this.register(DrawerInTw);
+    this.register(DrawerOutTw);
     this.register(PopupInTw);
     this.register(PopupOutTw);
     this.register(ShakeTw);
