@@ -5,7 +5,8 @@ import { Dependency } from "./dependency";
 import { IUIManager, IUIRootLayers, IUIView, UIConfig } from "./ui.typings";
 import { PRESET } from "../preset";
 import { colors } from "../ability";
-import { UIStackLayerManager, UIScreenManager } from "./ui-stack-layer-manager";
+import { UIStackLayerManager } from "./ui-stack-layer-manager";
+import { UIScreenManager } from "./ui-screen-manager";
 
 /**
  * UI 管理系统依赖（骨架实现）

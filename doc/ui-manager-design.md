@@ -175,23 +175,54 @@ ioc.ui.closePopup(keyOrClass);
 
 ### 3.4 Overlay
 
-- 不参与导航栈。
-- 管理方式：
-
-```ts
-ioc.ui.showOverlay(keyOrClass, params?);
-ioc.ui.hideOverlay(keyOrClass);
-```
-
-- 子类型：
+- 不参与导航栈，也不受 `back()` 影响。
+- 在层级结构上仍有独立的 `OverlayLayer`，用于承载各类悬浮 UI：
 
   - ToastOverlay：轻提示
   - DrawerOverlay：抽屉层
   - MarqueeOverlay：跑马灯
   - GuideOverlay：引导
 
-- 缓存：
-  - 固定为 Persistent，创建一次后常驻，显隐由调用方通过 API 控制。
+- 缓存策略：
+
+  - 所有 Overlay 视图统一使用 `Persistent` 策略：
+    - 首次创建后常驻内存。
+    - 通常通过显隐或内容更新来驱动表现，而不是反复销毁/重建。
+
+- 行为管理方式：
+
+  - 与 Screen/Page/Popup 不同，Overlay 不通过通用的 `showOverlay/hideOverlay` 管理，而是按**子类型划分功能服务**：
+
+    - 例如 Toast 使用 `ToastService` 管理：
+
+      ```ts
+      interface ToastOptions {
+        duration?: number;
+        level?: "info" | "warn" | "error";
+      }
+
+      interface ToastService {
+        enqueue(message: string, options?: ToastOptions): void; // 入队一条 toast 消息
+        clear(): void; // 清空队列并隐藏当前 toast
+      }
+      ```
+
+    - `ToastService` 作为 UIManager 的内部子服务存在，并通过 `ioc.ui` 暴露：
+
+      ```ts
+      // 完整能力：直接操作子服务
+      ioc.ui.toast.enqueue("保存成功", { duration: 2 });
+      ioc.ui.toast.clear();
+
+      // 语法糖：由 UIManager 转发到 ToastService
+      ioc.ui.showToast("保存成功", { duration: 2 }); // == toast.enqueue
+      ioc.ui.clearToast(); // == toast.clear
+      ```
+
+  - 其它 Overlay 子类型（如 Drawer/Guide/Marquee）可以采用类似模式：
+
+    - 在 UIManager 内部挂载相应的子服务（`DrawerService`、`GuideService` 等）。
+    - 通过 `ioc.ui` 暴露领域化接口（如 `openDrawer/closeDrawer`, `startGuide/finishGuide`），而不是统一的 `show/hide`。
 
 ---
 
