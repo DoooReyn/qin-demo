@@ -2,6 +2,7 @@ import { Node } from "cc";
 
 import { IDependency } from "./dependency.typings";
 import { Constructor } from "../typings";
+import { ToastOptions, ToastService } from "./ui-toast-service";
 
 /** UI 类型 */
 export type UIType = "Screen" | "Page" | "Popup" | "Overlay";
@@ -135,11 +136,14 @@ export interface IUIManager extends IDependency {
   /** 清空所有弹窗栈 */
   clearPopup(): void;
 
-  /** 显示 Overlay */
-  showOverlay(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
+  /** Toast 子服务 */
+  readonly toast: ToastService;
 
-  /** 隐藏 Overlay */
-  hideOverlay(keyOrClass: string | Constructor<IUIView>): Promise<void>;
+  /** 显示一条 Toast（语法糖，转发到 ToastService.enqueue） */
+  showToast(message: string, options?: ToastOptions): void;
+
+  /** 清空 Toast 队列并隐藏当前 Toast（语法糖，转发到 ToastService.clear） */
+  clearToast(): void;
 
   /** 通用后退：优先关闭 Popup，再考虑 Page 回退 */
   back(): Promise<void>;

@@ -30,18 +30,6 @@ export const PRESET = {
   STORE: {
     LANG: "lang",
   },
-  /** 常用预制体 */
-  PREFAB: {
-    /** 全局等待模板 */
-    GLOBAL_WAITING: "resources@pfb-tpl-global-waiting",
-    /** 文本模块模板 */
-    LABEL: "resources@pfb-tpl-label",
-  },
-  /** 节点池 */
-  ITEM_POOL: {
-    /** 文本 */
-    LABEL: "pfb-tpl-label",
-  },
   /** 时间 */
   TIME: {
     /** 懒清理间隔时间（秒） */
@@ -289,5 +277,7 @@ export const PRESET = {
     PAGE_CACHE_CAPACITY: 3,
     /** Popup LRU 缓存容量 */
     POPUP_CACHE_CAPACITY: 5,
+    /** Toast 对应的 UIConfig.key */
+    TOAST_CONFIG_KEY: "ui-toast",
   },
 } as const;

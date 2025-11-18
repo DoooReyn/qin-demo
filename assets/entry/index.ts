@@ -1,9 +1,9 @@
+import { sys } from "cc";
 import { DEV } from "cc/env";
 
 import * as qin from "../qin";
-import { sys } from "cc";
-import { UiPageMainController } from "./view/ui-page-main.controller";
-import { UiPopupUserinfoController } from "./view/ui-popup-userinfo.controller";
+import { UiBindings } from "./ui-bindings";
+import { UiLocator } from "./ui-locator";
 
 qin.app.initialize({
   env: "dev",
@@ -16,35 +16,21 @@ qin.ioc.eventBus.app.subscribes(
   {
     event: qin.PRESET.EVENT.APP_UI_ROOT_ENSURED,
     handle() {
-      qin.ioc.ui.registerMany([
-        {
-          key: "ui-page-main",
-          type: "Page",
-          prefabPath: "l:resources@ui/pfb-page-main",
-          controller: UiPageMainController,
-          cachePolicy: "LRU",
-        },
-        {
-          key: "ui-popup-userinfo",
-          type: "Popup",
-          prefabPath: "l:resources@ui/pfb-popup-userinfo",
-          controller: UiPopupUserinfoController,
-          enterTweenLib: "tweener-popup-in",
-          exitTweenLib: "tweener-popup-out",
-          cachePolicy: "LRU",
-          modal: true,
-          closeOnMaskClick: false,
-        },
-      ]);
+      qin.ioc.ui.registerMany(UiBindings);
     },
     once: true,
   },
   {
     event: qin.PRESET.EVENT.APP_AFTER_LAUNCHED,
-    handle() {
+    async handle() {
       qin.ioc.logcat.qin.i("Qin's application is launched.");
-      qin.ioc.ui.openPage("ui-page-main");
-      qin.ioc.ui.openPopup("ui-popup-userinfo");
+
+      const prefab = await qin.ioc.loader.loadPrefab(UiLocator.Toast);
+      prefab && qin.ioc.nodePool.register(prefab);
+
+      await qin.ioc.ui.openPage("ui-page-main");
+
+      await qin.ioc.ui.openPopup("ui-popup-userinfo");
     },
     once: true,
   }

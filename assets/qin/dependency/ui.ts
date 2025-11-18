@@ -7,6 +7,7 @@ import { PRESET } from "../preset";
 import { colors } from "../ability";
 import { UIStackLayerManager } from "./ui-stack-layer-manager";
 import { UIScreenManager } from "./ui-screen-manager";
+import { ToastOptions, ToastService, ToastServiceImpl } from "./ui-toast-service";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -25,10 +26,17 @@ export class UIManager extends Dependency implements IUIManager {
   private __popupManager: UIStackLayerManager | null = null;
   /** 是否正在后退 */
   private __backing = false;
+  /** Toast 子服务 */
+  private __toast: ToastService = new ToastServiceImpl(PRESET.UI.TOAST_CONFIG_KEY);
 
   /** UIRoot 及各层级节点 */
   get layers(): IUIRootLayers | null {
     return this.__layers;
+  }
+
+  /** Toast 子服务视图 */
+  get toast(): ToastService {
+    return this.__toast;
   }
 
   async onDetach(): Promise<void> {
@@ -382,12 +390,14 @@ export class UIManager extends Dependency implements IUIManager {
     this.__pageManager.focusTop();
   }
 
-  async showOverlay(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    // TODO: 显示 Overlay
+  /** 显示一条 Toast（语法糖，转发到 ToastService.enqueue） */
+  showToast(message: string, options?: ToastOptions): void {
+    this.__toast.enqueue(message, options);
   }
 
-  async hideOverlay(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
-    // TODO: 隐藏 Overlay
+  /** 清空 Toast 队列并隐藏当前 Toast（语法糖，转发到 ToastService.clear） */
+  clearToast(): void {
+    this.__toast.clear();
   }
 
   async back(): Promise<void> {

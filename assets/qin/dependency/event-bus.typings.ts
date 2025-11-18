@@ -59,5 +59,5 @@ export interface IEventListener {
   /** 是否只执行一次 */
   readonly once?: boolean;
   /** 事件处理函数 */
-  handle(data?: any): void;
+  handle(data?: any): void | Promise<void>;
 }
