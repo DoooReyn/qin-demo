@@ -1,6 +1,6 @@
 import { instantiate, Prefab } from "cc";
 
-import { might, mock, time } from "../ability";
+import { mock, time } from "../ability";
 import ioc, { Injectable } from "../ioc";
 import { Constructor } from "../typings";
 import { Dependency } from "./dependency";
@@ -365,7 +365,7 @@ export class NodePool {
       inst.__expire_at__ = this.expires > 0 ? time.now + this.expires : 0;
       inst.removeFromParent();
       // 延迟一帧回收，避免同一帧重复使用
-      ioc.timer.shared.nextTick(might.sync, might, () => this.__container.push(inst));
+      ioc.timer.shared.nextTick(() => this.__container.push(inst), this);
     }
   }
 

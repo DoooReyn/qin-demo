@@ -1,4 +1,8 @@
+import { Label, Node } from "cc";
+
 import ioc from "../ioc";
+import { UIConfig } from "./ui.typings";
+import { list } from "../ability";
 
 export interface ToastOptions {
   duration?: number;
@@ -21,8 +25,7 @@ export interface ToastService {
  * - 具体的 UI 展示（Overlay / 节点）后续接入
  */
 export class ToastServiceImpl implements ToastService {
-  private __queue: ToastPayload[] = [];
-  private __showing = false;
+  private __config: UIConfig;
 
   constructor(
     /** Toast 对应的 UIConfig.key（来自 PRESET.UI.TOAST_CONFIG_KEY） */
@@ -30,35 +33,72 @@ export class ToastServiceImpl implements ToastService {
   ) {}
 
   enqueue(message: string, options?: ToastOptions): void {
-    this.__queue.push({ message, options });
-    void this.__tryShowNext();
+    const payload: ToastPayload = { message, options };
+    this.__showToast(payload);
   }
 
   clear(): void {
-    this.__queue.length = 0;
-    // TODO: 隐藏当前 Toast UI（待接入具体 Overlay 视图后实现）
+    const layers = ioc.ui.layers;
+    const parent = layers?.toastOverlayRoot;
+    if (!parent) {
+      return;
+    }
+    list.each(
+      parent.children,
+      (child) => {
+        const controller = child.acquire(this.__config.controller);
+        controller.onViewWillDisappear?.();
+        controller.onViewDidDisappear?.();
+      },
+      true
+    );
   }
 
-  private async __tryShowNext(): Promise<void> {
-    if (this.__showing) return;
-    const next = this.__queue.shift();
-    if (!next) return;
-
-    this.__showing = true;
-    try {
-      // 演示实现：暂时使用日志 + 延时模拟 Toast 显示
-      const duration = next.options?.duration ?? 2;
-      ioc.logcat.ui.d(`[Toast:${this.__toastConfigKey}] ${next.message}`, {
-        duration,
-        level: next.options?.level ?? "info",
-      });
-      await this.__sleep(duration);
-    } finally {
-      this.__showing = false;
-      if (this.__queue.length > 0) {
-        void this.__tryShowNext();
-      }
+  private async __showToast(payload: ToastPayload): Promise<void> {
+    if (!this.__config) {
+      this.__config = ioc.ui.fetchConfig(this.__toastConfigKey, "ToastServiceImpl");
+      if (!this.__config) return;
     }
+
+    // 1. 获取停留时间
+    const duration = payload.options?.duration ?? 2;
+
+    // 2. 获取 Overlay 层级
+    const layers = ioc.ui.layers ?? ioc.ui.ensureRoot();
+    const parent = layers.toastOverlayRoot;
+
+    // 3. 从节点池获取 Toast 节点
+    const key = this.__config.prefabPath.slice(this.__config.prefabPath.lastIndexOf("/") + 1);
+    const node = ioc.nodePool.acquire<Node>(key);
+    if (!node) {
+      ioc.logcat?.ui.wf("ToastServiceImpl.__showToast: Toast 预制体未注册到节点池, key={0}", key);
+      return;
+    }
+
+    // 4. 挂载到 ToastOverlayRoot 下
+    parent.addChild(node);
+
+    // 5. 挂载控制器并触发生命周期
+    const controller = node.acquire(this.__config.controller);
+    controller.onViewCreated?.();
+    controller.onViewWillAppear?.(payload);
+    if (this.__config.enterTweenLib) {
+      await ioc.tweener.play(node, this.__config.enterTweenLib, { duration: 0.3 });
+    }
+    controller.onViewDidAppear?.();
+
+    // 6. 停留一段时间
+    await this.__sleep(duration);
+
+    // 7. 播放退出动画
+    controller.onViewWillDisappear?.();
+    if (this.__config.exitTweenLib) {
+      await ioc.tweener.play(node, this.__config.exitTweenLib, { duration: 0.3 });
+    }
+    controller.onViewDidDisappear?.();
+
+    // 8. 回收节点
+    ioc.nodePool.recycle(node);
   }
 
   private __sleep(seconds: number): Promise<void> {

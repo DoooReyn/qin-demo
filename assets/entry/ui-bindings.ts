@@ -13,6 +13,8 @@ export const UiBindings: UIConfig[] = [
     prefabPath: UiLocator.Toast,
     controller: UiToastController,
     cachePolicy: "Persistent",
+    enterTweenLib: "tweener-blur-in",
+    exitTweenLib: "tweener-blur-out",
   },
   {
     key: "ui-page-main",

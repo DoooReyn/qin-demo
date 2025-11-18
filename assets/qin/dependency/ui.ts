@@ -8,6 +8,7 @@ import { colors } from "../ability";
 import { UIStackLayerManager } from "./ui-stack-layer-manager";
 import { UIScreenManager } from "./ui-screen-manager";
 import { ToastOptions, ToastService, ToastServiceImpl } from "./ui-toast-service";
+import { Layout } from "cc";
 
 /**
  * UI 管理系统依赖（骨架实现）
@@ -87,18 +88,18 @@ export class UIManager extends Dependency implements IUIManager {
     }
 
     const root = launcher.root;
-    const uiRoot = this.__getOrCreateChild(root, "ui-root");
-    const screenLayer = this.__getOrCreateChild(uiRoot, "ui-screen");
-    const pageLayer = this.__getOrCreateChild(uiRoot, "ui-page");
-    const popupLayer = this.__getOrCreateChild(uiRoot, "ui-popup");
-    const overlayLayer = this.__getOrCreateChild(uiRoot, "ui-overlay");
-    const popupMask = this.__getOrCreateChild(popupLayer, "ui-popup-mask");
+    const uiRoot = this.__getOrCreateLayer(root, "ui-root");
+    const screenLayer = this.__getOrCreateLayer(uiRoot, "ui-screen");
+    const pageLayer = this.__getOrCreateLayer(uiRoot, "ui-page");
+    const popupLayer = this.__getOrCreateLayer(uiRoot, "ui-popup");
+    const overlayLayer = this.__getOrCreateLayer(uiRoot, "ui-overlay");
+    const popupMask = this.__getOrCreateLayer(popupLayer, "ui-popup-mask");
     popupMask.active = false;
     popupMask.on(Node.EventType.TOUCH_END, this.__onPopupMaskClicked, this);
-    const toastOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-toast-overlay");
-    const drawerOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-drawer-overlay");
-    const marqueeOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-marquee-overlay");
-    const guideOverlayRoot = this.__getOrCreateChild(overlayLayer, "ui-guide-overlay");
+    const toastOverlayRoot = this.__getOrCreateOverlayer(overlayLayer, "ui-toast-overlay");
+    const drawerOverlayRoot = this.__getOrCreateOverlayer(overlayLayer, "ui-drawer-overlay");
+    const marqueeOverlayRoot = this.__getOrCreateOverlayer(overlayLayer, "ui-marquee-overlay");
+    const guideOverlayRoot = this.__getOrCreateOverlayer(overlayLayer, "ui-guide-overlay");
 
     this.__layers = {
       root: uiRoot,
@@ -112,6 +113,14 @@ export class UIManager extends Dependency implements IUIManager {
       marqueeOverlayRoot,
       guideOverlayRoot,
     };
+
+    const toastLayout = toastOverlayRoot.acquire(Layout);
+    toastLayout.type = Layout.Type.VERTICAL;
+    toastLayout.alignVertical = true;
+    toastLayout.resizeMode = Layout.ResizeMode.CONTAINER;
+    toastLayout.verticalDirection = Layout.VerticalDirection.TOP_TO_BOTTOM;
+    toastLayout.spacingY = 3;
+    toastOverlayRoot.pivotY = 0;
 
     const playEnterTween = this.__playEnterTween.bind(this);
     const playExitTween = this.__playExitTween.bind(this);
@@ -141,7 +150,7 @@ export class UIManager extends Dependency implements IUIManager {
    * @param name 子节点名称
    * @returns 子节点
    */
-  private __getOrCreateChild(parent: Node, name: string): Node {
+  private __getOrCreateLayer(parent: Node, name: string): Node {
     let child = parent.getChildByName(name);
     if (!child) {
       child = new Node(name);
@@ -158,6 +167,16 @@ export class UIManager extends Dependency implements IUIManager {
       widget.isAlignTop = true;
       widget.isAlignBottom = true;
       widget.updateAlignment();
+    }
+    return child;
+  }
+
+  private __getOrCreateOverlayer(parent: Node, name: string) {
+    let child = parent.getChildByName(name);
+    if (!child) {
+      child = new Node(name);
+      const trans = child.acquire(UITransform);
+      parent.addChild(child);
     }
     return child;
   }
@@ -294,7 +313,7 @@ export class UIManager extends Dependency implements IUIManager {
    * @param source 调用来源
    * @returns UIConfig
    */
-  private __fetchConfig(keyOrClass: string | (new (...args: any[]) => IUIView), source: string): UIConfig | undefined {
+  public fetchConfig(keyOrClass: string | (new (...args: any[]) => IUIView), source: string): UIConfig | undefined {
     const name = typeof keyOrClass === "string" ? keyOrClass : keyOrClass.name;
     const config = this.__getConfig(keyOrClass);
     if (!config) {
@@ -306,7 +325,7 @@ export class UIManager extends Dependency implements IUIManager {
   // === 以下为导航与显示接口骨架，后续将根据设计文档补充具体逻辑 ===
 
   async openScreen(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    const config = this.__fetchConfig(keyOrClass, "openScreen");
+    const config = this.fetchConfig(keyOrClass, "openScreen");
     if (config) {
       await this.__screenManager.open(config, params);
     }
@@ -323,7 +342,7 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async openPage(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    const config = this.__fetchConfig(keyOrClass, "openPage");
+    const config = this.fetchConfig(keyOrClass, "openPage");
     if (config) {
       await this.__pageManager.open(config, params);
     }
@@ -332,7 +351,7 @@ export class UIManager extends Dependency implements IUIManager {
   async closePage(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
     if (this.__pageManager.size == 0) return;
 
-    const config = this.__fetchConfig(keyOrClass, "closePage");
+    const config = this.fetchConfig(keyOrClass, "closePage");
     if (config) {
       await this.__pageManager.closeBy(config);
       if (this.__pageManager.size == 0) {
@@ -359,7 +378,7 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async openPopup(keyOrClass: string | (new (...args: any[]) => IUIView), params?: any): Promise<void> {
-    const config = this.__fetchConfig(keyOrClass, "openPopup");
+    const config = this.fetchConfig(keyOrClass, "openPopup");
     if (config) {
       await this.__popupManager.open(config, params);
       this.__updatePopupMask();
@@ -367,7 +386,7 @@ export class UIManager extends Dependency implements IUIManager {
   }
 
   async closePopup(keyOrClass: string | (new (...args: any[]) => IUIView)): Promise<void> {
-    const config = this.__fetchConfig(keyOrClass, "closePopup");
+    const config = this.fetchConfig(keyOrClass, "closePopup");
     if (config) {
       await this.__popupManager.closeBy(config);
       this.__updatePopupMask();

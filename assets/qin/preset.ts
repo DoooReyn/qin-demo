@@ -39,6 +39,15 @@ export const PRESET = {
     /** 每次点击最短间隔时间（毫秒） */
     CLICK_INTERVAL_MS: 200,
   },
+  /** UI 相关配置 */
+  UI: {
+    /** Page LRU 缓存容量 */
+    PAGE_CACHE_CAPACITY: 3,
+    /** Popup LRU 缓存容量 */
+    POPUP_CACHE_CAPACITY: 5,
+    /** Toast 对应的 UIConfig.key */
+    TOAST_CONFIG_KEY: "ui-toast",
+  },
   /** 内置事件 */
   EVENT: {
     // ----------------------- APP Tier -----------------------
@@ -270,14 +279,5 @@ export const PRESET = {
     BLACK_50: "#00000080",
     /** 黑色，四分之一透明 */
     BLACK_25: "#00000040",
-  },
-  /** UI 相关配置 */
-  UI: {
-    /** Page LRU 缓存容量 */
-    PAGE_CACHE_CAPACITY: 3,
-    /** Popup LRU 缓存容量 */
-    POPUP_CACHE_CAPACITY: 5,
-    /** Toast 对应的 UIConfig.key */
-    TOAST_CONFIG_KEY: "ui-toast",
   },
 } as const;

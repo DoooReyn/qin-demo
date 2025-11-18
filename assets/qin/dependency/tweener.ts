@@ -4,6 +4,8 @@ import { Dependency } from "./dependency";
 import { ITweener, ITweenArgs, ITweenEntry } from "./tweener.typings";
 import { might, mock } from "../ability";
 import {
+  BlurInTw,
+  BlurOutTw,
   PopupInTw,
   PopupOutTw,
   ShakeTw,
@@ -26,6 +28,8 @@ export class Tweener extends Dependency implements ITweener {
   private __tweens: Map<string, Map<string, [Tween<Node>, ITweenArgs]>> = new Map();
 
   onAttach(): Promise<void> {
+    this.register(BlurInTw);
+    this.register(BlurOutTw);
     this.register(PopupInTw);
     this.register(PopupOutTw);
     this.register(ShakeTw);

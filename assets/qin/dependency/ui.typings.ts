@@ -3,6 +3,7 @@ import { Node } from "cc";
 import { IDependency } from "./dependency.typings";
 import { Constructor } from "../typings";
 import { ToastOptions, ToastService } from "./ui-toast-service";
+import { UIController } from "../atom";
 
 /** UI 类型 */
 export type UIType = "Screen" | "Page" | "Popup" | "Overlay";
@@ -24,7 +25,7 @@ export interface UIConfig {
   /** UI 预制体路径 */
   prefabPath: string;
   /** 视图控制脚本构造器 */
-  controller: Constructor<any>;
+  controller: Constructor<UIController<any>>;
   /** UI 缓存策略 */
   cachePolicy: UICachePolicy;
   /** 进入动画 */
@@ -102,6 +103,14 @@ export interface IUIManager extends IDependency {
 
   /** 批量注册 UI 配置 */
   registerMany(configs: UIConfig[]): void;
+
+  /**
+   * 根据 key 或 controller 构造器解析 UIConfig
+   * @param keyOrClass UIConfig key 或 controller 构造器
+   * @param source 调用来源
+   * @returns UIConfig
+   */
+  fetchConfig(keyOrClass: string | Constructor<IUIView>, source: string): UIConfig | undefined;
 
   /** 打开 Screen */
   openScreen(keyOrClass: string | Constructor<IUIView>, params?: any): Promise<void>;
