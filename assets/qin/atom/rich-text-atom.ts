@@ -77,6 +77,7 @@ interface ILaidOutGlyph extends IRichGlyph {
  * 富文本组件（低 DC 版本）
  */
 @mock.decorator.ccclass("RichTextAtom")
+@mock.decorator.menu("1/UI/RichTextAtom")
 export class RichTextAtom extends Atom {
   @property({ multiline: true, tooltip: "文本内容" })
   public text: string = "";

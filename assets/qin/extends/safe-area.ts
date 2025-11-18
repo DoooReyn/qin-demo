@@ -6,7 +6,7 @@ const { ccclass, property, menu } = _decorator;
  * 用于适配不同设备的安全区域，避免UI被刘海、胶囊遮挡
  */
 @ccclass("SafeArea")
-@menu("Qin/UI/SafeArea")
+@menu("1/UI/SafeArea")
 export class SafeArea extends Widget {
   @property({
     displayName: "顶部安全区域适配",

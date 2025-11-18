@@ -1,6 +1,6 @@
 import { _decorator, Enum, Layout, UITransform, Vec3 } from "cc";
 
-const { ccclass, property, disallowMultiple } = _decorator;
+const { ccclass, property, disallowMultiple, menu } = _decorator;
 
 /**
  * 水平居中布局方向枚举
@@ -21,6 +21,7 @@ export enum CenterHorizontalDirection {
  * @extends Layout
  */
 @ccclass("CenterLayout")
+@menu("1/UI/CenterLayout")
 @disallowMultiple()
 export class CenterLayout extends Layout {
   /**
