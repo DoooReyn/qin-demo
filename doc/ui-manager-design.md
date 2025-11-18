@@ -202,10 +202,23 @@ ioc.ui.closePopup(keyOrClass);
       }
 
       interface ToastService {
-        enqueue(message: string, options?: ToastOptions): void; // 入队一条 toast 消息
-        clear(): void; // 清空队列并隐藏当前 toast
+        enqueue(message: string, options?: ToastOptions): void; // 立即显示一条 toast
+        clear(): void; // 清除当前所有 toast 视图
       }
       ```
+
+    - 当前实现要点：
+
+      - `enqueue` 每次调用都会：
+        - 通过 `UIManager.fetchConfig(PRESET.UI.TOAST_CONFIG_KEY)` 拿到对应的 `UIConfig`；
+        - 使用 `UIConfig.prefabPath` 推导节点池 key，并通过 `ioc.nodePool.acquire` 获取一个 Toast 节点实例；
+        - 将节点挂到 `toastOverlayRoot` 下（该节点挂有垂直 `Layout`，支持多条 Toast 向上堆叠）；
+        - 调用 `node.acquire(config.controller)` 获取 `UiToastController`，依次触发 `onViewCreated / onViewWillAppear / onViewDidAppear`；
+        - 若 `UIConfig.enterTweenLib` 有配置，则通过 `ioc.tweener.play(node, enterTweenLib, { duration: 0.3 })` 播放进场动画；
+        - 停留一段时间（`ToastOptions.duration`，默认 2s）后，依次触发 `onViewWillDisappear / onViewDidDisappear`，并在有配置时播放 `exitTweenLib` 退场动画；
+        - 最后通过 `ioc.nodePool.recycle(node)` 回收节点。
+      - 由于每次 `enqueue` 都会独立实例化一个 Toast 节点并挂到 `toastOverlayRoot` 下，因此可同时存在多条 Toast，由父节点的 `Layout` 控制“新消息在下方、旧消息被挤到上方”等布局表现。
+      - `clear()` 会遍历 `toastOverlayRoot` 下现有子节点，对其控制器触发 `onViewWillDisappear / onViewDidDisappear`，并清理当前所有正在显示的 Toast。
 
     - `ToastService` 作为 UIManager 的内部子服务存在，并通过 `ioc.ui` 暴露：
 
@@ -222,7 +235,7 @@ ioc.ui.closePopup(keyOrClass);
   - 其它 Overlay 子类型（如 Drawer/Guide/Marquee）可以采用类似模式：
 
     - 在 UIManager 内部挂载相应的子服务（`DrawerService`、`GuideService` 等）。
-    - 通过 `ioc.ui` 暴露领域化接口（如 `openDrawer/closeDrawer`, `startGuide/finishGuide`），而不是统一的 `show/hide`。
+    - 通过 `ioc.ui` 暴露领域化接口（如 `openDrawer/closeDrawer`, `startGuide/finishGuide`），而不是统一的 `show/hide`.
 
 ---
 
